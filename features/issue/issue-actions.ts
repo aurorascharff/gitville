@@ -35,6 +35,20 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
   return { ok: true as const };
 }
 
+const titleEditSchema = z.string().trim().min(1, 'Title cannot be empty').max(160, 'Title is too long');
+
+export async function updateIssueTitle(issueId: string, title: string) {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false as const, error: 'Not signed in' };
+  const parsed = titleEditSchema.safeParse(title);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
+  const issue = await loadIssue(issueId);
+  if (!issue) return { ok: false as const, error: 'Issue not found' };
+
+  await prisma.issue.update({ where: { id: issueId }, data: { title: parsed.data } });
+  return { ok: true as const };
+}
+
 export async function updateIssuePriority(issueId: string, priority: IssuePriority) {
   const user = await getCurrentUser();
   if (!user) return { ok: false as const, error: 'Not signed in' };

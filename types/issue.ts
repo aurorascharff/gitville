@@ -43,3 +43,4 @@ export type Issue = {
 };
 
 export const issuesKey = (view: string) => `/api/issues?view=${view}`;
+export const issueKeyUrl = (key: string) => `/api/issue/${key}`;

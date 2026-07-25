@@ -1,22 +1,27 @@
 import { preload, SWRConfig } from 'swr';
 import { getIssuesForView } from '@/features/issue/issue-queries';
 import { getProjects } from '@/features/project/project-queries';
-import { getCurrentUserId, getTeammates } from '@/features/user/user-queries';
+import { getCurrentUser, getTeammates } from '@/features/user/user-queries';
 import { IssueWorkspace } from '@/features/issue/components/issue-workspace';
 import { Skeleton } from '@/components/ui/skeleton';
 import { issuesKey } from '@/types/issue';
 
 export async function IssuesView({ view }: { view: string }) {
-  const userId = await getCurrentUserId();
-  const [teammates, projects] = await Promise.all([getTeammates(), getProjects()]);
+  const [user, teammates, projects] = await Promise.all([getCurrentUser(), getTeammates(), getProjects()]);
+  const currentUser = user ?? { id: '', name: 'You', avatarColor: 'violet' };
 
   // Seed the SWR cache on the server so the list hydrates with no refetch, then polls live.
   const key = issuesKey(view);
-  const cacheData = preload(key, () => getIssuesForView(view, userId));
+  const cacheData = preload(key, () => getIssuesForView(view, currentUser.id));
 
   return (
     <SWRConfig value={{ cacheData }}>
-      <IssueWorkspace view={view} teammates={teammates} projects={projects} />
+      <IssueWorkspace
+        view={view}
+        teammates={teammates}
+        projects={projects}
+        currentUser={{ id: currentUser.id, name: currentUser.name, avatarColor: currentUser.avatarColor }}
+      />
     </SWRConfig>
   );
 }

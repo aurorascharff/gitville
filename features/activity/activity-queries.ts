@@ -14,6 +14,12 @@ export const getRecentEvents = cache(async (limit = 40): Promise<ActivityEvent[]
   return rows.map(toActivityEvent);
 });
 
+// Per-issue history (the issue's own events) — live via polling in the detail tabs.
+export async function getIssueEvents(issueId: string): Promise<ActivityEvent[]> {
+  const rows = await prisma.event.findMany({ where: { issueId }, orderBy: { createdAt: 'desc' }, take: 40 });
+  return rows.map(toActivityEvent);
+}
+
 // Unseen since the viewer's last-seen marker; drives the live badge (polled, uncached).
 export async function getUnseenCount(): Promise<number> {
   const userId = await getCurrentUserId();

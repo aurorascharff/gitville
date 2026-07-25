@@ -21,6 +21,7 @@ export type ActivityEvent = {
 
 export type NotificationsPayload = { count: number };
 export const NOTIFICATIONS_KEY = '/api/notifications';
+export const historyKey = (issueId: string) => `/api/issues/${issueId}/history`;
 
 export function toActivityEvent(row: EventRow): ActivityEvent {
   return {

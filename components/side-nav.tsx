@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Activity, CircleDot, Inbox, Layers, ListTodo, type LucideIcon } from 'lucide-react';
+import { BarChart3, CircleDot, Inbox, Layers, ListTodo, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { projectDot, type Project } from '@/types/project';
 import type { Route } from 'next';
@@ -27,7 +27,7 @@ export function SideNav({ projects }: { projects: Project[] }) {
           const active = onHome && currentView === v.view;
           return <Item key={v.view} href={`/?view=${v.view}`} label={v.label} icon={<v.icon size={15} strokeWidth={1.9} />} active={active} />;
         })}
-        <Item href="/activity" label="Activity" icon={<Activity size={15} strokeWidth={1.9} />} active={pathname === '/activity'} />
+        <Item href="/insights" label="Insights" icon={<BarChart3 size={15} strokeWidth={1.9} />} active={pathname === '/insights'} />
       </div>
 
       <div>
