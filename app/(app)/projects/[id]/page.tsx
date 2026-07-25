@@ -5,6 +5,8 @@ import { ProjectHeader, ProjectHeaderSkeleton } from '@/features/project/compone
 import { DeploymentsList, DeploymentsListSkeleton } from '@/features/deployment/components/deployments-list';
 
 export const prefetch = 'allow-runtime';
+// Keep the request alive long enough for the simulated build's after() task on Vercel.
+export const maxDuration = 60;
 
 export default function ProjectPage({ params }: PageProps<'/projects/[id]'>) {
   return (

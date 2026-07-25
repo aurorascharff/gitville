@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { GitCommit } from 'lucide-react';
 import { getRecentDeployments } from '@/features/deployment/deployment-queries';
 import { getProjects } from '@/features/project/project-queries';
+import { RelativeTime } from '@/components/ui/relative-time';
 import { StatusDot } from '@/components/ui/status-dot';
 import { Skeleton } from '@/components/ui/skeleton';
-import { timeAgo } from '@/lib/utils';
 
 export async function RecentDeploys() {
   const [deploys, projects] = await Promise.all([getRecentDeployments(6), getProjects()]);
@@ -25,7 +25,7 @@ export async function RecentDeploys() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] leading-tight font-medium text-foreground">{nameById.get(d.projectId) ?? d.projectId}</p>
                 <span className="text-[10px] leading-none text-muted-foreground">
-                  {d.version} · {timeAgo(d.createdAt)}
+                  {d.version} · <RelativeTime date={d.createdAt} />
                 </span>
               </div>
             </Link>

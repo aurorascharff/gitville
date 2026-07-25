@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { getDeployment } from '@/features/deployment/deployment-queries';
 import { StatusBadge } from '@/features/deployment/components/deployment-status';
+import { RelativeTime } from '@/components/ui/relative-time';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDuration, timeAgo } from '@/lib/utils';
+import { formatDuration } from '@/lib/utils';
 
 export async function DeploymentHeader({ projectId, deployId }: { projectId: string; deployId: string }) {
   const deployment = await getDeployment(deployId);
@@ -28,7 +29,7 @@ export async function DeploymentHeader({ projectId, deployId }: { projectId: str
           {' · '}
           {deployment.commit.branch}
           {' · '}
-          {timeAgo(deployment.createdAt)}
+          <RelativeTime date={deployment.createdAt} />
           {deployment.durationMs != null ? ` · built in ${formatDuration(deployment.durationMs)}` : ''}
         </p>
         {deployment.url ? (

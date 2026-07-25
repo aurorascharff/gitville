@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   partialPrefetching: true,
   typedRoutes: true,
-  // @vercel/sandbox and better-sqlite3 load native/node built-ins that must not be bundled.
-  serverExternalPackages: ['@vercel/sandbox', 'better-sqlite3'],
+  // @vercel/sandbox loads Node built-ins that must not be bundled into the RSC graph.
+  serverExternalPackages: ['@vercel/sandbox'],
   experimental: {
     inlineCss: true,
   },

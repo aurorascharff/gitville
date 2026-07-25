@@ -37,10 +37,11 @@ export async function setSandboxId(deploymentId: string, sandboxId: string): Pro
   await prisma.deployment.update({ where: { id: deploymentId }, data: { sandboxId } });
 }
 
-// Clear cached reads so a finished build shows fresh data on navigation.
+// Clear cached reads so a finished build shows fresh data on navigation. `after()` runs
+// outside the action's render, so we use revalidateTag (with a profile) rather than updateTag.
 export function invalidateDeployment(deploymentId: string, projectId: string): void {
-  revalidateTag(`deployment-${deploymentId}`);
-  revalidateTag(`build-log-${deploymentId}`);
-  revalidateTag(`deployments-${projectId}`);
-  revalidateTag('recent-deployments');
+  revalidateTag(`deployment-${deploymentId}`, 'max');
+  revalidateTag(`build-log-${deploymentId}`, 'max');
+  revalidateTag(`deployments-${projectId}`, 'max');
+  revalidateTag('recent-deployments', 'max');
 }

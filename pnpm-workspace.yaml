@@ -10,7 +10,6 @@ minimumReleaseAgeExclude:
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
-  - better-sqlite3
   - esbuild
   - prisma
   - unrs-resolver

@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { getDeployments } from '@/features/deployment/deployment-queries';
 import { StatusBadge } from '@/features/deployment/components/deployment-status';
+import { RelativeTime } from '@/components/ui/relative-time';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { Deployment } from '@/types/deployment';
 
 export async function DeploymentsList({ projectId }: { projectId: string }) {
@@ -38,7 +39,9 @@ function DeploymentRow({ deployment }: { deployment: Deployment }) {
             {deployment.commit.sha.slice(0, 7)} · {deployment.commit.message || deployment.commit.branch}
           </code>
         </div>
-        <span className="hidden text-right text-[11px] text-muted-foreground sm:block">{timeAgo(deployment.createdAt)}</span>
+        <span className="hidden text-right text-[11px] text-muted-foreground sm:block">
+          <RelativeTime date={deployment.createdAt} />
+        </span>
       </Link>
     </li>
   );

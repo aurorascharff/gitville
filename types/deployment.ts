@@ -38,6 +38,17 @@ export function isTerminal(status: DeploymentStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
 }
 
+// Live payload shared by the SWR seed (server) and the polling fetcher (client).
+export type DeploymentStatusPayload = {
+  status: DeploymentStatus;
+  url: string | null;
+  engine: DeployEngineKind;
+  durationMs: number | null;
+  logs: LogLine[];
+};
+
+export const statusKey = (deployId: string) => `/api/deployments/${deployId}/status`;
+
 export function toDeployment(row: DeploymentRow): Deployment {
   return {
     id: row.id,
