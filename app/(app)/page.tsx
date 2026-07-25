@@ -1,22 +1,47 @@
 import { Suspense } from 'react';
-import { Crossfade } from '@/components/ui/crossfade';
-import { ProjectsGrid, ProjectsGridSkeleton } from '@/features/project/components/projects-grid';
+import { IssuesView, IssuesViewSkeleton } from '@/features/issue/components/issues-view';
 
 export const prefetch = 'allow-runtime';
 
-export default function ProjectsPage({ searchParams }: PageProps<'/'>) {
+const VIEW_LABEL: Record<string, string> = {
+  mine: 'My issues',
+  active: 'Active',
+  backlog: 'Backlog',
+  all: 'All issues',
+};
+
+function resolveView(sp: Record<string, string | string[] | undefined>): string {
+  const v = sp.view;
+  return typeof v === 'string' && v.length > 0 ? v : 'active';
+}
+
+export default function HomePage({ searchParams }: PageProps<'/'>) {
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-5 flex items-baseline justify-between gap-3">
-        <h1 className="text-lg font-semibold">Projects</h1>
-      </div>
-      <Suspense fallback={<ProjectsGridSkeleton />}>
-        <Crossfade>
-          {searchParams.then(sp => (
-            <ProjectsGrid query={typeof sp.q === 'string' ? sp.q : undefined} />
-          ))}
-        </Crossfade>
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <>
+          <ViewHeader title="Active" />
+          <IssuesViewSkeleton />
+        </>
+      }
+    >
+      {searchParams.then(sp => {
+        const view = resolveView(sp);
+        return (
+          <>
+            <ViewHeader title={VIEW_LABEL[view] ?? view} />
+            <IssuesView view={view} />
+          </>
+        );
+      })}
+    </Suspense>
+  );
+}
+
+function ViewHeader({ title }: { title: string }) {
+  return (
+    <header className="flex h-11 shrink-0 items-center border-b px-4 sm:px-6">
+      <h1 className="text-[13px] font-semibold tracking-tight">{title}</h1>
+    </header>
   );
 }

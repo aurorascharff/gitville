@@ -22,9 +22,9 @@ export function SignInForm() {
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className="text-xs font-medium text-muted-foreground">
-          Continue with a username
+          Your name
         </label>
-        <Input id="name" name="name" type="text" autoComplete="username" required autoFocus placeholder="aurora" />
+        <Input id="name" name="name" type="text" autoComplete="username" required autoFocus placeholder="Aurora" />
       </div>
       {state?.error ? (
         <p role="alert" className="text-xs text-destructive">

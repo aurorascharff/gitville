@@ -1,9 +1,8 @@
-import { Layers } from 'lucide-react';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { SignInForm } from '@/features/user/components/sign-in-form';
-import { SESSION_COOKIE } from '@/features/user/user-constants';
+import { getCurrentUserId } from '@/features/user/user-queries';
+import { LoopMark } from '@/components/loop-mark';
 
 export default function LoginPage() {
   return (
@@ -13,12 +12,10 @@ export default function LoginPage() {
       </Suspense>
       <div className="w-full max-w-xs">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-foreground text-background">
-            <Layers size={18} strokeWidth={1.8} />
-          </span>
+          <LoopMark size={40} />
           <div>
-            <h1 className="font-mono text-base font-semibold">next16-deploy-platform</h1>
-            <p className="mt-1 text-xs text-muted-foreground">No account needed — just pick a name.</p>
+            <h1 className="text-lg font-semibold tracking-tight">Loop</h1>
+            <p className="mt-1 text-xs text-muted-foreground">Where the team tracks what ships.</p>
           </div>
         </div>
         <SignInForm />
@@ -28,7 +25,7 @@ export default function LoginPage() {
 }
 
 async function RedirectIfAuthed() {
-  const store = await cookies();
-  if (store.has(SESSION_COOKIE)) redirect('/');
+  const userId = await getCurrentUserId();
+  if (userId) redirect('/');
   return null;
 }

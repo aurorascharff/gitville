@@ -35,3 +35,8 @@ export async function verifyAuth(): Promise<string> {
   if (!userId) redirect('/login');
   return userId;
 }
+
+export const getTeammates = cache(async (): Promise<User[]> => {
+  const rows = await prisma.user.findMany({ orderBy: { createdAt: 'asc' } });
+  return rows.map(toUser);
+});

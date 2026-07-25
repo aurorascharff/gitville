@@ -7,10 +7,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   description:
-    'A mini Vercel-style deployments dashboard with real sandbox deploys and live build logs streamed via SWR, built on Next.js 16.3 Cache Components.',
+    'Loop — a live issue tracker for teams. Your board stays in sync as teammates move work, with everything server-rendered first and kept live by SWR. Built on Next.js 16.3.',
   title: {
-    default: 'next16-deploy-platform',
-    template: '%s · next16-deploy-platform',
+    default: 'Loop',
+    template: '%s · Loop',
   },
 };
 

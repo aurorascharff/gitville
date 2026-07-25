@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/features/user/user-queries';
-import { cn } from '@/lib/utils';
-import { SignOutButton } from './sign-out-button';
+import { Avatar } from '@/components/ui/avatar';
+import { SignOutButton } from '@/features/user/components/sign-out-button';
 
 export async function ViewerAvatar() {
   const user = await getCurrentUser();
@@ -8,13 +8,11 @@ export async function ViewerAvatar() {
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        aria-label={user.name}
-        title={user.name}
-        className={cn('inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold', user.avatarClasses)}
-      >
-        {user.initials}
-      </span>
+      <Avatar name={user.name} color={user.avatarColor} size={24} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium">{user.name}</p>
+        <p className="truncate text-[11px] text-muted-foreground">{user.role}</p>
+      </div>
       <SignOutButton />
     </div>
   );

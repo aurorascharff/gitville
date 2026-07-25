@@ -3,14 +3,14 @@ import { ImageResponse } from 'next/og';
 export const size = { height: 32, width: 32 };
 export const contentType = 'image/png';
 
-// A rounded-square mark with a Vercel-style triangle — the app's "trademark" favicon.
+// Loop's mark: a circular sync/loop arrow on the brand tile.
 export default function Icon() {
   return new ImageResponse(
     (
       <div
         style={{
           alignItems: 'center',
-          background: '#0a0a0a',
+          background: '#6d4ee6',
           borderRadius: 7,
           display: 'flex',
           height: '100%',
@@ -18,8 +18,9 @@ export default function Icon() {
           width: '100%',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 3 L22 21 L2 21 Z" fill="#fafafa" />
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M20 4v4.5h-4.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
     ),
