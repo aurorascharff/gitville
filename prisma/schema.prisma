@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  pins Pin[]
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  name          String
+  description   String   @default("")
+  framework     String
+  language      String
+  status        String
+  icon          String
+  productionUrl String
+  repo          String
+  createdAt     DateTime @default(now())
+
+  deployments Deployment[]
+  pins        Pin[]
+
+  @@index([name])
+}
+
+model Deployment {
+  id         String    @id @default(cuid())
+  projectId  String
+  version    String
+  status     String
+  region     String    @default("iad1")
+  commit     String // JSON: { sha, message, author, branch }
+  durationMs Int?
+  source     String    @default("manual")
+  engine     String    @default("simulated")
+  url        String?
+  sandboxId  String?
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  project Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logs    DeploymentLog[]
+
+  @@index([projectId, createdAt])
+  @@index([createdAt])
+}
+
+model DeploymentLog {
+  id           String   @id @default(cuid())
+  deploymentId String
+  seq          Int
+  level        String
+  message      String
+  createdAt    DateTime @default(now())
+
+  deployment Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+
+  @@unique([deploymentId, seq])
+  @@index([deploymentId, seq])
+}
+
+model Pin {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([userId])
+}

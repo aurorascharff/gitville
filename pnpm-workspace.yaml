@@ -1,0 +1,16 @@
+packages:
+  - .
+
+minimumReleaseAge: 2880 # 48 hrs
+minimumReleaseAgeExclude:
+  - '@next/*'
+  - eslint-config-next
+  - next
+  - swr
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - better-sqlite3
+  - esbuild
+  - prisma
+  - unrs-resolver
