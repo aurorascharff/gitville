@@ -17,7 +17,7 @@ export default function LoginPage() {
             <Layers size={18} strokeWidth={1.8} />
           </span>
           <div>
-            <h1 className="text-base font-semibold">Deploy Platform</h1>
+            <h1 className="font-mono text-base font-semibold">next16-deploy-platform</h1>
             <p className="mt-1 text-xs text-muted-foreground">No account needed — just pick a name.</p>
           </div>
         </div>

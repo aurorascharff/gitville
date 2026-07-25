@@ -30,10 +30,8 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
 
 export async function verifyAuth(): Promise<string> {
   const userId = await getCurrentUserId();
-  if (!userId) {
-    const store = await cookies();
-    store.delete(SESSION_COOKIE);
-    redirect('/login');
-  }
+  // Note: don't delete the cookie here — verifyAuth runs during render (AuthGate), where
+  // cookie mutation is illegal. A stale cookie simply keeps redirecting until re-sign-in.
+  if (!userId) redirect('/login');
   return userId;
 }

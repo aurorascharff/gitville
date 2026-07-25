@@ -14,7 +14,7 @@ export function SiteHeader() {
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-foreground text-background">
           <Layers size={14} strokeWidth={1.8} />
         </span>
-        <span className="hidden sm:inline">Deploy&nbsp;Platform</span>
+        <span className="hidden font-mono sm:inline">next16-deploy-platform</span>
       </Link>
       <Suspense fallback={<Skeleton className="h-8 w-full max-w-[360px] sm:ml-auto" />}>
         <SearchBar />
