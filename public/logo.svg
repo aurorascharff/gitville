@@ -1,5 +1,12 @@
-<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="72" height="72" rx="16" fill="#1b50ff" />
-  <path d="M36 12 59.4 25.5 V52.5 L36 66 12.6 52.5 V25.5 Z" stroke="#fff" stroke-width="5" stroke-linejoin="round" transform="translate(0,-3)" />
-  <circle cx="36" cy="36" r="6.5" fill="#fff" />
+<svg width="72" height="72" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <rect width="8" height="8" fill="#4d9153"/>
+  <rect x="3" y="0" width="2" height="1" fill="#b0532e"/>
+  <rect x="2" y="1" width="4" height="1" fill="#b0532e"/>
+  <rect x="1" y="2" width="6" height="1" fill="#b0532e"/>
+  <rect x="0" y="3" width="8" height="1" fill="#b0532e"/>
+  <rect x="0" y="4" width="1" height="4" fill="#4a3826"/><rect x="7" y="4" width="1" height="4" fill="#4a3826"/>
+  <rect x="1" y="4" width="6" height="3" fill="#c9a06b"/>
+  <rect x="2" y="5" width="1" height="1" fill="#ffd76a"/>
+  <rect x="5" y="5" width="1" height="2" fill="#5a4632"/>
+  <rect x="0" y="7" width="8" height="1" fill="#4a3826"/>
 </svg>
