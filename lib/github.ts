@@ -94,6 +94,8 @@ type EventResponse = {
     ref?: string | null;
     ref_type?: string;
     size?: number;
+    head?: string;
+    before?: string;
     commits?: { message: string }[];
     action?: string;
     pull_request?: { number: number; title: string; html_url: string; merged?: boolean };
@@ -114,7 +116,7 @@ function shortRef(ref?: string | null): string {
   return (ref ?? '').replace(/^refs\/heads\//, '');
 }
 
-function mapEvent(e: EventResponse): WireEvent | null {
+function mapEvent(e: EventResponse, slug: string): WireEvent | null {
   const base = {
     id: e.id,
     actor: e.actor?.login ?? 'someone',
@@ -133,11 +135,18 @@ function mapEvent(e: EventResponse): WireEvent | null {
     case 'PushEvent': {
       const branch = shortRef(p.ref);
       const n = p.size ?? p.commits?.length ?? 0;
+      const pushUrl =
+        p.head && p.before && n > 1
+          ? `https://github.com/${slug}/compare/${p.before.slice(0, 12)}...${p.head.slice(0, 12)}`
+          : p.head
+            ? `https://github.com/${slug}/commit/${p.head}`
+            : null;
       return {
         ...base,
         kind: 'push',
         ref: branch || null,
         count: n,
+        url: pushUrl,
         line: n > 0 ? `pushed ${n === 1 ? 'a commit' : `${n} commits`} to ${branch}` : `pushed to ${branch}`,
         detail: p.commits?.[0]?.message?.split('\n')[0] ?? null,
       };
@@ -238,7 +247,9 @@ export async function getHivePayload(slug: string, defaultBranch: string): Promi
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
   ]);
-  const events = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
+  const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
+  // Event pages shift while we fetch — the same event can appear on two pages.
+  const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
   if (!Array.isArray(pulls) && events.length === 0) {
     return { ok: false, fetchedAt: new Date().toISOString(), defaultBranch, prs: [], branches: [], events: [] };
@@ -256,7 +267,7 @@ export async function getHivePayload(slug: string, defaultBranch: string): Promi
   }));
 
   const wire = (events ?? [])
-    .map(mapEvent)
+    .map(e => mapEvent(e, slug))
     .filter((e): e is WireEvent => e !== null)
     // Bot comment chatter drowns out the humans on busy repos.
     .filter(e => !(e.actor.endsWith('[bot]') && (e.kind === 'comment' || e.kind === 'review')))

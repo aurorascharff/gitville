@@ -40,7 +40,7 @@ function slotPos(i: number): { x: number; y: number } {
   return { x: CX + (q + r / 2) * DX, y: CY + r * DY };
 }
 
-export type CellKind = 'main' | 'pr' | 'branch' | 'inbox';
+export type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
 
 export type Cell = {
   id: string;
@@ -66,7 +66,8 @@ export function buildCells(payload: HivePayload, slug: string): Cell[] {
     ...slotPos(slot++),
   });
 
-  for (const pr of payload.prs.slice(0, 10)) {
+  const prNumbers = new Set(payload.prs.map(pr => pr.number));
+  for (const pr of payload.prs.slice(0, 8)) {
     cells.push({
       id: `pr:${pr.number}`,
       kind: 'pr',
@@ -78,7 +79,8 @@ export function buildCells(payload: HivePayload, slug: string): Cell[] {
     });
   }
 
-  for (const b of payload.branches.slice(0, Math.max(0, 18 - slot))) {
+  for (const b of payload.branches.slice(0, 5)) {
+    if (slot >= 18) break;
     cells.push({
       id: `branch:${b.ref}`,
       kind: 'branch',
@@ -89,12 +91,35 @@ export function buildCells(payload: HivePayload, slug: string): Cell[] {
     });
   }
 
-  // Everything else (closed PRs, issues under discussion) gathers at the inbox.
+  // The busiest issues/discussions get their own houses too — that's where the
+  // conversation villagers actually are.
+  const issueActivity = new Map<number, { count: number; title: string | null }>();
+  for (const e of payload.events) {
+    if (e.number == null || prNumbers.has(e.number)) continue;
+    const cur = issueActivity.get(e.number) ?? { count: 0, title: null };
+    cur.count += 1;
+    if (!cur.title && e.detail) cur.title = e.detail;
+    issueActivity.set(e.number, cur);
+  }
+  const topIssues = [...issueActivity.entries()].sort((a, b) => b[1].count - a[1].count);
+  for (const [number, info] of topIssues) {
+    if (slot >= 18) break;
+    cells.push({
+      id: `issue:${number}`,
+      kind: 'issue',
+      label: `#${number}`,
+      sub: info.title,
+      url: `https://github.com/${slug}/issues/${number}`,
+      ...slotPos(slot++),
+    });
+  }
+
+  // Whoever's latest work points somewhere older hangs out on the town square.
   cells.push({
     id: 'inbox',
     kind: 'inbox',
-    label: 'inbox',
-    sub: 'issues & older threads',
+    label: 'town square',
+    sub: 'passing through',
     url: `https://github.com/${slug}/issues`,
     ...slotPos(slot++),
   });
@@ -110,7 +135,9 @@ export function cellForEvent(e: WireEvent, cells: Cell[], defaultBranch: string)
     return cells.some(c => c.id === `branch:${e.ref}`) ? `branch:${e.ref}` : 'inbox';
   }
   if (e.number != null) {
-    return cells.some(c => c.id === `pr:${e.number}`) ? `pr:${e.number}` : 'inbox';
+    if (cells.some(c => c.id === `pr:${e.number}`)) return `pr:${e.number}`;
+    if (cells.some(c => c.id === `issue:${e.number}`)) return `issue:${e.number}`;
+    return 'inbox';
   }
   if (e.kind === 'release') return 'main';
   return 'inbox';
@@ -167,12 +194,10 @@ export function hashDelay(login: string): number {
   return (h >>> 0) % 2000;
 }
 
-
 // Recent events that happened at one cell — powers the inspector's local history.
 export function eventsForCell(payload: HivePayload, cells: Cell[], cellId: string, limit = 8): WireEvent[] {
   return payload.events.filter(e => cellForEvent(e, cells, payload.defaultBranch) === cellId).slice(0, limit);
 }
-
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────
 // A cell's interior: commits are the furniture, reviews/comments are sticky notes,

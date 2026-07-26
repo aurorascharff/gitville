@@ -12,7 +12,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^4.0.19",
     "@radix-ui/react-slot": "^1.1.2",
+    "ai": "^7.0.26",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "geist": "^1.7.0",
@@ -24,7 +26,8 @@
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "swr": "2.5.0-beta.0",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

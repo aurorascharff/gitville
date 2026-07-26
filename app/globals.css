@@ -164,15 +164,13 @@
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
 
-
-
 /* ── The village (pixel-game layer) ─────────────────────────────────────────── */
 .pixel {
   image-rendering: pixelated;
 }
 .grass-field {
-  background-color: #2c5a35;
-  background-image: repeating-conic-gradient(#32663c 0% 25%, #2c5a35 0% 50%);
+  background-color: #3f7a47;
+  background-image: repeating-conic-gradient(#468a4f 0% 25%, #3f7a47 0% 50%);
   background-size: 22px 22px;
 }
 .room-wall {

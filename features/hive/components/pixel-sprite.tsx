@@ -2,11 +2,28 @@
 
 type Palette = Record<string, string>;
 
-export function PixelSprite({ art, palette, scale = 3, className }: { art: string[]; palette: Palette; scale?: number; className?: string }) {
+export function PixelSprite({
+  art,
+  palette,
+  scale = 3,
+  className,
+}: {
+  art: string[];
+  palette: Palette;
+  scale?: number;
+  className?: string;
+}) {
   const h = art.length;
   const w = Math.max(...art.map(r => r.length));
   return (
-    <svg width={w * scale} height={h * scale} viewBox={`0 0 ${w} ${h}`} className={className} shapeRendering="crispEdges" aria-hidden>
+    <svg
+      width={w * scale}
+      height={h * scale}
+      viewBox={`0 0 ${w} ${h}`}
+      className={className}
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
       {art.flatMap((row, y) =>
         [...row].map((ch, x) => {
           const fill = palette[ch];
@@ -84,6 +101,14 @@ export const TREE = {
 export const BUSH = {
   palette: { l: LEAF, d: LEAF_D },
   art: ['.lld.', 'lldll', 'dllld', '.ddd.'],
+};
+export const FENCE = {
+  palette: { w: '#a5814e', d: '#7c5f38' },
+  art: ['w..w..w', 'wwwwwww', 'w..w..w', 'd..d..d'],
+};
+export const CROPS = {
+  palette: { s: '#6b4a2b', d: '#5a3d22', g: '#58a55c', l: '#7cc281' },
+  art: ['gsgsgsg', 'sdsdsds', 'lslsgsl', 'sdsdsds', 'gsgslsg', 'sdsdsds'],
 };
 export const ROCK = {
   palette: { g: '#8d939c', d: '#6b7078' },

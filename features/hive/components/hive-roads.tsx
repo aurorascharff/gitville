@@ -1,11 +1,8 @@
 'use client';
 
-import { useHive } from '@/features/hive/hive-context';
-import { WORLD_H, WORLD_W } from '@/features/hive/hive-world-model';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/hive/hive-world-model';
 
-// Stepping-stone paths radiating from the town square.
-export function HiveRoads() {
-  const { cells } = useHive();
+export function HiveRoads({ cells }: { cells: Cell[] }) {
   const main = cells.find(c => c.kind === 'main');
   if (!main) return null;
   return (
