@@ -8,8 +8,4 @@ minimumReleaseAgeExclude:
   - next
   - swr
 onlyBuiltDependencies:
-  - '@prisma/client'
-  - '@prisma/engines'
-  - esbuild
-  - prisma
   - unrs-resolver

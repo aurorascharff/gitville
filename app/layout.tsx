@@ -7,10 +7,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   description:
-    'Loop — a live issue tracker for teams. Your board stays in sync as teammates move work, with everything server-rendered first and kept live by SWR. Built on Next.js 16.3.',
+    'Your favorite repos as living honeycombs — watch real contributors buzz between branches and PRs, then scrub back in time.',
   title: {
-    default: 'Loop',
-    template: '%s · Loop',
+    default: 'Hive',
+    template: '%s · Hive',
   },
 };
 

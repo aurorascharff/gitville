@@ -35,55 +35,56 @@
   --tracking-tight: -0.014em;
 }
 
+/* Palette matched to the Drop / next16-social-media design system. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.185 0 0);
-  --card: oklch(0.995 0 0);
-  --card-foreground: oklch(0.185 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.185 0 0);
-  --primary: oklch(0.21 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.21 0 0);
-  --muted: oklch(0.968 0 0);
-  --muted-foreground: oklch(0.52 0 0);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.21 0 0);
-  --destructive: oklch(0.58 0.22 27);
-  --success: oklch(0.62 0.15 155);
-  --warning: oklch(0.72 0.15 70);
-  --brand: oklch(0.52 0.25 267);
-  --brand-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #f7f7f8;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f1;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f4f4f5;
+  --muted-foreground: #6b7280;
+  --accent: #f2f2f3;
+  --accent-foreground: #0a0a0a;
+  --destructive: #e54848;
+  --success: #0fa958;
+  --warning: #d98a00;
+  --brand: #1b50ff;
+  --brand-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
   --ring: var(--brand);
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 }
 
-/* Neutral near-black (no hue tint) — matches the Drop / NextBeats feel. */
+/* Pure black, #0f0f0f cards, #262626 hairlines — the signature Drop dark theme. */
 .dark {
-  --background: oklch(0.15 0 0);
-  --foreground: oklch(0.955 0 0);
-  --card: oklch(0.185 0 0);
-  --card-foreground: oklch(0.955 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.955 0 0);
-  --primary: oklch(0.955 0 0);
-  --primary-foreground: oklch(0.2 0 0);
-  --secondary: oklch(0.24 0 0);
-  --secondary-foreground: oklch(0.955 0 0);
-  --muted: oklch(0.23 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.255 0 0);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.64 0.19 25);
-  --success: oklch(0.72 0.14 158);
-  --warning: oklch(0.79 0.14 72);
-  --brand: oklch(0.62 0.22 264);
-  --brand-foreground: oklch(0.99 0 0);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
+  --background: #000000;
+  --foreground: #f5f5f5;
+  --card: #0f0f0f;
+  --card-foreground: #f5f5f5;
+  --popover: #161616;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #f5f5f5;
+  --muted: #161616;
+  --muted-foreground: #9ca3af;
+  --accent: #161616;
+  --accent-foreground: #ffffff;
+  --destructive: #f26161;
+  --success: #2fbd6a;
+  --warning: #f5a524;
+  --brand: #3b6bff;
+  --brand-foreground: #ffffff;
+  --border: #262626;
+  --input: #2a2a2a;
   --ring: var(--brand);
 }
 
@@ -158,11 +159,145 @@
   }
 }
 
-.log-stream {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.55;
-  letter-spacing: 0;
+/* Honeycomb cells. */
+.hex {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+
+
+/* ── The village (pixel-game layer) ─────────────────────────────────────────── */
+.pixel {
+  image-rendering: pixelated;
+}
+.grass-field {
+  background-color: #2c5a35;
+  background-image: repeating-conic-gradient(#32663c 0% 25%, #2c5a35 0% 50%);
+  background-size: 22px 22px;
+}
+.room-wall {
+  background-color: #c3ab84;
+  background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.07) 0 4px, transparent 4px 26px);
+}
+.room-floor {
+  background-color: #93673d;
+  background-image:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 24px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 2px, transparent 2px 64px);
+}
+.sticky-note {
+  background: #f5d76a;
+  clip-path: polygon(0 0, 100% 0, 100% 76%, 76% 100%, 0 100%);
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.35);
+}
+.window-glow {
+  box-shadow: 0 0 12px 3px rgb(255 214 106 / 0.5);
+}
+.room-pop {
+  animation: room-pop 260ms ease-out;
+}
+@keyframes room-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Fireflies: ambient drifting lights. */
+.firefly {
+  animation-name: drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  box-shadow: 0 0 8px 2px color-mix(in oklch, var(--brand) 40%, transparent);
+}
+@keyframes drift {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.4;
+    transform: translate(26px, -34px);
+  }
+  75% {
+    opacity: 0.8;
+  }
+}
+
+/* Occupied cells breathe. */
+.cell-breathe {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+/* Villagers: idle bob + landing pop. */
+.sprite-bob {
+  animation: bob 2.6s ease-in-out infinite;
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+.pop-in {
+  animation: pop-in 320ms ease-out backwards;
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprite-bob,
+  .pop-in,
+  .room-pop,
+  .firefly,
+  .cell-breathe,
+  .radar-sweep {
+    animation: none;
+  }
+}
+
+/* Radar sweep: a slow rotating conic highlight inside the live indicator. */
+.radar-sweep {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    color-mix(in oklch, var(--brand) 85%, transparent) 360deg
+  );
+  animation: sweep 2.4s linear infinite;
+}
+@keyframes sweep {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
