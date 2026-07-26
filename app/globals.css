@@ -146,10 +146,6 @@
   }
 }
 
-/* Flash a row when it changes / arrives live (SWR revalidation highlight). */
-.flash-in {
-  animation: flash-in 1.1s ease-out;
-}
 @keyframes flash-in {
   0% {
     background-color: color-mix(in oklch, var(--brand) 22%, transparent);
@@ -159,19 +155,32 @@
   }
 }
 
-/* Honeycomb cells. */
-.hex {
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-
 /* ── The village (pixel-game layer) ─────────────────────────────────────────── */
 .pixel {
   image-rendering: pixelated;
 }
 .grass-field {
-  background-color: #3f7a47;
-  background-image: repeating-conic-gradient(#468a4f 0% 25%, #3f7a47 0% 50%);
+  background-color: #4d9153;
+  background-image: repeating-conic-gradient(#57a05c 0% 25%, #4d9153 0% 50%);
   background-size: 22px 22px;
+}
+.dark .grass-field {
+  background-color: #2c5a35;
+  background-image: repeating-conic-gradient(#32663c 0% 25%, #2c5a35 0% 50%);
+}
+
+/* Light = day, dark = night over the village. */
+.village-sun {
+  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgb(255 244 190 / 0.22), transparent 70%);
+}
+.dark .village-sun {
+  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgb(230 238 255 / 0.09), transparent 70%);
+}
+.village-vignette {
+  background: radial-gradient(ellipse 95% 85% at 50% 50%, transparent 55%, rgb(20 44 24 / 0.4));
+}
+.dark .village-vignette {
+  background: radial-gradient(ellipse 95% 85% at 50% 50%, transparent 45%, rgb(4 10 6 / 0.78));
 }
 .room-wall {
   background-color: #c3ab84;
@@ -230,19 +239,6 @@
   }
 }
 
-/* Occupied cells breathe. */
-.cell-breathe {
-  animation: breathe 3.4s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.65;
-  }
-}
 
 /* Villagers: idle bob + landing pop. */
 .sprite-bob {
@@ -276,7 +272,6 @@
   .pop-in,
   .room-pop,
   .firefly,
-  .cell-breathe,
   .radar-sweep {
     animation: none;
   }
