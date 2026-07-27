@@ -111,53 +111,46 @@ function InteriorScene({
 }) {
   const { slug } = useVillageUi();
   const { spec } = useRoomSpec(slug, cell.id, ai);
+  const roomRef = useRef<HTMLDivElement>(null);
   const [w, h] = roomDims(cell);
-  // Wide screens give the sign and the carpenter their own columns; narrow ones
-  // stack them above a full-width room instead of shrinking it to a stamp.
-  const narrow = viewport.w < 900;
-  const fit = narrow
-    ? Math.min(1, (viewport.w - 24) / w, (viewport.h - 200) / h)
-    : Math.min(1, (viewport.w - 620) / w, (viewport.h - 48) / h);
+  // Full scale behind the HUD, like the village: the camera follows you around
+  // the room and simply centers it when the whole thing fits on screen.
+  const camX = w <= viewport.w ? (viewport.w - w) / 2 : Math.min(0, Math.max(viewport.w - w, viewport.w / 2 - w / 2));
+  const camY = h <= viewport.h ? (viewport.h - h) / 2 : Math.min(0, Math.max(viewport.h - h, viewport.h / 2 - (h - 78)));
 
   return (
     <div
-      className={cn('scene-in absolute inset-0 z-40 gap-4 p-4', narrow ? 'flex flex-col items-center overflow-y-auto' : 'flex items-start')}
+      className="scene-in absolute inset-0 z-40 overflow-hidden"
       style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
     >
-      <div className={narrow ? 'flex w-full max-w-xl items-start gap-3' : 'contents'}>
-        <HouseSign cell={cell} />
-        {narrow ? <AiPanel cell={cell} ai={ai} onToggle={setAiOn} /> : null}
+      <div
+        key={cell.id}
+        ref={roomRef}
+        className={cn(
+          'pixel absolute top-0 left-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)] will-change-transform',
+          // AI mode is visible on the room itself: a golden frame while it's on.
+          ai && 'ring-4 ring-[#e4c05a]',
+        )}
+        style={{ width: w, height: h, transform: `translate3d(${camX}px, ${camY}px, 0)` }}
+        onClick={e => {
+          if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          walkTargetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }}
+      >
+        <WallNotes cell={cell} width={w} ai={ai} />
+        <Floor cell={cell} width={w} height={h} ai={ai} />
+        <Occupants cell={cell} width={w} height={h} />
+        <DoorMat width={w} height={h} />
+        <InteriorPlayer width={w} height={h} walkTargetRef={walkTargetRef} roomRef={roomRef} onExit={() => setFocusId(null)} />
+        {ai ? (
+          <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+            {spec?.ai ? spec.theme : 'AI at work…'}
+          </span>
+        ) : null}
       </div>
-      <div className={cn('flex min-w-0 items-center justify-center', !narrow && 'h-full flex-1')}>
-        <div style={{ width: w * fit, height: h * fit }}>
-          <div
-            key={cell.id}
-            className={cn(
-              'pixel relative overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]',
-              // AI mode is visible on the room itself: a golden frame while it's on.
-              ai && 'ring-4 ring-[#e4c05a]',
-            )}
-            style={{ width: w, height: h, transform: `scale(${fit})`, transformOrigin: 'top left' }}
-            onClick={e => {
-              if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              walkTargetRef.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
-            }}
-          >
-            <WallNotes cell={cell} width={w} ai={ai} />
-            <Floor cell={cell} width={w} height={h} ai={ai} />
-            <Occupants cell={cell} width={w} height={h} />
-            <DoorMat width={w} height={h} />
-            <InteriorPlayer width={w} height={h} walkTargetRef={walkTargetRef} onExit={() => setFocusId(null)} />
-            {ai ? (
-              <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-                {spec?.ai ? spec.theme : 'AI at work…'}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
-      {!narrow ? <AiPanel cell={cell} ai={ai} onToggle={setAiOn} /> : null}
+      <HouseSign cell={cell} />
+      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
     </div>
   );
 }
@@ -181,7 +174,7 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
   const label = working ? 'at work…' : ai ? 'AI room' : 'visualize with AI';
 
   return (
-    <aside className="z-50 w-36 shrink-0">
+    <aside className="absolute top-4 right-4 z-50">
       <button
         onClick={() => onToggle(!ai)}
         role="switch"
@@ -190,7 +183,7 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
         onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: label, body: !working && spec?.ai ? spec.theme : null, when: null })}
         onMouseLeave={() => setTip(null)}
         className={cn(
-          'panel pixel flex w-full cursor-pointer flex-col items-center rounded-sm p-2.5 transition-transform hover:-translate-y-0.5',
+          'panel pixel flex cursor-pointer flex-col items-center rounded-sm p-2 transition-transform hover:-translate-y-0.5',
           ai && 'ring-2 ring-[#e4c05a]',
           !ai && !working && 'opacity-80',
         )}
@@ -204,22 +197,20 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
             </span>
           ) : null}
           <span className={cn('block', working && 'sprite-bob')}>
-            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={4} />
+            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={3} />
           </span>
         </span>
         {/* A real switch: track and knob, no guessing which state you're in. */}
         <span
           aria-hidden
           className={cn(
-            'mt-2 flex h-5 w-10 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
+            'mt-1.5 flex h-4 w-8 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
             ai ? 'justify-end bg-[#e4c05a]' : 'justify-start bg-[#b5a687]',
           )}
         >
-          <span className="h-3 w-3.5 rounded-xs border border-[#4a3826] bg-[#f7efdc]" />
+          <span className="h-2 w-2.5 rounded-xs border border-[#4a3826] bg-[#f7efdc]" />
         </span>
-        <span className="font-pixel mt-1.5 text-center text-[11px] leading-4 font-bold text-[#3a2f22]">{label}</span>
       </button>
-      {!working && ai && spec && !spec.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#f0e6d2]/70">couldn’t draw this one</p> : null}
     </aside>
   );
 }
@@ -377,8 +368,8 @@ function buildWidth(build: Build): number {
 // Flow layout: builds take the width they need, wrap into rows, never touch
 // the walls, and flow around the centerpiece instead of standing on it.
 function layoutBuilds(builds: Build[], w: number, floorH: number): { x: number; y: number }[] {
-  const pad = 48;
-  const gap = 36;
+  const pad = 72;
+  const gap = 40;
   const rowH = 128;
   const cx = w / 2;
   const cy = floorH / 2 - 20;
@@ -556,16 +547,19 @@ function DoorMat({ width, height }: { width: number; height: number }) {
   );
 }
 
-// Stepping on the door mat leaves the house.
+// Stepping on the door mat leaves the house. The room camera lives here too,
+// chasing the player exactly like the village camera does outside.
 function InteriorPlayer({
   width,
   height,
   walkTargetRef,
+  roomRef,
   onExit,
 }: {
   width: number;
   height: number;
   walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
+  roomRef: React.RefObject<HTMLDivElement | null>;
   onExit: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -577,7 +571,7 @@ function InteriorPlayer({
   }, [onExit]);
 
   useEffect(() => {
-    const s = { x: width / 2, y: height - 78, keys: new Set<string>(), dir: 1, left: false };
+    const s = { x: width / 2, y: height - 78, keys: new Set<string>(), dir: 1, left: false, camX: Number.NaN, camY: Number.NaN };
     const SPEED = 4;
     const matX = width / 2;
     const matY = height - 16;
@@ -599,6 +593,22 @@ function InteriorPlayer({
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
+
+      if (roomRef.current) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const targetX = width <= vw ? (vw - width) / 2 : Math.min(0, Math.max(vw - width, vw / 2 - s.x));
+        const targetY = height <= vh ? (vh - height) / 2 : Math.min(0, Math.max(vh - height, vh / 2 - s.y));
+        if (Number.isNaN(s.camX)) {
+          s.camX = targetX;
+          s.camY = targetY;
+        } else {
+          s.camX += (targetX - s.camX) * 0.12;
+          s.camY += (targetY - s.camY) * 0.12;
+        }
+        roomRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0)`;
+      }
+
       let dx = 0;
       let dy = 0;
       if (s.keys.size > 0) {
@@ -643,7 +653,7 @@ function InteriorPlayer({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [width, height, walkTargetRef]);
+  }, [width, height, walkTargetRef, roomRef]);
 
   return (
     <div ref={ref} className="absolute" style={{ transform: `translate(${width / 2 - 13}px, ${height - 108}px)` }}>
@@ -691,7 +701,7 @@ function HouseSign({ cell }: { cell: Cell }) {
   const chip = cell.kind !== 'pr' ? null : stack.length > 1 ? `⌂ ${floorNo}/${stack.length}` : cell.prState === 'ready' ? 'ready' : null;
 
   return (
-    <aside className="panel z-50 w-80 max-w-full min-w-0 shrink rounded-sm p-3">
+    <aside className="panel absolute top-4 left-4 z-50 max-h-[60dvh] w-80 max-w-[calc(100vw-8.5rem)] overflow-y-auto rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
       <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
