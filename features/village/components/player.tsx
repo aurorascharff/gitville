@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { WORLD_H, WORLD_W, type Cell } from '@/features/hive/hive-world-model';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
+import { useVillageUi } from '@/features/village/village-ui-context';
 
 export type TravelDetail = { x: number; y: number; cellId?: string };
 
@@ -14,7 +14,7 @@ const SPEED = 4.4;
 
 // You. Walk with WASD/arrows or click the ground; walk to a door and it opens.
 export function Player({ cells }: { cells: Cell[] }) {
-  const { focusId, setFocusId } = useHiveUi();
+  const { focusId, setFocusId } = useVillageUi();
   const ref = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const st = useRef({
@@ -117,7 +117,11 @@ export function Player({ cells }: { cells: Cell[] }) {
   }, [setFocusId]);
 
   return (
-    <div ref={ref} className="absolute z-20" style={{ transform: `translate(${WORLD_W / 2 - 16}px, ${WORLD_H / 2 + 116}px)` }}>
+    <div
+      ref={ref}
+      className="absolute z-20"
+      style={{ transform: `translate(${WORLD_W / 2 - 16}px, ${WORLD_H / 2 + 116}px)` }}
+    >
       <div className="flex flex-col items-center">
         <div ref={inner} className="pixel">
           <svg width="26" height="34" viewBox="0 0 13 17" shapeRendering="crispEdges" aria-label="Your villager">
@@ -136,7 +140,9 @@ export function Player({ cells }: { cells: Cell[] }) {
           </svg>
         </div>
         <span aria-hidden className="mt-0.5 h-1.5 w-6 rounded-full bg-black/50 blur-[2px]" />
-        <span className="font-pixel mt-0.5 rounded-sm bg-[#3b6bff] px-1 text-[11px] leading-4 font-bold text-white">you</span>
+        <span className="font-pixel mt-0.5 rounded-sm bg-[#3b6bff] px-1 text-[11px] leading-4 font-bold text-white">
+          you
+        </span>
       </div>
     </div>
   );

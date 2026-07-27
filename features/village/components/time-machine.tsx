@@ -1,11 +1,11 @@
 'use client';
 
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { SCRUB_MAX, useHiveData, useTimeWindow } from '@/features/hive/use-hive-data';
+import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/use-village-data';
+import { useVillageUi } from '@/features/village/village-ui-context';
 
 export function TimeMachine() {
-  const { slug, scrub, setScrub } = useHiveUi();
-  const { payload } = useHiveData(slug);
+  const { slug, scrub, setScrub } = useVillageUi();
+  const { payload } = useVillageData(slug);
   const { minT, maxT, asOf, live } = useTimeWindow(payload, scrub);
 
   return (

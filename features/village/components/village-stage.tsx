@@ -1,22 +1,35 @@
 'use client';
 
-import { HiveRoads } from '@/features/hive/components/hive-roads';
-import { HiveVillager } from '@/features/hive/components/hive-villager';
-import { BUSH, CROPS, FENCE, PixelSprite, ROCK, TREE } from '@/features/hive/components/pixel-sprite';
-import { Player, travelTo } from '@/features/hive/components/player';
-import { VillageHouse } from '@/features/hive/components/village-house';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { WORLD_H, WORLD_W } from '@/features/hive/hive-world-model';
-import { useHiveData, useTimeWindow, useWorldModel } from '@/features/hive/use-hive-data';
+import { useEffect, useState } from 'react';
+import { BUSH, CROPS, FENCE, PixelSprite, ROCK, TREE } from '@/features/village/components/pixel-sprite';
+import { Player, travelTo } from '@/features/village/components/player';
+import { VillageHouse } from '@/features/village/components/village-house';
+import { VillageRoads } from '@/features/village/components/village-roads';
+import { Villager } from '@/features/village/components/villager';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
+import { WORLD_H, WORLD_W } from '@/features/village/village-model';
+import { useVillageUi } from '@/features/village/village-ui-context';
 
-export function HiveStage() {
-  const { slug, scrub, zoom, buzzOpen, focusId, setFocusId } = useHiveUi();
-  const { payload } = useHiveData(slug);
+function useFitScale(): number {
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const update = () => setFit(Math.min(1, window.innerWidth / (WORLD_W + 60), window.innerHeight / (WORLD_H + 140)));
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return fit;
+}
+
+export function VillageStage() {
+  const { slug, scrub, zoom, buzzOpen, focusId, setFocusId } = useVillageUi();
+  const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells, placed, occupied, weights } = useWorldModel(payload, slug, asOf);
+  const fit = useFitScale();
 
   const focusCell = focusId ? cells.find(c => c.id === focusId) : null;
-  const scale = focusCell ? 1.35 : zoom;
+  const scale = (focusCell ? 1.35 : zoom) * fit;
   const target = focusCell ?? { x: WORLD_W / 2, y: WORLD_H / 2 };
   const biasX = !focusCell && buzzOpen ? -140 : 0;
 
@@ -43,7 +56,7 @@ export function HiveStage() {
           transform: `translate(calc(50vw + ${biasX - target.x * scale}px), calc(50dvh + ${-target.y * scale}px)) scale(${scale})`,
         }}
       >
-        <HiveRoads cells={cells} />
+        <VillageRoads cells={cells} />
         <Pond x={210} y={180} />
         <Pond x={960} y={640} />
         <Greenery />
@@ -56,7 +69,7 @@ export function HiveStage() {
           />
         ))}
         {placed.map(({ actor, x, y }) => (
-          <HiveVillager key={actor.login} actor={actor} x={x} y={y} />
+          <Villager key={actor.login} actor={actor} x={x} y={y} />
         ))}
         <Player cells={cells} />
       </div>
@@ -131,8 +144,14 @@ function NightSky() {
   return (
     <>
       <div aria-hidden className="stars pointer-events-none absolute inset-0 hidden opacity-50 dark:block" />
-      <span aria-hidden className="pixel absolute top-8 right-24 hidden h-8 w-8 rounded-full bg-[#e8e4d2] shadow-[inset_-6px_-4px_0_#c9c4ae] dark:block" />
-      <span aria-hidden className="pixel absolute top-8 right-24 block h-8 w-8 rounded-full bg-[#ffd76a] shadow-[0_0_24px_6px_rgb(255_215_106/0.5)] dark:hidden" />
+      <span
+        aria-hidden
+        className="pixel absolute top-8 right-24 hidden h-8 w-8 rounded-full bg-[#e8e4d2] shadow-[inset_-6px_-4px_0_#c9c4ae] dark:block"
+      />
+      <span
+        aria-hidden
+        className="pixel absolute top-8 right-24 block h-8 w-8 rounded-full bg-[#ffd76a] shadow-[0_0_24px_6px_rgb(255_215_106/0.5)] dark:hidden"
+      />
     </>
   );
 }

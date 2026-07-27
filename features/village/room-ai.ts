@@ -30,6 +30,7 @@ export async function generateRoomSpec(
   label: string,
   sub: string | null,
   commits: string[],
+  notes: string[] = [],
 ): Promise<RoomSpec | null> {
   'use cache: remote';
   cacheLife('days');
@@ -47,15 +48,20 @@ export async function generateRoomSpec(
       schema: specSchema,
       prompt: [
         'You are decorating one tiny room in a cozy pixel-art village where GitHub work is life.',
-        `The room belongs to "${label}"${sub ? ` — ${sub}` : ''} in the ${slug} repository.`,
-        'Recent commits built the furniture, one piece per commit, in order:',
+        `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
+        commits.length > 0
+          ? 'Recent commits built the furniture, one piece per commit, in order:'
+          : 'No commits are visible; theme the room from the discussion below.',
         ...commits.slice(0, 14).map((c, i) => `${i + 1}. ${c}`),
+        notes.length > 0 ? 'Recent discussion in this room:' : '',
+        ...notes.slice(0, 6).map(n => `- ${n}`),
         '',
         'Reply with: a playful room theme name (max 3 words, e.g. "Turbo Forge", "Flaky Test Attic"),',
-        'one wry flavor line about what is being built here, and a short playful furniture name for',
-        'each commit in order (e.g. "half-soldered HMR pipe", "jar of deflaked tests"). Stay concrete',
-        'to the actual commit messages. No emoji.',
-      ].join('\n'),
+        'one wry flavor line about what is happening here, and a short playful furniture name for',
+        'each commit in order (empty list if no commits). Stay concrete to the actual messages. No emoji.',
+      ]
+        .filter(Boolean)
+        .join('\n'),
     });
 
     return specSchema.parse(object);

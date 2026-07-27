@@ -215,7 +215,6 @@
   }
 }
 
-
 /* Pixel-game panels: parchment and wood, hard shadows, no glass. */
 .panel {
   background: #f0e6d2;
@@ -235,11 +234,13 @@
 
 /* Night sky (dark mode): stars twinkle, houses sleep. */
 .stars {
-  background-image:
-    radial-gradient(#ffffff 1px, transparent 1px),
-    radial-gradient(#ffffffaa 1px, transparent 1px);
-  background-size: 220px 180px, 140px 120px;
-  background-position: 20px 30px, 90px 70px;
+  background-image: radial-gradient(#ffffff 1px, transparent 1px), radial-gradient(#ffffffaa 1px, transparent 1px);
+  background-size:
+    220px 180px,
+    140px 120px;
+  background-position:
+    20px 30px,
+    90px 70px;
 }
 .zzz span {
   animation: zzz 2.6s ease-in infinite;
@@ -286,7 +287,6 @@
     opacity: 0.8;
   }
 }
-
 
 /* Villagers: idle bob + landing pop. */
 .sprite-bob {

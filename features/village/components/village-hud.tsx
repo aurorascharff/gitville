@@ -3,14 +3,14 @@
 import { Minus, Plus, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { useHiveData, useTimeWindow, useWorldModel } from '@/features/hive/use-hive-data';
 import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-export function HiveStatus() {
-  const { slug, repo, pinned, scrub } = useHiveUi();
-  const { payload, stale } = useHiveData(slug);
+export function VillageStatus() {
+  const { slug, repo, pinned, scrub } = useVillageUi();
+  const { payload, stale } = useVillageData(slug);
   const { asOf, live } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
 
@@ -39,8 +39,8 @@ export function HiveStatus() {
   );
 }
 
-export function HiveControls() {
-  const { repo, zoom, setZoom, buzzOpen, setBuzzOpen, focusId } = useHiveUi();
+export function VillageControls() {
+  const { repo, zoom, setZoom, buzzOpen, setBuzzOpen, focusId } = useVillageUi();
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
       <a
@@ -77,8 +77,8 @@ export function HiveControls() {
   );
 }
 
-export function HiveTooltip() {
-  const { tip } = useHiveUi();
+export function VillageTooltip() {
+  const { tip } = useVillageUi();
   if (!tip) return null;
   return (
     <div

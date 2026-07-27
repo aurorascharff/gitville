@@ -1,26 +1,26 @@
 import { notFound } from 'next/navigation';
 import { preload, SWRConfig } from 'swr';
-import { HiveWorld } from '@/features/hive/components/hive-world';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
-import { getHivePayload, getRepoData } from '@/lib/github';
-import { hiveKey } from '@/types/github';
+import { VillageWorld } from '@/features/village/components/village-world';
+import { getVillagePayload, getRepoData } from '@/lib/github';
+import { villageKey } from '@/types/github';
 
-export async function HiveView({ slug }: { slug: string }) {
+export async function VillageView({ slug }: { slug: string }) {
   const [repo, pinned] = await Promise.all([getRepoData(slug), getPinnedRepos()]);
   if (!repo) notFound();
 
   // Server-seeded SWR: the world hydrates from this snapshot with no refetch,
   // then every component's useSWR polls the same key (preload + cacheData).
-  const cacheData = preload(hiveKey(repo.slug), () => getHivePayload(repo.slug, repo.defaultBranch));
+  const cacheData = preload(villageKey(repo.slug), () => getVillagePayload(repo.slug, repo.defaultBranch));
 
   return (
     <SWRConfig value={{ cacheData }}>
-      <HiveWorld repo={repo} pinned={pinned} />
+      <VillageWorld repo={repo} pinned={pinned} />
     </SWRConfig>
   );
 }
 
-export function HiveViewSkeleton() {
+export function VillageViewSkeleton() {
   return (
     <div className="grass-field relative h-dvh w-full overflow-hidden">
       <div aria-hidden className="village-sun absolute inset-0" />

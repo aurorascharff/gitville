@@ -13,7 +13,7 @@ export type RepoData = {
   ownerAvatar: string;
 };
 
-export type HivePR = {
+export type VillagePR = {
   number: number;
   title: string;
   url: string;
@@ -54,13 +54,13 @@ export type WireEvent = {
 
 export type ActiveBranch = { ref: string; actor: string; at: string };
 
-export type HivePayload = {
+export type VillagePayload = {
   ok: boolean;
   fetchedAt: string;
   defaultBranch: string;
-  prs: HivePR[];
+  prs: VillagePR[];
   branches: ActiveBranch[];
   events: WireEvent[];
 };
 
-export const hiveKey = (slug: string) => `/api/hive/${slug}`;
+export const villageKey = (slug: string) => `/api/village/${slug}`;

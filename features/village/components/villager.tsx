@@ -1,14 +1,14 @@
 'use client';
 
-import { KindBadge } from '@/features/hive/components/pixel-sprite';
-import { travelTo } from '@/features/hive/components/player';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { hashDelay, type Actor } from '@/features/hive/hive-world-model';
+import { KindBadge } from '@/features/village/components/pixel-sprite';
+import { travelTo } from '@/features/village/components/player';
+import { hashDelay, type Actor } from '@/features/village/village-model';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
 // Crisp avatar head on a pixel body; walks (transform transition) when its cell changes.
-export function HiveVillager({ actor, x, y }: { actor: Actor; x: number; y: number }) {
-  const { setTip, setFocusId } = useHiveUi();
+export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }) {
+  const { setTip, setFocusId } = useVillageUi();
   const delay = hashDelay(actor.login);
   const talking = actor.event.kind === 'comment' || actor.event.kind === 'review';
   const hue = hashDelay(actor.login + 'shirt') % 360;
@@ -63,7 +63,7 @@ export function HiveVillager({ actor, x, y }: { actor: Actor; x: number; y: numb
           </span>
         </div>
         <span aria-hidden className="mt-0.5 h-1.5 w-6 rounded-full bg-black/50 blur-[2px]" />
-        <span className="mt-0.5 max-w-32 truncate rounded-sm bg-black/50 px-1 font-pixel text-[11px] leading-4 text-white">
+        <span className="font-pixel mt-0.5 max-w-32 truncate rounded-sm bg-black/50 px-1 text-[11px] leading-4 text-white">
           {actor.login}
         </span>
       </div>

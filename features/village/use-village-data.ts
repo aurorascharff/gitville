@@ -9,11 +9,11 @@ import {
   commitWeights,
   type Actor,
   type Cell,
-} from '@/features/hive/hive-world-model';
-import { hiveKey, type HivePayload } from '@/types/github';
+} from '@/features/village/village-model';
+import { villageKey, type VillagePayload } from '@/types/github';
 
-const fetcher = async (url: string): Promise<HivePayload> => {
-  const payload = (await fetch(url).then(r => r.json())) as HivePayload;
+const fetcher = async (url: string): Promise<VillagePayload> => {
+  const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
   // Rate-limited upstream: throw so SWR keeps the previous snapshot on screen.
   if (!payload.ok) throw new Error('github-unavailable');
   return payload;
@@ -21,8 +21,8 @@ const fetcher = async (url: string): Promise<HivePayload> => {
 
 // Every component fetches its own data with this hook. SWR dedupes the key to one
 // request, the server seeds it via preload + cacheData, and one poll revalidates all.
-export function useHiveData(slug: string): { payload: HivePayload; stale: boolean } {
-  const { data, error } = useSWR<HivePayload>(hiveKey(slug), fetcher, {
+export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean } {
+  const { data, error } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
     suspense: true,
     refreshInterval: 15_000,
     revalidateOnFocus: true,
@@ -36,7 +36,7 @@ export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boole
 
 // Scrubbing is indexed over events, not wall-clock, so every slider position lands on
 // a moment where something actually happened.
-export function useTimeWindow(payload: HivePayload, scrub: number): TimeWindow {
+export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindow {
   return useMemo(() => {
     if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
     const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
@@ -58,7 +58,7 @@ export type WorldModel = {
   weights: Map<string, number>;
 };
 
-export function useWorldModel(payload: HivePayload, slug: string, asOf: number): WorldModel {
+export function useWorldModel(payload: VillagePayload, slug: string, asOf: number): WorldModel {
   const cells = useMemo(() => buildCells(payload, slug), [payload, slug]);
   const actors = useMemo(() => actorsAt(payload, cells, asOf), [payload, cells, asOf]);
   const weights = useMemo(() => commitWeights(payload, cells), [payload, cells]);

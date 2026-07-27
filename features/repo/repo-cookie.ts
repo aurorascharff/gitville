@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-export const REPOS_COOKIE = 'hive-repos';
+export const REPOS_COOKIE = 'gitville-repos';
 
 // Busy repos so the app is alive on first visit, before any personalization.
 export const DEFAULT_REPOS = ['vercel/next.js', 'facebook/react', 'vercel/swr', 'vitejs/vite'];

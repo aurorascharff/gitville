@@ -1,8 +1,8 @@
 'use client';
 
-import { travelTo } from '@/features/hive/components/player';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import type { Cell } from '@/features/hive/hive-world-model';
+import { travelTo } from '@/features/village/components/player';
+import type { Cell } from '@/features/village/village-model';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
 const ROOF: Record<Cell['kind'], string> = {
@@ -14,7 +14,7 @@ const ROOF: Record<Cell['kind'], string> = {
 };
 
 export function VillageHouse({ cell, people, built }: { cell: Cell; people: number; built: number }) {
-  const { focusId, setFocusId, setTip } = useHiveUi();
+  const { focusId, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
 
   return (
@@ -39,7 +39,7 @@ export function VillageHouse({ cell, people, built }: { cell: Cell; people: numb
         {cell.kind === 'inbox' ? <Well lit={lit} /> : <House cell={cell} built={built} lit={lit} />}
 
         <div className="mt-1.5 flex max-w-48 flex-col items-center rounded-sm border border-black/30 bg-[#f0e6d2] px-1.5 py-0.5 text-center shadow">
-          <p className="w-full truncate font-pixel text-[13px] leading-4 font-bold text-[#3a2f22]">{cell.label}</p>
+          <p className="font-pixel w-full truncate text-[13px] leading-4 font-bold text-[#3a2f22]">{cell.label}</p>
           {cell.sub && cell.kind !== 'main' ? (
             <p className="line-clamp-1 w-full text-[10px] leading-tight text-[#6b5b43]">{cell.sub}</p>
           ) : null}

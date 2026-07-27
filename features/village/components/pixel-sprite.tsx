@@ -118,7 +118,10 @@ export const ROCK = {
 // Event-kind badges — tiny pixel glyphs instead of emoji.
 const BADGE: Record<string, { art: string[]; palette: Palette }> = {
   push: { palette: { g: '#9aa2ad', h: '#8a5a33' }, art: ['.gggg.', '.gggg.', '..hh..', '..hh..', '..hh..'] },
-  pr_opened: { palette: { g: '#58a55c', w: '#f0ead8' }, art: ['g....g', 'g.ww.g', 'g.ww.g', 'gggggg', '...g..', '...g..'] },
+  pr_opened: {
+    palette: { g: '#58a55c', w: '#f0ead8' },
+    art: ['g....g', 'g.ww.g', 'g.ww.g', 'gggggg', '...g..', '...g..'],
+  },
   pr_merged: { palette: { p: '#9a6ab8' }, art: ['p....p', 'p....p', '.pppp.', '...p..', '...p..'] },
   pr_closed: { palette: { r: '#c85b5b' }, art: ['r....r', '.r..r.', '..rr..', '.r..r.', 'r....r'] },
   review: { palette: { w: '#f0ead8', b: '#2b3d55' }, art: ['.wwww.', 'wwbbww', 'wbbbbw', 'wwbbww', '.wwww.'] },

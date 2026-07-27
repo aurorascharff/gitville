@@ -4,11 +4,11 @@ import { ArrowUpRight, X } from 'lucide-react';
 import { useEffect } from 'react';
 import useSWR from 'swr';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { furnitureFor, PixelSprite } from '@/features/hive/components/pixel-sprite';
-import { KindBadge } from '@/features/hive/components/pixel-sprite';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { roomFor } from '@/features/hive/hive-world-model';
-import { useHiveData, useTimeWindow, useWorldModel } from '@/features/hive/use-hive-data';
+import { furnitureFor, PixelSprite } from '@/features/village/components/pixel-sprite';
+import { KindBadge } from '@/features/village/components/pixel-sprite';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
+import { roomFor } from '@/features/village/village-model';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import type { WireEvent } from '@/types/github';
 
 const ROOM_W: Record<'S' | 'M' | 'L', number> = { S: 560, M: 720, L: 880 };
@@ -20,8 +20,8 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> => fetch(url).then(r
 // to read the commit, click to open it), and every review/comment left a sticky note on
 // the wall you can read and follow. AI names the room after what the crew is building.
 export function RoomView() {
-  const { slug, repo, scrub, focusId, setFocusId, setTip } = useHiveUi();
-  const { payload } = useHiveData(slug);
+  const { slug, repo, scrub, focusId, setFocusId, setTip } = useVillageUi();
+  const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells, actors } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
@@ -60,10 +60,11 @@ export function RoomView() {
       >
         {/* Header plaque */}
         <div className="absolute top-3 left-1/2 z-20 flex max-w-[80%] -translate-x-1/2 flex-col items-center gap-0.5 rounded-sm border border-black/40 bg-[#f0e6d2] px-3 py-1 text-center shadow-lg">
-          <p className="truncate font-pixel text-[15px] font-bold whitespace-nowrap text-[#3a2f22]">
+          <p className="font-pixel truncate text-[15px] font-bold whitespace-nowrap text-[#3a2f22]">
             {cell.label} · {theme}
           </p>
           {spec?.flavor ? <p className="line-clamp-1 text-[11px] text-[#6b5b43] italic">{spec.flavor}</p> : null}
+          {cell.ref ? <p className="font-mono text-[9px] text-[#8a6d2a]">{cell.ref}</p> : null}
         </div>
         <button
           onClick={() => setFocusId(null)}
@@ -137,7 +138,9 @@ export function RoomView() {
                     ) : (
                       <span className="bg-secondary block h-[30px] w-[30px] rounded-full" />
                     )}
-                    <span className="absolute -top-2 -right-2"><KindBadge kind={a.event.kind} /></span>
+                    <span className="absolute -top-2 -right-2">
+                      <KindBadge kind={a.event.kind} />
+                    </span>
                   </div>
                   <span className="mt-0.5 rounded bg-black/40 px-1 font-mono text-[9px] text-white/85">{a.login}</span>
                 </a>
@@ -169,7 +172,7 @@ export function RoomView() {
 }
 
 function Furniture({ commit, aiName }: { commit: WireEvent; aiName?: string }) {
-  const { setTip } = useHiveUi();
+  const { setTip } = useVillageUi();
   const item = furnitureFor(commit.id);
   const name = aiName ?? item.name;
   const inner = (
@@ -214,7 +217,7 @@ function Furniture({ commit, aiName }: { commit: WireEvent; aiName?: string }) {
 
 // A readable review/comment, pinned to the wall. Click to open the thread on GitHub.
 function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
-  const { setTip } = useHiveUi();
+  const { setTip } = useVillageUi();
   return (
     <a
       href={note.url ?? undefined}

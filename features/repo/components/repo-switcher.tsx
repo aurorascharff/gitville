@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
 import type { Route } from 'next';
 
-// The HUD identity pill: Hive mark + current repo, opening a glass panel with the
+// The HUD identity pill: village mark + current repo, opening a panel with the
 // watchlist and a "watch a repo" input.
 export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
   const [open, setOpen] = useState(false);

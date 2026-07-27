@@ -1,8 +1,8 @@
 'use client';
 
-import { WORLD_H, WORLD_W, type Cell } from '@/features/hive/hive-world-model';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 
-export function HiveRoads({ cells }: { cells: Cell[] }) {
+export function VillageRoads({ cells }: { cells: Cell[] }) {
   const main = cells.find(c => c.kind === 'main');
   if (!main) return null;
   return (

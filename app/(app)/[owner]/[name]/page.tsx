@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { Crossfade } from '@/components/ui/crossfade';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { HiveView, HiveViewSkeleton } from '@/features/hive/components/hive-view';
+import { VillageView, VillageViewSkeleton } from '@/features/village/components/village-view';
 
 export const prefetch = 'allow-runtime';
 
@@ -10,13 +10,13 @@ export async function generateMetadata({ params }: PageProps<'/[owner]/[name]'>)
   return { title: `${owner}/${name}` };
 }
 
-export default function RepoHivePage({ params }: PageProps<'/[owner]/[name]'>) {
+export default function RepoVillagePage({ params }: PageProps<'/[owner]/[name]'>) {
   return (
-    <ErrorBoundary title="The hive couldn’t sync this repo">
-      <Suspense fallback={<HiveViewSkeleton />}>
+    <ErrorBoundary title="This village couldn’t load">
+      <Suspense fallback={<VillageViewSkeleton />}>
         <Crossfade>
           {params.then(({ owner, name }) => (
-            <HiveView slug={`${owner}/${name}`} />
+            <VillageView slug={`${owner}/${name}`} />
           ))}
         </Crossfade>
       </Suspense>

@@ -1,4 +1,4 @@
-import { PixelSprite } from '@/features/hive/components/pixel-sprite';
+import { PixelSprite } from '@/features/village/components/pixel-sprite';
 
 const HOUSE = {
   palette: { r: '#b0532e', w: '#c9a06b', d: '#5a4632', y: '#ffd76a', o: '#4a3826' },

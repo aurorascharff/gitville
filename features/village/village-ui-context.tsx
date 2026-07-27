@@ -5,8 +5,8 @@ import type { RepoData } from '@/types/github';
 
 export type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
 
-// UI-only state. Data lives in the SWR cache — see use-hive-data.ts.
-type HiveUi = {
+// UI-only state. Data lives in the SWR cache — see use-village-data.ts.
+type VillageUi = {
   slug: string;
   repo: RepoData;
   pinned: string[];
@@ -22,15 +22,15 @@ type HiveUi = {
   setTip: (t: Tooltip | null) => void;
 };
 
-const HiveUiContext = createContext<HiveUi | null>(null);
+const VillageUiContext = createContext<VillageUi | null>(null);
 
-export function useHiveUi(): HiveUi {
-  const ctx = useContext(HiveUiContext);
-  if (!ctx) throw new Error('useHiveUi must be used inside <HiveUiProvider>');
+export function useVillageUi(): VillageUi {
+  const ctx = useContext(VillageUiContext);
+  if (!ctx) throw new Error('useVillageUi must be used inside <VillageUiProvider>');
   return ctx;
 }
 
-export function HiveUiProvider({
+export function VillageUiProvider({
   repo,
   pinned,
   children,
@@ -46,7 +46,7 @@ export function HiveUiProvider({
   const [tip, setTip] = useState<Tooltip | null>(null);
 
   return (
-    <HiveUiContext.Provider
+    <VillageUiContext.Provider
       value={{
         slug: repo.slug,
         repo,
@@ -64,6 +64,6 @@ export function HiveUiProvider({
       }}
     >
       {children}
-    </HiveUiContext.Provider>
+    </VillageUiContext.Provider>
   );
 }

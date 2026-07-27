@@ -1,25 +1,30 @@
 'use client';
 
 import { RelativeTime } from '@/components/ui/relative-time';
-import { KindBadge } from '@/features/hive/components/pixel-sprite';
-import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { useHiveData, useTimeWindow } from '@/features/hive/use-hive-data';
+import { KindBadge } from '@/features/village/components/pixel-sprite';
+import { useVillageData, useTimeWindow } from '@/features/village/use-village-data';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
 export function BuzzPanel() {
-  const { slug, scrub, buzzOpen, focusId } = useHiveUi();
-  const { payload } = useHiveData(slug);
+  const { slug, scrub, buzzOpen, focusId } = useVillageUi();
+  const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   if (!buzzOpen || focusId) return null;
 
   return (
     <aside className="bg-background/80 absolute top-16 right-4 bottom-24 z-30 hidden w-72 flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-md sm:flex">
-      <><p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">the buzz</p><ul className="min-h-0 flex-1 overflow-y-auto py-1">
-        {payload.events.slice(0, 40).map(e => (
-          <BuzzRow key={e.id} event={e} dimmed={new Date(e.at).getTime() > asOf} />
-        ))}
-      </ul></>
+      <>
+        <p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">
+          the buzz
+        </p>
+        <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+          {payload.events.slice(0, 40).map(e => (
+            <BuzzRow key={e.id} event={e} dimmed={new Date(e.at).getTime() > asOf} />
+          ))}
+        </ul>
+      </>
     </aside>
   );
 }
@@ -35,7 +40,8 @@ function BuzzRow({ event, dimmed }: { event: WireEvent; dimmed: boolean }) {
       )}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px]">
-          <span className="font-bold text-[#3a2f22]">{event.actor}</span> <span className="text-[#6b5b43]">{event.line}</span>
+          <span className="font-bold text-[#3a2f22]">{event.actor}</span>{' '}
+          <span className="text-[#6b5b43]">{event.line}</span>
         </p>
         <p className="flex items-center gap-1.5 text-[11px] text-[#8a6d2a]">
           <KindBadge kind={event.kind} /> <RelativeTime date={event.at} />

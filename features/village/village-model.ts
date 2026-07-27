@@ -1,4 +1,4 @@
-import type { HivePayload, WireEvent } from '@/types/github';
+import type { VillagePayload, WireEvent } from '@/types/github';
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 // A honeycomb: center cell + two rings = 19 slots, laid out in a fixed logical
@@ -49,11 +49,12 @@ export type Cell = {
   sub: string | null;
   url: string;
   draft?: boolean;
+  ref?: string; // a PR's head branch — pushes to it land in this room
   x: number;
   y: number;
 };
 
-export function buildCells(payload: HivePayload, slug: string): Cell[] {
+export function buildCells(payload: VillagePayload, slug: string): Cell[] {
   const cells: Cell[] = [];
   let slot = 0;
 
@@ -75,11 +76,13 @@ export function buildCells(payload: HivePayload, slug: string): Cell[] {
       sub: pr.title,
       url: pr.url,
       draft: pr.draft,
+      ref: pr.branch,
       ...slotPos(slot++),
     });
   }
 
-  for (const b of payload.branches.slice(0, 5)) {
+  const prRefs = new Set(payload.prs.map(pr => pr.branch));
+  for (const b of payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5)) {
     if (slot >= 18) break;
     cells.push({
       id: `branch:${b.ref}`,
@@ -132,6 +135,8 @@ export function buildCells(payload: HivePayload, slug: string): Cell[] {
 export function cellForEvent(e: WireEvent, cells: Cell[], defaultBranch: string): string {
   if (e.ref) {
     if (e.ref === defaultBranch) return 'main';
+    const pr = cells.find(c => c.kind === 'pr' && c.ref === e.ref);
+    if (pr) return pr.id;
     return cells.some(c => c.id === `branch:${e.ref}`) ? `branch:${e.ref}` : 'inbox';
   }
   if (e.number != null) {
@@ -151,7 +156,7 @@ export type Actor = {
 };
 
 // Where everyone is "as of" a moment: each human's latest event at or before `t`.
-export function actorsAt(payload: HivePayload, cells: Cell[], t: number): Actor[] {
+export function actorsAt(payload: VillagePayload, cells: Cell[], t: number): Actor[] {
   const byActor = new Map<string, WireEvent>();
   for (const e of payload.events) {
     if (e.actor.endsWith('[bot]')) continue;
@@ -195,7 +200,7 @@ export function hashDelay(login: string): number {
 }
 
 // Recent events that happened at one cell — powers the inspector's local history.
-export function eventsForCell(payload: HivePayload, cells: Cell[], cellId: string, limit = 8): WireEvent[] {
+export function eventsForCell(payload: VillagePayload, cells: Cell[], cellId: string, limit = 8): WireEvent[] {
   return payload.events.filter(e => cellForEvent(e, cells, payload.defaultBranch) === cellId).slice(0, limit);
 }
 
@@ -221,7 +226,7 @@ const THEMES: [RegExp, string][] = [
   [/release|publish|ship/i, 'Shipping Dock'],
 ];
 
-export function roomFor(payload: HivePayload, cells: Cell[], cellId: string): Room {
+export function roomFor(payload: VillagePayload, cells: Cell[], cellId: string): Room {
   const events = payload.events.filter(e => cellForEvent(e, cells, payload.defaultBranch) === cellId);
   const commits = events.filter(e => e.kind === 'push');
   const notes = events.filter(e => (e.kind === 'comment' || e.kind === 'review') && e.body);
@@ -235,7 +240,7 @@ export function roomFor(payload: HivePayload, cells: Cell[], cellId: string): Ro
 }
 
 // How much has been built at each cell — drives house size + lit windows on the map.
-export function commitWeights(payload: HivePayload, cells: Cell[]): Map<string, number> {
+export function commitWeights(payload: VillagePayload, cells: Cell[]): Map<string, number> {
   const weights = new Map<string, number>();
   for (const e of payload.events) {
     if (e.kind !== 'push') continue;
@@ -244,4 +249,3 @@ export function commitWeights(payload: HivePayload, cells: Cell[]): Map<string, 
   }
   return weights;
 }
-

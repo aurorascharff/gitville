@@ -9,7 +9,8 @@ import './globals.css';
 const pixel = Pixelify_Sans({ subsets: ['latin'], variable: '--font-pixel' });
 
 export const metadata: Metadata = {
-  description: 'A tiny pixel village for every GitHub repo. Watch real contributors build, review, and chat, then scrub back in time.',
+  description:
+    'A tiny pixel village for every GitHub repo. Watch real contributors build, review, and chat, then scrub back in time.',
   title: {
     default: 'Gitville',
     template: '%s · Gitville',
@@ -18,7 +19,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${pixel.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${pixel.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen text-sm antialiased">
         <ThemeProvider>
           {children}

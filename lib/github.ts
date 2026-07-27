@@ -1,14 +1,14 @@
 import 'server-only';
 
 import { cacheLife, cacheTag } from 'next/cache';
-import type { ActiveBranch, HivePR, HivePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
+import type { ActiveBranch, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
 
 const API = 'https://api.github.com';
 
 function ghHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
-    'User-Agent': 'hive-app',
+    'User-Agent': 'gitville',
     'X-GitHub-Api-Version': '2022-11-28',
   };
   // 5000 req/hr with a token vs 60 without — strongly recommended in production.
@@ -231,12 +231,12 @@ function deriveBranches(events: EventResponse[], defaultBranch: string): ActiveB
   return [...seen.values()].slice(0, 8);
 }
 
-// The hive snapshot: open PRs + the event window, in two GitHub calls. Cached remotely for
+// The village snapshot: open PRs + the event window, in two GitHub calls. Cached remotely for
 // ~45s so every polling client shares one upstream fetch per window (rate-limit safe).
-export async function getHivePayload(slug: string, defaultBranch: string): Promise<HivePayload> {
+export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   'use cache: remote';
   cacheLife({ stale: 45, revalidate: 45, expire: 600 });
-  cacheTag(`gh-hive-${slug}`);
+  cacheTag(`gv-live-${slug}`);
 
   const [owner, repo] = slug.split('/');
   // GitHub's events API serves up to 300 events across 3 pages — fetch them all so the
@@ -255,7 +255,7 @@ export async function getHivePayload(slug: string, defaultBranch: string): Promi
     return { ok: false, fetchedAt: new Date().toISOString(), defaultBranch, prs: [], branches: [], events: [] };
   }
 
-  const prs: HivePR[] = (pulls ?? []).map(pr => ({
+  const prs: VillagePR[] = (pulls ?? []).map(pr => ({
     number: pr.number,
     title: pr.title,
     url: pr.html_url,
