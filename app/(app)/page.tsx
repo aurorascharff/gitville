@@ -42,6 +42,15 @@ export default function HomePage() {
         </Suspense>
 
         <WatchForm />
+
+        <a
+          href="https://github.com/aurorascharff/gitville"
+          target="_blank"
+          rel="noreferrer"
+          className="font-pixel rounded-sm bg-black/40 px-2 py-0.5 text-[11px] text-white/80 transition-colors hover:text-white"
+        >
+          gitville is a repo too — view the source
+        </a>
       </div>
     </div>
   );

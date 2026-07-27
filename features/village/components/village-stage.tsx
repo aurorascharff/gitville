@@ -37,7 +37,11 @@ export function VillageStage() {
         travelTo({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}
     >
-      <div ref={worldRef} className="grass-field absolute top-0 left-0 will-change-transform" style={{ width: WORLD_W, height: WORLD_H }}>
+      <div
+        ref={worldRef}
+        className="grass-field absolute top-0 left-0 will-change-transform"
+        style={{ width: WORLD_W, height: WORLD_H, boxShadow: 'inset 0 0 90px 46px rgb(14 30 18 / 0.55)' }}
+      >
         <GrassPatches />
         <VillageRoads cells={cells} />
         <GrassDetail />

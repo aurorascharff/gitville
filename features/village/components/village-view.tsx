@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { preload, SWRConfig } from 'swr';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
+import { cottageArt, housePalette, PixelSprite } from '@/features/village/components/pixel-sprite';
 import { VillageWorld } from '@/features/village/components/village-world';
 import { getVillagePayload, getRepoData } from '@/lib/github';
 import { villageKey } from '@/types/github';
@@ -20,21 +21,21 @@ export async function VillageView({ slug }: { slug: string }) {
   );
 }
 
+// Splash screen: a cottage going up while the village loads.
 export function VillageViewSkeleton() {
   return (
-    <div className="grass-field relative h-dvh w-full overflow-hidden">
-      <div aria-hidden className="village-sun absolute inset-0" />
+    <div className="grass-field relative flex h-dvh w-full items-center justify-center overflow-hidden">
       <div aria-hidden className="village-vignette absolute inset-0" />
-      <div className="bg-background/80 absolute top-4 left-4 h-11 w-56 rounded-full border shadow-2xl backdrop-blur-md" />
-      <div className="flex h-full items-center justify-center">
-        <div className="grid grid-cols-3 gap-10 opacity-60">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="shimmer h-24 w-28 rounded-md" style={{ animationDelay: `${(i % 3) * 160}ms` }} />
-          ))}
+      <div className="pixel relative flex flex-col items-center gap-4">
+        <div className="relative" style={{ filter: 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25))' }}>
+          <span aria-hidden className="pointer-events-none absolute -top-1 right-[21%]">
+            {[0, 1, 2].map(i => (
+              <span key={i} className="smoke-puff absolute h-2 w-2 rounded-full bg-white/70" style={{ animationDelay: `${i * 900}ms` }} />
+            ))}
+          </span>
+          <PixelSprite art={cottageArt(1, false)} palette={housePalette('#c85b5b', '#9d4444', true)} scale={6} />
         </div>
-      </div>
-      <div className="absolute inset-x-0 bottom-5 flex justify-center px-4">
-        <div className="bg-background/80 h-12 w-full max-w-xl rounded-full border shadow-2xl backdrop-blur-md" />
+        <p className="font-pixel rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">raising the village…</p>
       </div>
     </div>
   );

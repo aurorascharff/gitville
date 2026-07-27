@@ -1,63 +1,61 @@
 <div align="center">
 
-<img src="public/logo.svg" alt="next16-deploy-platform" width="72" height="72" />
+<img src="public/logo.svg" alt="Gitville" width="72" height="72" />
 
-# next16-deploy-platform
+# Gitville
 
-A mini Vercel-style deployments dashboard that makes the "syncing" demo **real**: import a GitHub repo, watch a build stream **live build logs**, and get a real preview URL — built on the [Next.js 16 preview](https://nextjs.org/blog/next-16-3-instant-navigations) with the new [SWR](https://swr.vercel.app) server layer.
+Every GitHub repo is a tiny pixel village. Open pull requests are houses, contributors are villagers standing where they last worked, and the commits furnish the rooms inside. Walk around, step through a door, and read the real work on the walls.
 
-[**Live demo →**](https://next16-deploy-platform.vercel.app/)
+[**Visit a village →**](https://gitville.vercel.app/)
 
 </div>
 
 ---
 
-The architecture follows the [Next.js App Architecture](https://github.com/aurorascharff/skills/tree/main/skills/nextjs-app-architecture) skill and the [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) blog post.
+Gitville is a real project and also a demo. It exists to show how far you can push the [Next.js 16 preview](https://nextjs.org/blog/next-16-3-instant-navigations) and the new [SWR](https://swr.vercel.app) server layer with live third party data. The architecture follows the [Next.js App Architecture](https://github.com/aurorascharff/skills/tree/main/skills/nextjs-app-architecture) skill and the [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) blog post.
+
+## How the village works
+
+- The **town hall** is the default branch. Releases and merges land there.
+- A **finished cottage** is an open PR that is ready for review.
+- A house **under construction** with a tarp and scaffolding is a draft PR.
+- A **multi storey house** is a stack of PRs. Every floor is a PR built on the one below, and the attic is the top of the stack.
+- A **cabin** is an active branch with no PR yet. A **tent** is a busy issue. The **well** marks the town square.
+- **Villagers** are real contributors, placed at the house where their latest activity happened. The world updates live as they work.
+- Step inside a house and the room is furnished from the PR's real commits. Group work becomes bigger furniture. Review comments hang on the wall as notes. With an AI gateway key the furniture is designed and drawn by a model, and without one a deterministic designer does the job.
+- The **clock** at the bottom winds the whole village back in time through the recent event history.
 
 ## Features
 
-- **[SWR 2.5 server layer](https://swr.vercel.app)** streams live build logs. A building deployment is seeded on the server with the new `preload()` API and passed to the client through `cacheData` on `<SWRConfig>`, so the client hydrates the current logs with **no refetch**, then polls the status route until the build reaches a terminal state. Everything else stays pure RSC.
-- **Real deploys via [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)** — paste a public GitHub repo and, in local development, it spins up a real sandbox (`@vercel/sandbox`), runs `npm install` + `npm run dev`, streams the real command output into the log panel, and exposes a live `*.vercel.run` URL. A `DeployEngine` interface swaps transparently between the real sandbox and a simulated engine.
-- **[Cache Components](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)** cache each query with `'use cache'`, name the data with `cacheTag`, and set its lifetime with `cacheLife`, so repeated reads come from the cache until a tag is invalidated. Per-user reads use [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private).
-- **[Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching)** prefetches the shared App Shell as links enter the viewport, so navigation commits instantly and data streams in behind it.
-- **[Runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching)** lets pages prefetch per-request data by exporting [`prefetch = 'allow-runtime'`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch).
-- **[Server Functions](https://nextjs.org/docs/app/getting-started/mutating-data)** trigger deploys and pins on the server and invalidate only the tags they change with [`updateTag`](https://nextjs.org/docs/app/api-reference/functions/updateTag); the background build finalizes with `revalidateTag` so lists stay in sync.
-- **[React Compiler](https://react.dev/learn/react-compiler)** memoizes components automatically — no manual `useMemo`/`useCallback`.
-- **[View Transitions](https://nextjs.org/docs/app/guides/view-transitions)** cross-fade content as it streams in from Suspense.
-- **[Async React](https://github.com/rickhanlonii/async-react)** keeps the UI live with `Suspense`, `useOptimistic`, `useTransition`, `useActionState`, `useFormStatus`, and `use`.
-- **Name-only auth** — no account, just a name stored in a cookie, like a lab demo should be.
-
-## Deploy engine
-
-Deploys run through a `DeployEngine` (`features/deployment/deploy-engine/`):
-
-- **Simulated engine** — a scripted build with realistic timing and persisted log lines. Runs everywhere with no credentials, so the public deployment always works.
-- **Sandbox engine** — a real `@vercel/sandbox` build with streamed logs and a live URL.
-
-Real deploys are **local/development only** by design: `realSandboxEnabled()` returns `false` whenever `NODE_ENV === 'production'`, so the public deployment can never spend your Vercel sandbox compute — no environment variable can turn it on in production. To try real deploys locally, run `vercel link` + `vercel env pull .env.local`, set `ENABLE_REAL_SANDBOX=true`, and restart.
+- **[SWR 2.5 server layer](https://swr.vercel.app)** keeps the village alive. The server starts the fetch with the new `preload()` API and hands it to the client through `cacheData` on `<SWRConfig>`. The client hydrates with no refetch and then polls. Every component fetches its own data with the same key, so SWR dedupes the whole village into one request per poll.
+- **[Cache Components](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)** cache the GitHub reads with `'use cache'`, tag them with `cacheTag`, and bound them with `cacheLife`, so a busy village never spends your rate limit twice on the same window.
+- **[Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching)** and **[runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching)** make hopping between villages feel instant.
+- **[Server Functions](https://nextjs.org/docs/app/getting-started/mutating-data)** manage your watchlist and invalidate only the tags they touch.
+- **[React Compiler](https://react.dev/learn/react-compiler)** memoizes automatically, so there is no manual `useMemo` or `useCallback` anywhere.
+- **Optional AI interior design** through the [AI SDK](https://ai-sdk.dev) and the Vercel AI Gateway. Only successful generations are cached, and the whole feature degrades cleanly when no key is set.
+- **Hand drawn pixel art** rendered as SVG rect grids. No image assets, crisp at any scale.
 
 ## Getting started
 
-Runs on Postgres (Neon in production). Set `DATABASE_URL` in `.env.local`, then:
-
 ```bash
 pnpm install
-pnpm run prisma.push
-pnpm run prisma.seed
 pnpm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Browse the data with `pnpm run prisma.studio`, or wipe and re-seed with `pnpm run prisma.reset`. See `.env.sample` for all environment variables.
+Open [http://localhost:3000](http://localhost:3000) and paste any public repo URL.
+
+Optional environment variables in `.env.local`:
+
+- `GITHUB_TOKEN` raises the GitHub API limit from 60 to 5000 requests per hour. Strongly recommended.
+- `VERCEL_AI_GATEWAY_KEY` turns on the AI interior designer.
 
 ## Stack
 
-- **[Next.js 16](https://nextjs.org/)**: App Router, Cache Components, Server Functions
-- **[React 19](https://react.dev/)** with React Compiler: Suspense, View Transitions, `useOptimistic`
-- **[SWR 2.5](https://swr.vercel.app)** server layer (`preload` + `cacheData`) for live data
-- **[@vercel/sandbox](https://vercel.com/docs/vercel-sandbox)** for real deploys
+- **[Next.js 16](https://nextjs.org/)** with the App Router, Cache Components, and Server Functions
+- **[React 19](https://react.dev/)** with the React Compiler
+- **[SWR 2.5](https://swr.vercel.app)** server layer with `preload` and `cacheData`
+- **[AI SDK](https://ai-sdk.dev)** with the Vercel AI Gateway for room design
 - **[TypeScript](https://www.typescriptlang.org/)** and **[Tailwind CSS v4](https://tailwindcss.com/)**
-- **[Prisma 7](https://www.prisma.io/)** on PostgreSQL (Neon)
-- **[Ariakit](https://ariakit.org/)**, **[sonner](https://sonner.emilkowal.ski/)**, **[lucide](https://lucide.dev/)**
 
 ## License
 

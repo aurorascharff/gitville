@@ -117,8 +117,8 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
         </>
       ) : null}
 
-      <div className="absolute top-4 flex flex-wrap gap-2" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
-        {notes.map((note, i) => (
+      <div className="absolute top-3.5 flex flex-wrap gap-2" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
+        {notes.slice(0, 6).map((note, i) => (
           <StickyNote key={note.id} note={note} tilt={((i * 47) % 9) - 4} />
         ))}
       </div>
@@ -206,7 +206,8 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const art = build.art?.length ? build.art : fallback.art;
   const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
   const name = build.name ?? fallback.name;
-  const scale = build.commits.length >= 6 ? 7 : build.commits.length >= 4 ? 6 : build.commits.length >= 2 ? 5 : 4;
+  // Same code touched by more commits grows into a bigger piece.
+  const scale = build.commits.length >= 5 ? 8 : build.commits.length >= 3 ? 7 : build.commits.length >= 2 ? 6 : 5;
   const tip = (e: React.MouseEvent) =>
     setTip({
       x: e.clientX,
@@ -519,7 +520,7 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
       target="_blank"
       rel="noreferrer"
       data-stop-walk
-      className="sticky-note relative h-16 w-16 p-1 text-left transition-transform hover:scale-110 hover:rotate-0"
+      className="sticky-note relative h-24 w-24 p-1.5 text-left transition-transform hover:scale-110 hover:rotate-0"
       style={{ transform: `rotate(${tilt}deg)` }}
       onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} · ${note.line}`, body: note.body, when: note.at })}
       onMouseLeave={() => setTip(null)}
@@ -527,9 +528,9 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
     >
       {note.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`${note.avatar}?size=32`} alt="" width={12} height={12} className="absolute top-1 right-1 rounded-full border border-black/30" />
+        <img src={`${note.avatar}?size=32`} alt="" width={14} height={14} className="absolute top-1 right-1 rounded-full border border-black/30" />
       ) : null}
-      <span className="line-clamp-3 block font-mono text-[8.5px] leading-[1.4] wrap-break-word text-[#5a4a1e]">{note.body}</span>
+      <span className="line-clamp-6 block font-mono text-[9px] leading-[1.35] wrap-break-word text-[#5a4a1e]">{note.body}</span>
       <span className="absolute right-0.5 bottom-0.5 font-mono text-[7px] font-bold text-[#8a6d2a]">
         <RelativeTime date={note.at} />
       </span>

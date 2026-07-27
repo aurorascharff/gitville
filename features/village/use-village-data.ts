@@ -96,7 +96,7 @@ export type WorldModel = {
 };
 
 export function useWorldModel(payload: VillagePayload, slug: string, asOf: number): WorldModel {
-  const cells = useMemo(() => buildCells(payload, slug), [payload, slug]);
+  const cells = useMemo(() => buildCells(payload, slug, asOf), [payload, slug, asOf]);
   const actors = useMemo(() => actorsAt(payload, cells, asOf), [payload, cells, asOf]);
   const weights = useMemo(() => commitWeights(payload, cells), [payload, cells]);
 

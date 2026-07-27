@@ -57,25 +57,25 @@ export function VillageHelp() {
               </button>
             </header>
             <ul className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-              <LegendRow art={hallArt()} palette={MAIN_ROOF} scale={2} title="town hall" text="the default branch, where releases and merges land" />
-              <LegendRow art={cottageArt(1, false)} palette={PR_ROOF} scale={2} title="finished cottage" text="an open PR, ready for review" />
-              <LegendRow art={cottageArt(1, true)} palette={PR_ROOF} scale={2} title="under construction" text="a draft PR: tarp, scaffolding, no door yet" />
+              <LegendRow art={hallArt()} palette={MAIN_ROOF} scale={2} title="town hall" text="the default branch. releases and merges land here" />
+              <LegendRow art={cottageArt(1, false)} palette={PR_ROOF} scale={2} title="finished cottage" text="an open PR that is ready for review" />
+              <LegendRow art={cottageArt(1, true)} palette={PR_ROOF} scale={2} title="under construction" text="a draft PR. still tarp and scaffolding" />
               <LegendRow
                 art={cottageArt(3, false)}
                 palette={PR_ROOF}
                 scale={2}
                 title="multi-storey house"
-                text="a stack of PRs, every floor is a PR built on the one below"
+                text="a stack of PRs. every floor is a PR built on the one below and the attic is the top of the stack"
               />
-              <LegendRow art={cabinArt()} palette={BRANCH_ROOF} scale={2.5} title="cabin" text="an active branch with no PR yet" />
-              <LegendRow art={tentArt()} palette={ISSUE_ROOF} scale={2.5} title="tent" text="a busy issue: talk, not construction" />
-              <LegendRow art={WELL.art} palette={WELL.palette} scale={2.5} title="the well" text="the town square, for folks whose latest work points elsewhere" />
+              <LegendRow art={cabinArt()} palette={BRANCH_ROOF} scale={2.5} title="cabin" text="an active branch that has no PR yet" />
+              <LegendRow art={tentArt()} palette={ISSUE_ROOF} scale={2} title="tent" text="a busy issue. people talk here instead of building" />
+              <LegendRow art={WELL.art} palette={WELL.palette} scale={2.5} title="the well" text="the town square. people end up here when their latest work points somewhere else" />
               <LegendRow
                 art={FURNITURE[1].art}
                 palette={FURNITURE[1].palette}
                 scale={3}
                 title="furniture"
-                text="commits build the room inside each house; bigger work, bigger piece"
+                text="real commits build the room inside each house. bigger work becomes a bigger piece"
               />
               <li className="flex items-center gap-3 py-2">
                 <span className="flex w-16 shrink-0 justify-center">
@@ -83,12 +83,22 @@ export function VillageHelp() {
                 </span>
                 <div className="min-w-0">
                   <p className="font-pixel text-[12px] font-bold text-[#3a2f22]">wall notes</p>
-                  <p className="text-[11px] leading-snug text-[#6b5b43]">reviews and comments, pinned inside</p>
+                  <p className="text-[11px] leading-snug text-[#6b5b43]">reviews and comments pinned inside</p>
                 </div>
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
-                villagers stand where they last worked. walk with WASD or click the grass; walk into a door (or press Enter) to step
-                inside, and onto the mat to leave.
+                villagers stand where they last worked. walk with WASD or click the grass. walk into a door or press Enter to step
+                inside. walk onto the mat to leave.
+              </li>
+              <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
+                made by{' '}
+                <a href="https://github.com/aurorascharff" target="_blank" rel="noreferrer" className="font-bold text-[#8a4a2b] hover:underline">
+                  aurorascharff
+                </a>
+                . the village itself is a repo too:{' '}
+                <a href="https://github.com/aurorascharff/gitville" target="_blank" rel="noreferrer" className="font-bold text-[#8a4a2b] hover:underline">
+                  view the source
+                </a>
               </li>
             </ul>
           </aside>

@@ -83,7 +83,7 @@ export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
   return payload.prs.slice(0, 14);
 }
 
-export function buildCells(payload: VillagePayload, slug: string): Cell[] {
+export function buildCells(payload: VillagePayload, slug: string, asOf = Number.POSITIVE_INFINITY): Cell[] {
   const cells: Cell[] = [];
   let slot = 0;
 
@@ -116,6 +116,32 @@ export function buildCells(payload: VillagePayload, slug: string): Cell[] {
       baseRef: pr.baseRef,
       ...slotPos(slot++),
     });
+  }
+
+  // Winding the clock back resurrects houses: a PR merged or closed after the
+  // viewed moment was still open then, so it stands in the village again.
+  if (Number.isFinite(asOf)) {
+    const past = new Map<number, WireEvent>();
+    for (const e of payload.events) {
+      if (e.kind !== 'pr_merged' && e.kind !== 'pr_closed') continue;
+      if (e.number == null || prNumbers.has(e.number)) continue;
+      if (new Date(e.at).getTime() <= asOf) continue;
+      if (!past.has(e.number)) past.set(e.number, e);
+    }
+    for (const [number, e] of past) {
+      if (slot >= 17) break;
+      cells.push({
+        id: `pr:${number}`,
+        kind: 'pr',
+        label: `#${number}`,
+        sub: e.detail,
+        url: e.url ?? `https://github.com/${slug}/pull/${number}`,
+        prState: 'ready',
+        floors: 1,
+        author: e.actor,
+        ...slotPos(slot++),
+      });
+    }
   }
 
   const prRefs = new Set(payload.prs.map(pr => pr.branch));

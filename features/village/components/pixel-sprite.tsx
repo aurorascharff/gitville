@@ -220,11 +220,11 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     'pppppppppppppppppppppp',
   ];
   const upperFloor = [
+    '.OwwwwwwwwwwwwwwwwwwO.',
     '.OWWWWWWWWWWWWWWWWWWO.',
     '.OWqqWWqqWWWWqqWWqqWO.',
     '.OWqqWWqqWWWWqqWWqqWO.',
-    '.OWwWWWWWWwWWWWWWWwWO.',
-    '.OwwwwwwwwwwwwwwwwwwO.',
+    '.OWffWWffWWWWffWWffWO.',
   ];
   // Finished ground floor: framed windows, flower boxes, a proper door with a step.
   const readyGround = [
@@ -269,14 +269,18 @@ export function cabinArt(): string[] {
 // Issues camp out in tents — conversations pitched on the green, not construction.
 export function tentArt(): string[] {
   return [
-    '.......OO.......',
-    '......ORRO......',
-    '.....ORRRRO.....',
-    '....ORSRRSRO....',
-    '...ORRSRRSRRO...',
-    '..ORRRSmmSRRRO..',
-    '.ORRRRSmmSRRRRO.',
-    'OOOOOOOmmOOOOOOO',
+    '...........OO...........',
+    '..........ORRO..........',
+    '.........ORRRRO.........',
+    '........ORRRRRRO........',
+    '.......ORRSRRSRRO.......',
+    '......ORRRSRRSRRRO......',
+    '.....ORRRRSRRSRRRRO.....',
+    '....ORRRRRSRRSRRRRRO....',
+    '...ORRRRRRSmmSRRRRRRO...',
+    '..ORRRRRRRSmmSRRRRRRRO..',
+    '.ORRRRRRRRSmmSRRRRRRRRO.',
+    'OOOOOOOOOOOmmOOOOOOOOOOO',
   ];
 }
 

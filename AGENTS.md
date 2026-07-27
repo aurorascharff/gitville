@@ -1,9 +1,12 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
-This repo runs a preview build of Next.js (16.3) with breaking changes vs. older
-docs and training data — APIs, conventions, and file structure may differ. Read the
-relevant guide in `node_modules/next/dist/docs/` before writing framework code, and
-heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
 
 ## Architecture
 
@@ -21,19 +24,9 @@ picture. Core rules:
 - Client components are leaves. React Compiler is on — do not add `useMemo`/`useCallback`.
 - Comments only where non-obvious, and short.
 
-## Deploy engine
+## Live data
 
-Deploys run through a `DeployEngine` (see `features/deployment/deploy-engine/`). Real
-`@vercel/sandbox` deploys are gated behind `ENABLE_REAL_SANDBOX=true` **and** resolvable
-Vercel credentials; otherwise the simulated engine runs. Never expose the real engine to
-untrusted/public users — it consumes your Vercel compute.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+The village polls GitHub through `lib/github.ts` (cached with `'use cache: remote'` so
+every visitor shares one upstream fetch per window). `GITHUB_TOKEN` raises the rate
+limit. The AI room designer (`features/village/room-ai.ts`) is optional: it needs
+`VERCEL_AI_GATEWAY_KEY` and must only cache successful generations.

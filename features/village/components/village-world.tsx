@@ -6,6 +6,7 @@ import { HouseInterior } from '@/features/village/components/house-interior';
 import { TimeMachine } from '@/features/village/components/time-machine';
 import { VillageHelp } from '@/features/village/components/village-help';
 import { VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/village-hud';
+import { VillageMusic } from '@/features/village/components/village-music';
 import { VillageStage } from '@/features/village/components/village-stage';
 import { VillageUiProvider } from '@/features/village/village-ui-context';
 import type { RepoData } from '@/types/github';
@@ -37,6 +38,9 @@ export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[
         </ErrorBoundary>
         <ErrorBoundary title="The field guide is missing">
           <VillageHelp />
+        </ErrorBoundary>
+        <ErrorBoundary title="The band went home">
+          <VillageMusic />
         </ErrorBoundary>
         <VillageTooltip />
       </div>
