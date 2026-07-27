@@ -303,7 +303,7 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
   const anchor = campsite ? null : centerpiece(cell);
   const floorH = height - WALL_H;
   const builds = redecorating ? [] : toBuilds(commits, spec?.items);
-  const slots = furnitureSlots(builds.length, width, floorH);
+  const slots = layoutBuilds(builds, width, floorH);
 
   return (
     <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell))} style={{ top: WALL_H }}>
@@ -324,21 +324,51 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
   );
 }
 
-// Furniture fills the room tile by tile from the back-left corner, clear of
-// the wall band above and leaving the middle to the centerpiece.
-function furnitureSlots(count: number, w: number, floorH: number): { x: number; y: number }[] {
-  const step = TILE * 2.5;
-  const cols = Math.max(1, Math.floor((w - TILE * 2) / step));
-  const slots: { x: number; y: number }[] = [];
-  for (let i = 0; slots.length < count && i < 60; i++) {
-    const row = Math.floor(i / cols);
-    const col = i % cols;
-    const x = TILE + col * step + step / 2;
-    const y = 100 + row * TILE * 1.9;
-    if (Math.abs(x - w / 2) < 170 && Math.abs(y - (floorH / 2 - 20)) < 120) continue;
-    slots.push({ x, y });
+// A big joined machine deserves its footprint. Sprites scale down as a set grows.
+function pieceScale(build: Build): number {
+  const n = build.pieces?.length ?? build.commits.length;
+  return n <= 2 ? 6 : n <= 4 ? 5 : 4;
+}
+
+function buildWidth(build: Build): number {
+  if (build.pieces?.length) {
+    const scale = pieceScale(build);
+    return build.pieces.reduce((sum, piece) => sum + Math.max(...piece.map(r => r.length)) * scale, 0);
   }
-  return slots;
+  const n = build.commits.length;
+  return n * 8 * (n > 2 ? 4 : 5);
+}
+
+// Flow layout: builds take the width they need, wrap into rows, never touch
+// the walls, and flow around the centerpiece instead of standing on it.
+function layoutBuilds(builds: Build[], w: number, floorH: number): { x: number; y: number }[] {
+  const pad = 48;
+  const gap = 36;
+  const rowH = 128;
+  const cx = w / 2;
+  const cy = floorH / 2 - 20;
+  const positions: { x: number; y: number }[] = [];
+  let x = pad;
+  let y = 100;
+
+  for (const build of builds) {
+    const bw = Math.min(buildWidth(build), w - pad * 2);
+    if (x + bw > w - pad) {
+      x = pad;
+      y += rowH;
+    }
+    if (Math.abs(y - cy) < 120 && x < cx + 190 && x + bw > cx - 190) {
+      x = cx + 190;
+      if (x + bw > w - pad) {
+        x = pad;
+        y += rowH;
+      }
+    }
+    if (y > floorH - 90) y = 130; // room is full, start a second pass offset from the first
+    positions.push({ x: x + bw / 2, y });
+    x += bw + gap;
+  }
+  return positions;
 }
 
 function Campsite({ width, height }: { width: number; height: number }) {
@@ -412,7 +442,7 @@ function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: num
               }
               onMouseLeave={() => setTip(null)}
             >
-              <PixelSprite art={piece} palette={palette} scale={drawn ? 6 : n > 2 ? 4 : 5} />
+              <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : n > 2 ? 4 : 5} />
             </a>
           );
         })}

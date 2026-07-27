@@ -8,7 +8,7 @@ export const FLOORS = ['wood', 'stone', 'carpet'] as const;
 export const ITEM_KINDS = ['plant', 'desk', 'bookshelf', 'lamp', 'crate', 'sofa', 'coffee table', 'monitor rig'] as const;
 
 // The letters an AI-drawn sprite may use — must match AI_ART_PALETTE in pixel-sprite.tsx.
-export const ART_LETTERS = 'OWwmsbrygpc';
+export const ART_LETTERS = 'OWwmsbrygpcot';
 
 export type RoomItem = {
   name: string;
@@ -121,7 +121,8 @@ async function generateRoomSpecCached(
         '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group, designed to connect side by side (left end, middle segments, right end) into one machine. One commit means one self-contained piece.',
         '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights so they join cleanly.',
         '- Build BIG. Pieces should be 10-16 wide and 8-12 rows so the finished machine furnishes the room. No trinkets.',
-        '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream.',
+        '- Every machine must have its own silhouette. Vary shapes with "." aggressively: towers, funnels, wheels, arms, chimneys, tanks. Vary the dominant color per machine. Never a plain filled rectangle.',
+        '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
         `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent anything. Set \`kind\` and \`pieces\` to null when unused.`,
         '- Theme name max 3 words. No emoji.',
       ]

@@ -108,6 +108,8 @@ export const AI_ART_PALETTE: Palette = {
   g: '#58a55c',
   p: '#9a6ab8',
   c: '#f0ead8',
+  o: '#e0862f',
+  t: '#3aa8a0',
 };
 
 // Night version of any palette: every tone pulled toward a cold dark blue.
