@@ -102,9 +102,10 @@ export async function generateRoomSpec(
   }
 }
 
-// The no-token designer: same vocabulary, deterministic picks, one build per
-// commit — the feature is identical without AI, only the taste differs.
-export function fallbackSpec(theme: string, commits: { id: string; line: string }[]): RoomSpec {
+// The no-token designer: same vocabulary, deterministic picks. Consecutive
+// pushes by the same person read as one piece of work, so they group into one
+// build — the feature is identical without AI, only the taste differs.
+export function fallbackSpec(theme: string, commits: { id: string; actor?: string }[]): RoomSpec {
   const hash = (s: string) => {
     let h = 2166136261;
     for (let i = 0; i < s.length; i++) {
@@ -114,14 +115,22 @@ export function fallbackSpec(theme: string, commits: { id: string; line: string 
     return h >>> 0;
   };
   const seed = hash(theme);
+
+  const groups: number[][] = [];
+  commits.slice(0, 14).forEach((c, i) => {
+    const prev = groups[groups.length - 1];
+    const prevActor = prev ? commits[prev[0]].actor : undefined;
+    if (prev && c.actor && c.actor === prevActor && prev.length < 4) prev.push(i);
+    else groups.push([i]);
+  });
+
   return {
     theme,
     wall: WALLS[seed % WALLS.length],
     floor: FLOORS[seed % FLOORS.length],
-    items: commits.slice(0, 14).map((c, i) => ({
-      name: c.line.slice(0, 30),
-      kind: ITEM_KINDS[hash(c.id) % ITEM_KINDS.length],
-      commits: [i],
-    })),
+    items: groups.map(idx => {
+      const kind = ITEM_KINDS[hash(commits[idx[0]].id) % ITEM_KINDS.length];
+      return { name: kind, kind, commits: idx };
+    }),
   };
 }

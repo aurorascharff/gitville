@@ -35,7 +35,7 @@ export async function GET(request: Request): Promise<Response> {
     commitLines.length > 0 || noteLines.length > 0 || cell.sub
       ? await generateRoomSpec(repo.slug, cell.label, cell.sub, commitLines, noteLines, state)
       : null;
-  const spec = ai ?? fallbackSpec(room.theme, room.commits.map(c => ({ id: c.id, line: c.detail ?? c.line })));
+  const spec = ai ?? fallbackSpec(room.theme, room.commits.map(c => ({ id: c.id, actor: c.actor })));
 
   return Response.json({ ok: true, ...spec });
 }

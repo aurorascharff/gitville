@@ -2,7 +2,6 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { Suspense, useEffect, useRef } from 'react';
-import ErrorBoundary from '@/components/ui/error-boundary';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { AI_ART_PALETTE, furnitureByName, furnitureFor, KindBadge, PixelSprite, RUG } from '@/features/village/components/pixel-sprite';
 import { PlayerSprite } from '@/features/village/components/player';
@@ -58,19 +57,13 @@ export function HouseInterior() {
         }}
       >
         {/* The door stays dark until the room's design has loaded — no repaint flash. */}
-        <ErrorBoundary title="The wall fell over">
-          <Suspense fallback={<WallSkeleton />}>
-            <WallNotes cellId={cell.id} width={w} />
-          </Suspense>
-        </ErrorBoundary>
-        <ErrorBoundary title="The furniture didn’t arrive">
-          <Suspense fallback={<FloorSkeleton />}>
-            <Floor cell={cell} width={w} height={h} />
-          </Suspense>
-        </ErrorBoundary>
-        <ErrorBoundary title="Nobody home">
-          <Occupants cellId={cell.id} width={w} height={h} />
-        </ErrorBoundary>
+        <Suspense fallback={<WallSkeleton />}>
+          <WallNotes cellId={cell.id} width={w} />
+        </Suspense>
+        <Suspense fallback={<FloorSkeleton />}>
+          <Floor cell={cell} width={w} height={h} />
+        </Suspense>
+        <Occupants cellId={cell.id} width={w} height={h} />
         <DoorMat width={w} height={h} />
         <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
       </div>
@@ -167,12 +160,12 @@ function toBuilds(commits: WireEvent[], items: RoomSpecItem[] | undefined): Buil
 function furnitureSlots(w: number, h: number): { x: number; y: number }[] {
   const floorH = h - WALL_H;
   const slots: { x: number; y: number }[] = [];
-  for (let x = 90; x <= w - 90; x += 108) slots.push({ x, y: 52 });
-  for (let y = 170; y <= floorH - 120; y += 112) {
-    slots.push({ x: 64, y });
-    slots.push({ x: w - 64, y });
+  for (let x = 100; x <= w - 100; x += 136) slots.push({ x, y: 56 });
+  for (let y = 180; y <= floorH - 120; y += 116) {
+    slots.push({ x: 72, y });
+    slots.push({ x: w - 72, y });
   }
-  for (let x = 200; x <= w - 200; x += 132) slots.push({ x, y: floorH - 130 });
+  for (let x = 210; x <= w - 210; x += 150) slots.push({ x, y: floorH - 130 });
   return slots;
 }
 
@@ -184,9 +177,8 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(primary.id);
   const art = build.art?.length ? build.art : fallback.art;
   const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
-  // The commit message is the point. Only when a push carries none (force-push,
-  // empty payload) does the AI's name for the work stand in.
-  const message = primary.detail ?? build.name ?? primary.line;
+  // The plate names the piece, like any furniture. The commits live on hover.
+  const name = build.name ?? fallback.name;
   // Bigger work → bigger furniture: scale by commits represented, not hype.
   const weight = build.events.reduce((sum, e) => sum + Math.max(1, e.count ?? 1), 0);
   const scale = weight >= 12 ? 7 : weight >= 6 ? 6 : weight >= 3 ? 5 : 4;
@@ -194,7 +186,7 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
     setTip({
       x: e.clientX,
       y: e.clientY,
-      title: `${build.name ?? fallback.name} · by ${primary.actor}`,
+      title: `${name} · by ${primary.actor}`,
       body: build.events.map(ev => ev.detail ?? ev.line).join('\n'),
       when: primary.at,
     });
@@ -202,8 +194,8 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
     <>
       <PixelSprite art={art} palette={palette} scale={scale} />
       <span aria-hidden className="mx-auto mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-      <span className="font-pixel mt-0.5 block max-w-36 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
-        {message}
+      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
+        {name}
       </span>
       {build.events.length > 1 ? (
         <span className="font-pixel absolute -top-2 -right-2 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold text-[#3a2f22]">

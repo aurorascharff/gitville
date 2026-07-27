@@ -119,6 +119,12 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         const len = Math.hypot(dx, dy) || 1;
         s.x = Math.max(24, Math.min(WORLD_W - 24, s.x + (dx / len) * SPEED));
         s.y = Math.max(24, Math.min(WORLD_H - 24, s.y + (dy / len) * SPEED));
+        if (s.keys.size > 0) {
+          // Keyboard walking moves the goal with you — otherwise releasing the
+          // key would send you strolling back to where you pressed it.
+          s.tx = s.x;
+          s.ty = s.y;
+        }
         if (dx !== 0) s.dir = dx > 0 ? 1 : -1;
         inner.current?.classList.add('sprite-bob');
       } else {

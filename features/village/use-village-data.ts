@@ -47,7 +47,12 @@ export type RoomSpecPayload = {
   items: RoomSpecItem[];
 };
 
-const specFetcher = (url: string): Promise<RoomSpecPayload> => fetch(url).then(r => r.json());
+// A failed spec fetch degrades to the default room — never an error screen
+// for what is only decoration.
+const specFetcher = (url: string): Promise<RoomSpecPayload> =>
+  fetch(url)
+    .then(r => r.json() as Promise<RoomSpecPayload>)
+    .catch(() => ({ ok: false, theme: '', wall: 'cream' as const, floor: 'wood' as const, items: [] }));
 
 // Suspends until the room is designed — callers sit behind a <Suspense> door.
 export function useRoomSpec(slug: string, cellId: string): RoomSpecPayload | null {
