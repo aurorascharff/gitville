@@ -26,7 +26,7 @@ import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel, type RoomSpe
 import { pickedPrs, roomFor, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
-import type { BranchCommit, WireEvent } from '@/types/github';
+import type { BranchCommit, RoomNote } from '@/types/github';
 
 const WALL_H = 150;
 const TILE = 56;
@@ -89,7 +89,9 @@ export function HouseInterior() {
 
   if (!cell) return null;
 
-  return <InteriorScene key={cell.id} cell={cell} ai={ai} setAiOn={setAiOn} setFocusId={setFocusId} viewport={viewport} walkTargetRef={walkTargetRef} />;
+  // No key here: switching floors swaps the room content but keeps the scene
+  // (sign, panel, backdrop) mounted — only entering from outside plays the cut.
+  return <InteriorScene cell={cell} ai={ai} setAiOn={setAiOn} setFocusId={setFocusId} viewport={viewport} walkTargetRef={walkTargetRef} />;
 }
 
 function InteriorScene({
@@ -155,7 +157,7 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
   const working = ai && loading;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const label = working ? 'at work…' : ai ? 'AI room' : 'draw this room with AI';
+  const label = working ? 'at work…' : ai ? 'AI room' : 'visualize with AI';
 
   return (
     <aside className="z-50 w-36 shrink-0">
@@ -163,7 +165,7 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
         onClick={() => onToggle(!ai)}
         role="switch"
         aria-checked={ai}
-        aria-label="Draw this room with AI"
+        aria-label="Visualize this room with AI"
         onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: label, body: !working && spec?.ai ? spec.theme : null, when: null })}
         onMouseLeave={() => setTip(null)}
         className={cn(
@@ -251,8 +253,20 @@ function WallNotes({ cell, width, ai }: { cell: Cell; width: number; ai: boolean
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
-  const notes = roomFor(payload, cells, cell.id).notes;
   const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
+
+  // The real thread from the API; the square falls back to recent event chatter.
+  const notes: RoomNote[] =
+    spec?.notes.length
+      ? spec.notes
+      : roomFor(payload, cells, cell.id).notes.map(e => ({
+          id: e.id,
+          author: e.actor,
+          avatar: e.avatar,
+          body: e.body ?? '',
+          at: e.at,
+          url: e.url,
+        }));
 
   // First entry only — toggling AI must never blank the wall.
   if (loading && !spec) return <WallSkeleton />;
@@ -725,7 +739,7 @@ function HouseSign({ cell }: { cell: Cell }) {
   );
 }
 
-function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
+function StickyNote({ note, tilt }: { note: RoomNote; tilt: number }) {
   const { setTip } = useVillageUi();
   return (
     <a
@@ -735,9 +749,9 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
       data-stop-walk
       className="sticky-note relative h-28 w-28 shrink-0 p-2 pb-4 text-left transition-transform hover:-translate-y-1"
       style={{ rotate: `${tilt}deg` }}
-      onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} ${note.line}`, body: note.body, when: note.at })}
+      onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: note.author, body: note.body, when: note.at })}
       onMouseLeave={() => setTip(null)}
-      aria-label={`Note from ${note.actor}`}
+      aria-label={`Note from ${note.author}`}
     >
       {note.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element

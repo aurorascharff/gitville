@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cacheLife, cacheTag } from 'next/cache';
-import type { ActiveBranch, BranchCommit, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
+import type { ActiveBranch, BranchCommit, RoomNote, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
 
 const API = 'https://api.github.com';
 
@@ -255,6 +255,39 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
   const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
   // Newest first from the API; oldest first reads as construction order.
   return (list ?? []).map(mapCommit).reverse();
+}
+
+type CommentResponse = {
+  id: number;
+  body?: string | null;
+  html_url?: string | null;
+  submitted_at?: string;
+  created_at?: string;
+  user: { login: string; avatar_url: string } | null;
+};
+
+// The real thread: conversation comments, plus review bodies for PRs. The
+// events feed only covers a recent window, so rooms fetch the whole wall.
+export async function getThreadNotes(slug: string, number: number, isPr: boolean): Promise<RoomNote[]> {
+  'use cache: remote';
+  cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
+  cacheTag(`gh-notes-${slug}`);
+  const [owner, repo] = slug.split('/');
+  const [comments, reviews] = await Promise.all([
+    gh<CommentResponse[]>(`/repos/${owner}/${repo}/issues/${number}/comments?per_page=30`),
+    isPr ? gh<CommentResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/reviews?per_page=30`) : Promise.resolve(null),
+  ]);
+  return [...(comments ?? []), ...(reviews ?? [])]
+    .filter(c => (c.body ?? '').trim().length > 0 && !(c.user?.login ?? '').endsWith('[bot]'))
+    .map(c => ({
+      id: String(c.id),
+      author: c.user?.login ?? 'someone',
+      avatar: c.user?.avatar_url ?? null,
+      body: trimBody(c.body) ?? '',
+      at: c.created_at ?? c.submitted_at ?? '',
+      url: c.html_url ?? null,
+    }))
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
 // Feature branches with recent pushes — derived from the event stream, no extra API calls.

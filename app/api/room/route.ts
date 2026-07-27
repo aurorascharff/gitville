@@ -1,7 +1,7 @@
 import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
 import { buildCells, roomFor } from '@/features/village/village-model';
-import { getBranchCommits, getPrCommits, getRepoData, getVillagePayload } from '@/lib/github';
-import type { BranchCommit } from '@/types/github';
+import { getBranchCommits, getPrCommits, getRepoData, getThreadNotes, getVillagePayload } from '@/lib/github';
+import type { BranchCommit, RoomNote } from '@/types/github';
 
 // Room detail, fetched when a door opens: the cell's real commits (push events
 // no longer carry them) plus an AI-designed spec — deterministic without a key.
@@ -19,14 +19,22 @@ export async function GET(request: Request): Promise<Response> {
   const cell = cells.find(c => c.id === cellId);
   if (!cell) return Response.json({ ok: false }, { status: 404 });
 
+  const number = cell.kind === 'pr' || cell.kind === 'issue' ? Number(cell.id.split(':')[1]) : null;
   let commits: BranchCommit[] = [];
-  if (cell.kind === 'pr') commits = await getPrCommits(repo.slug, Number(cell.id.split(':')[1]));
-  else if (cell.kind === 'branch' && cell.ref) commits = await getBranchCommits(repo.slug, cell.ref);
-  else if (cell.kind === 'main') commits = await getBranchCommits(repo.slug, payload.defaultBranch);
+  let notes: RoomNote[] = [];
+  if (cell.kind === 'pr' && number != null) {
+    [commits, notes] = await Promise.all([getPrCommits(repo.slug, number), getThreadNotes(repo.slug, number, true)]);
+  } else if (cell.kind === 'issue' && number != null) {
+    notes = await getThreadNotes(repo.slug, number, false);
+  } else if (cell.kind === 'branch' && cell.ref) {
+    commits = await getBranchCommits(repo.slug, cell.ref);
+  } else if (cell.kind === 'main') {
+    commits = await getBranchCommits(repo.slug, payload.defaultBranch);
+  }
   commits = commits.slice(-14);
 
   const room = roomFor(payload, cells, cellId);
-  const noteLines = room.notes.map(n => `${n.actor}: ${(n.body ?? '').slice(0, 120)}`);
+  const noteLines = notes.slice(-6).map(n => `${n.author}: ${n.body.slice(0, 120)}`);
 
   const state =
     cell.prState === 'stacked'
@@ -53,5 +61,5 @@ export async function GET(request: Request): Promise<Response> {
       : null;
   const spec = ai ?? fallbackSpec(room.theme, commits.map(c => ({ id: c.sha, actor: c.author })));
 
-  return Response.json({ ok: true, ...spec, commits, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
+  return Response.json({ ok: true, ...spec, commits, notes, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
 }

@@ -58,6 +58,9 @@ export type ActiveBranch = { ref: string; actor: string; at: string };
 // A real commit (from the commits/PR-commits API — push events no longer carry them).
 export type BranchCommit = { sha: string; message: string; author: string; at: string; url: string };
 
+// A real comment or review from the PR/issue thread.
+export type RoomNote = { id: string; author: string; avatar: string | null; body: string; at: string; url: string | null };
+
 export type VillagePayload = {
   ok: boolean;
   fetchedAt: string;

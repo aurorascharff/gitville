@@ -9,7 +9,7 @@ import {
   type Actor,
   type Cell,
 } from '@/features/village/village-model';
-import { villageKey, type BranchCommit, type VillagePayload } from '@/types/github';
+import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
 
 const fetcher = async (url: string): Promise<VillagePayload> => {
   const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
@@ -41,6 +41,7 @@ export type RoomSpecPayload = {
   theme: string;
   items: RoomSpecItem[];
   commits: BranchCommit[];
+  notes: RoomNote[];
   ai: boolean;
   aiAvailable: boolean;
 };
@@ -49,7 +50,7 @@ export type RoomSpecPayload = {
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
-    .catch(() => ({ ok: false, theme: '', items: [], commits: [], ai: false, aiAvailable: false }));
+    .catch(() => ({ ok: false, theme: '', items: [], commits: [], notes: [], ai: false, aiAvailable: false }));
 
 const roomKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
