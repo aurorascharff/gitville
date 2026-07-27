@@ -1,4 +1,4 @@
-import { fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
+import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
 import { buildCells, roomFor } from '@/features/village/village-model';
 import { getBranchCommits, getPrCommits, getRepoData, getVillagePayload } from '@/lib/github';
 import type { BranchCommit } from '@/types/github';
@@ -37,8 +37,11 @@ export async function GET(request: Request): Promise<Response> {
           ? 'a pull request ready for review'
           : null;
 
+  // AI design only runs when the visitor asks for it (?ai=1) — the default
+  // room is always the free deterministic one.
+  const wantAi = url.searchParams.get('ai') === '1';
   const ai =
-    commits.length > 0 || noteLines.length > 0 || cell.sub
+    wantAi && (commits.length > 0 || noteLines.length > 0 || cell.sub)
       ? await generateRoomSpec(
           repo.slug,
           cell.label,
@@ -50,5 +53,5 @@ export async function GET(request: Request): Promise<Response> {
       : null;
   const spec = ai ?? fallbackSpec(room.theme, commits.map(c => ({ id: c.sha, actor: c.author })));
 
-  return Response.json({ ok: true, ...spec, commits });
+  return Response.json({ ok: true, ...spec, commits, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
 }

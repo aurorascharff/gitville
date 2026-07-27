@@ -18,7 +18,7 @@ function lampSpots(cells: Cell[]): { x: number; y: number }[] {
 
 // The village at fixed scale; the camera (world transform) chases the player.
 export function VillageStage() {
-  const { slug, scrub, focusId } = useVillageUi();
+  const { slug, scrub, focusId, zoom } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells, placed, occupied } = useWorldModel(payload, slug, asOf);
@@ -34,13 +34,20 @@ export function VillageStage() {
         if ((e.target as Element).closest('button, a, [data-stop-walk]')) return;
         const rect = worldRef.current?.getBoundingClientRect();
         if (!rect) return;
-        travelTo({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        travelTo({ x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom });
       }}
     >
       <div
         ref={worldRef}
         className="grass-field absolute top-0 left-0 will-change-transform"
-        style={{ width: WORLD_W, height: WORLD_H, boxShadow: 'inset 0 0 90px 46px rgb(14 30 18 / 0.55)' }}
+        style={{
+          width: WORLD_W,
+          height: WORLD_H,
+          transformOrigin: '0 0',
+          // First paint already centers on the player, so the camera doesn't jump in.
+          transform: `translate(calc(50vw - ${WORLD_W / 2}px), calc(50dvh - ${WORLD_H / 2 + 170}px))`,
+          boxShadow: 'inset 0 0 140px 80px rgb(14 30 18 / 0.6)',
+        }}
       >
         <GrassPatches />
         <VillageRoads cells={cells} />

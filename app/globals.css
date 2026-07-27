@@ -221,7 +221,7 @@
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.09) 0 6px, transparent 6px 42px);
 }
 .room-wall-sky {
-  background-color: #7d92b8;
+  background-color: #92aab4;
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.09) 0 6px, transparent 6px 42px);
 }
 .room-wall-stone {
@@ -243,6 +243,22 @@
     repeating-linear-gradient(90deg, rgb(59 107 255 / 0.35) 0 30px, transparent 30px 120px),
     repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 6px, transparent 6px 36px);
 }
+/* The square's backdrop is a hedge, not wallpaper: it is outdoors. */
+.room-wall-hedge {
+  background-color: #4e8a4f;
+  background-image:
+    conic-gradient(#57975a 0 25%, transparent 0),
+    conic-gradient(#3f7442 0 25%, transparent 0),
+    repeating-conic-gradient(#539254 0% 25%, #4e8a4f 0% 50%);
+  background-size:
+    38px 38px,
+    54px 54px,
+    18px 18px;
+  background-position:
+    6px 8px,
+    24px 30px,
+    0 0;
+}
 .room-floor-ground {
   background-color: #6f8f52;
   background-image:
@@ -259,10 +275,15 @@
     repeating-linear-gradient(90deg, rgb(0 0 0 / 0.09) 0 5px, transparent 5px 96px);
 }
 .room-floor-stone {
-  background-color: #7e848c;
+  background-color: #8d8a82;
   background-image:
-    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.15) 0 5px, transparent 5px 40px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 5px, transparent 5px 40px);
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.1) 0 4px, transparent 4px 44px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.07) 0 4px, transparent 4px 44px),
+    repeating-conic-gradient(rgb(255 255 255 / 0.04) 0% 25%, transparent 0% 50%);
+  background-size:
+    auto,
+    auto,
+    22px 22px;
 }
 .room-floor-carpet {
   background-color: #a8574f;

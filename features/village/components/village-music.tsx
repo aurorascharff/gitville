@@ -60,11 +60,9 @@ export function VillageMusic() {
     let cleanupSynth: (() => void) | null = null;
     const melody = indoors ? INSIDE : OUTSIDE;
 
-    const audio = audioRef.current ?? new Audio('/music.mp3');
-    audioRef.current = audio;
-    audio.loop = true;
-    audio.volume = indoors ? 0.2 : 0.35;
-    audio.play().catch(() => {
+    // "Stage 1" from Chiptune Adventures by Juhani Junkala (CC0) ships as ogg;
+    // a music.mp3 you drop in yourself wins if present.
+    const startSynth = () => {
       // No real track available: fall back to the generated melody.
       if (cancelled) return;
       const ctx = ctxRef.current ?? new AudioContext();
@@ -92,11 +90,28 @@ export function VillageMusic() {
         out.disconnect();
         delay.disconnect();
       };
-    });
+    };
+
+    const tryPlay = (src: string) => {
+      const audio = new Audio(src);
+      audio.loop = true;
+      audio.volume = indoors ? 0.2 : 0.35;
+      return audio.play().then(() => {
+        if (cancelled) audio.pause();
+        else audioRef.current = audio;
+      });
+    };
+
+    if (audioRef.current) {
+      audioRef.current.volume = indoors ? 0.2 : 0.35;
+      void audioRef.current.play().catch(startSynth);
+    } else {
+      tryPlay('/music.mp3').catch(() => tryPlay('/music.ogg').catch(startSynth));
+    }
 
     return () => {
       cancelled = true;
-      audio.pause();
+      audioRef.current?.pause();
       cleanupSynth?.();
     };
   }, [playing, indoors]);

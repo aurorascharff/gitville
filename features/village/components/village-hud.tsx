@@ -35,7 +35,7 @@ export function VillageStatus() {
 }
 
 export function VillageControls() {
-  const { repo, buzzOpen, setBuzzOpen, focusId } = useVillageUi();
+  const { repo, buzzOpen, setBuzzOpen, focusId, setZoom } = useVillageUi();
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
       <a
@@ -48,6 +48,20 @@ export function VillageControls() {
       </a>
       {!focusId ? (
         <>
+          <button
+            onClick={() => setZoom(z => Math.max(0.55, Math.round((z - 0.15) * 100) / 100))}
+            aria-label="Zoom out to see more of the village"
+            className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+          >
+            −
+          </button>
+          <button
+            onClick={() => setZoom(z => Math.min(1.3, Math.round((z + 0.15) * 100) / 100))}
+            aria-label="Zoom in"
+            className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+          >
+            +
+          </button>
           <button
             onClick={() => setBuzzOpen(o => !o)}
             className={cn(

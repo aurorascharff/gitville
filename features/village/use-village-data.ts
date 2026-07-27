@@ -43,24 +43,37 @@ export type RoomSpecPayload = {
   floor: 'wood' | 'stone' | 'carpet';
   items: RoomSpecItem[];
   commits: BranchCommit[];
+  ai: boolean;
+  aiAvailable: boolean;
 };
 
 // A failed spec fetch degrades to the default room — never an error for decoration.
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
-    .catch(() => ({ ok: false, theme: '', wall: 'cream' as const, floor: 'wood' as const, items: [], commits: [] }));
+    .catch(() => ({
+      ok: false,
+      theme: '',
+      wall: 'cream' as const,
+      floor: 'wood' as const,
+      items: [],
+      commits: [],
+      ai: false,
+      aiAvailable: false,
+    }));
 
-const roomKey = (slug: string, cellId: string) =>
-  `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}`;
+const roomKey = (slug: string, cellId: string, ai: boolean) =>
+  `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
 
 // Warm the cache on intent so the room is usually ready before the door opens.
 export function preloadRoomSpec(slug: string, cellId: string): void {
-  void preload(roomKey(slug, cellId), specFetcher);
+  void preload(roomKey(slug, cellId, false), specFetcher);
 }
 
-export function useRoomSpec(slug: string, cellId: string): { spec: RoomSpecPayload | null; loading: boolean } {
-  const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId), specFetcher, {
+// AI design is opt-in per room: the `ai` flag becomes part of the SWR key, so
+// clicking "draw with AI" fetches (and server-caches) the designed version.
+export function useRoomSpec(slug: string, cellId: string, ai = false): { spec: RoomSpecPayload | null; loading: boolean } {
+  const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId, ai), specFetcher, {
     revalidateOnFocus: false,
   });
   return { spec: data?.ok ? data : null, loading: isLoading };

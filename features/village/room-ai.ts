@@ -24,8 +24,8 @@ export type RoomSpec = {
   items: RoomItem[];
 };
 
-// Keep the generation schema plain: regex and min/max constraints get rejected
-// by structured-output providers. We sanitize the result ourselves below.
+// Structured-output providers reject regex, min/max, AND optional fields
+// (every property must be required — use null instead). Sanitized below.
 const specSchema = z.object({
   theme: z.string(),
   wall: z.enum(WALLS),
@@ -33,8 +33,8 @@ const specSchema = z.object({
   items: z.array(
     z.object({
       name: z.string(),
-      kind: z.enum(ITEM_KINDS).optional(),
-      art: z.array(z.string()).optional(),
+      kind: z.enum(ITEM_KINDS).nullable(),
+      art: z.array(z.string()).nullable(),
       commits: z.array(z.number()),
     }),
   ),
@@ -47,7 +47,7 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
     const art = (item.art ?? []).filter(row => artRow.test(row)).slice(0, 12);
     return {
       name: item.name.slice(0, 30),
-      kind: item.kind,
+      kind: item.kind ?? undefined,
       art: art.length >= 3 ? art : undefined,
       commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
     };
@@ -80,6 +80,7 @@ export async function generateRoomSpec(
     return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
   } catch (error) {
     // Never break a room over decoration, but never fail silently either.
+    // eslint-disable-next-line no-console
     console.warn('[room-ai] generation failed:', error instanceof Error ? error.message : error);
     return null;
   }
@@ -118,7 +119,7 @@ async function generateRoomSpecCached(
         '- More/bigger commits in a group → that item should be drawn bigger. Small fix → small object.',
         '- Prefer drawing original pixel '.concat('`art`: 3-12 rows, 2-16 chars each, letters from the legend, "." = transparent. Make it look like what the work IS (a cache → an icebox, a parser → a loom, docs → a lectern).'),
         '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream.',
-        `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when nothing better fits.`,
+        `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when nothing better fits. Set \`kind\` and \`art\` to null when unused.`,
         `- Pick a wall from [${WALLS.join(', ')}] and floor from [${FLOORS.join(', ')}] that fit the work. Theme name max 3 words. No emoji.`,
       ]
         .filter(Boolean)

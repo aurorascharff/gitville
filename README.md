@@ -57,6 +57,10 @@ Optional environment variables in `.env.local`:
 - **[AI SDK](https://ai-sdk.dev)** with the Vercel AI Gateway for room design
 - **[TypeScript](https://www.typescriptlang.org/)** and **[Tailwind CSS v4](https://tailwindcss.com/)**
 
+## Credits
+
+Music: "The Old Tower Inn" by RandomMind, released under CC0.
+
 ## License
 
 [MIT](LICENSE)

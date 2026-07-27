@@ -16,7 +16,7 @@ import type { RepoData } from '@/types/github';
 export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
   return (
     <VillageUiProvider repo={repo} pinned={pinned}>
-      <div className="relative h-dvh w-full overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
+      <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
         <div aria-hidden className="village-vignette absolute inset-0" />
         <ErrorBoundary title="The village couldn’t be drawn">
           <VillageStage />

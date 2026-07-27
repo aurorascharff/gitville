@@ -14,7 +14,12 @@ const SPEED = 4.4;
 
 // The camera lives here: each frame the world transform recenters on the player.
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
-  const { focusId, setFocusId } = useVillageUi();
+  const { focusId, setFocusId, zoom } = useVillageUi();
+  const zoomRef = useRef(zoom);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
   const ref = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const st = useRef({
@@ -24,6 +29,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     ty: WORLD_H / 2 + 170,
     camX: Number.NaN,
     camY: Number.NaN,
+    camZ: 1,
     pending: null as string | null,
     keys: new Set<string>(),
     dir: 1,
@@ -78,10 +84,13 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       raf = requestAnimationFrame(tick);
 
       if (worldRef.current) {
+        const z = zoomRef.current;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const targetX = WORLD_W <= vw ? (vw - WORLD_W) / 2 : Math.min(0, Math.max(vw - WORLD_W, vw / 2 - s.x));
-        const targetY = WORLD_H <= vh ? (vh - WORLD_H) / 2 : Math.min(0, Math.max(vh - WORLD_H, vh / 2 - s.y));
+        const ww = WORLD_W * z;
+        const wh = WORLD_H * z;
+        const targetX = ww <= vw ? (vw - ww) / 2 : Math.min(0, Math.max(vw - ww, vw / 2 - s.x * z));
+        const targetY = wh <= vh ? (vh - wh) / 2 : Math.min(0, Math.max(vh - wh, vh / 2 - s.y * z));
         if (Number.isNaN(s.camX)) {
           s.camX = targetX;
           s.camY = targetY;
@@ -89,7 +98,8 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
           s.camX += (targetX - s.camX) * 0.12;
           s.camY += (targetY - s.camY) * 0.12;
         }
-        worldRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0)`;
+        worldRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${s.camZ + (z - s.camZ) * 0.12})`;
+        s.camZ += (z - s.camZ) * 0.12;
       }
 
       if (paused.current) return;

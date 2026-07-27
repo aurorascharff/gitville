@@ -12,6 +12,7 @@ import {
   KindBadge,
   LOG_SEAT,
   PixelSprite,
+  WELL,
   WINDOW,
 } from '@/features/village/components/pixel-sprite';
 import { PlayerSprite } from '@/features/village/components/player';
@@ -24,14 +25,27 @@ import type { BranchCommit, WireEvent } from '@/types/github';
 const WALL_H = 150;
 const TILE = 56;
 
-// The room matches its building: halls are grand, cabins snug, and a stack
-// adds floor space per storey.
+// Where in the building this room sits: the top of a stack is the attic, the
+// bottom is the living room, and everything between is a plain storey.
+type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
+
+function roomRole(cell: Cell): RoomRole {
+  if (cell.kind !== 'pr') return 'single';
+  if (!cell.hidden && (cell.floors ?? 1) > 1) return 'attic';
+  if (cell.hidden) return cell.stackedOn ? 'middle' : 'ground';
+  return 'single';
+}
+
+// The room matches its building: halls are grand, cabins snug, attics small.
 function roomDims(cell: Cell): [number, number] {
   if (cell.kind === 'main') return [1240, 740];
   if (cell.kind === 'branch') return [880, 600];
   if (cell.kind === 'issue') return [920, 600];
   if (cell.kind === 'inbox') return [1020, 660];
-  return [1080, Math.min(840, 640 + ((cell.floors ?? 1) - 1) * 60)];
+  const role = roomRole(cell);
+  if (role === 'attic') return [860, 560];
+  if (role === 'ground') return [1000, 660];
+  return [1000, 620];
 }
 
 // Every block fetches its own data through the shared SWR hooks, so the scene
@@ -44,6 +58,10 @@ export function HouseInterior() {
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTarget = useRef<{ x: number; y: number } | null>(null);
   const [viewport, setViewport] = useState({ w: 1400, h: 900 });
+  // AI design is remembered per house id, so walking next door resets it
+  // without any effect-driven state juggling.
+  const [aiFor, setAiFor] = useState<string | null>(null);
+  const ai = aiFor === focusId;
 
   useEffect(() => {
     const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -69,27 +87,30 @@ export function HouseInterior() {
   if (!cell) return null;
 
   const [w, h] = roomDims(cell);
-  const fit = Math.min(1, (viewport.w - 48) / w, (viewport.h - 48) / h);
+  // The sign gets its own column, so the room can never end up underneath it.
+  const fit = Math.min(1, (viewport.w - 400) / w, (viewport.h - 48) / h);
 
   return (
-    <div className="scene-in absolute inset-0 z-40 flex items-center justify-center bg-[#0c0a08] p-4">
-      <div
-        key={cell.id}
-        className="pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]"
-        style={{ width: w, height: h, transform: `scale(${fit})` }}
-        onClick={e => {
-          if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          walkTarget.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
-        }}
-      >
-        <WallNotes cell={cell} width={w} />
-        <Floor cell={cell} width={w} height={h} />
-        <Occupants cellId={cell.id} width={w} height={h} />
-        <DoorMat width={w} height={h} />
-        <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
+    <div className="scene-in absolute inset-0 z-40 flex items-start gap-4 bg-[#0c0a08] p-4">
+      <HouseSign cell={cell} ai={ai} onAi={() => setAiFor(cell.id)} />
+      <div className="flex h-full min-w-0 flex-1 items-center justify-center">
+        <div
+          key={cell.id}
+          className="pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]"
+          style={{ width: w, height: h, transform: `scale(${fit})` }}
+          onClick={e => {
+            if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            walkTarget.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
+          }}
+        >
+          <WallNotes cell={cell} width={w} ai={ai} />
+          <Floor cell={cell} width={w} height={h} ai={ai} />
+          <Occupants cell={cell} width={w} height={h} />
+          <DoorMat width={w} height={h} />
+          <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
+        </div>
       </div>
-      <HouseSign cell={cell} />
     </div>
   );
 }
@@ -98,35 +119,37 @@ function wallClass(cell: Cell, spec: { wall: string } | null): string {
   if (cell.kind === 'issue') return 'room-wall-tent';
   if (cell.kind === 'branch') return 'room-wall-log';
   if (cell.kind === 'main') return 'room-wall-hall';
-  if (cell.kind === 'inbox') return 'room-wall-stone';
+  if (cell.kind === 'inbox') return 'room-wall-hedge';
+  const role = roomRole(cell);
+  if (role === 'attic') return 'room-wall-log';
+  if (role === 'ground') return 'room-wall-stone';
   return `room-wall-${spec?.wall ?? 'cream'}`;
 }
 
 function floorClass(cell: Cell, spec: { floor: string } | null): string {
-  if (cell.kind === 'issue') return 'room-floor-ground';
+  if (cell.kind === 'issue' || cell.kind === 'inbox') return 'room-floor-ground';
   if (cell.kind === 'branch') return 'room-floor-wood';
-  if (cell.kind === 'inbox' || cell.kind === 'main') return 'room-floor-stone';
+  if (cell.kind === 'main') return 'room-floor-stone';
+  const role = roomRole(cell);
+  if (role === 'attic') return 'room-floor-wood';
+  if (role === 'ground') return 'room-floor-carpet';
   return `room-floor-${spec?.floor ?? 'wood'}`;
 }
 
-function WallNotes({ cell, width }: { cell: Cell; width: number }) {
+function WallNotes({ cell, width, ai }: { cell: Cell; width: number; ai: boolean }) {
   const { slug, scrub } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
-  const { spec, loading } = useRoomSpec(slug, cell.id);
+  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const notes = roomFor(payload, cells, cell.id).notes;
-  const tent = cell.kind === 'issue';
-  // Only what fits on one row of the wall; the rest becomes a "+N" note.
-  const maxNotes = Math.max(2, Math.floor((width - (tent ? 60 : 240)) / 124));
-  const visible = notes.slice(0, maxNotes);
-  const extra = notes.length - visible.length;
+  const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
 
   if (loading) return <WallSkeleton />;
 
   return (
     <div className={cn('absolute inset-x-0 top-0', wallClass(cell, spec))} style={{ height: WALL_H }}>
-      {!tent ? (
+      {!outdoors ? (
         <>
           <span className="pixel absolute top-6 left-8">
             <PixelSprite art={WINDOW.art} palette={WINDOW.palette} scale={8} className="dark:hidden" />
@@ -139,22 +162,15 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
         </>
       ) : null}
 
-      <div className="absolute top-3.5 flex gap-2 overflow-hidden" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
-        {visible.map((note, i) => (
+      {/* One row of notes, scrollable sideways when the wall fills up. */}
+      <div
+        data-stop-walk
+        className="absolute top-3.5 bottom-3 flex gap-2 overflow-x-auto overflow-y-hidden"
+        style={{ left: outdoors ? 24 : 110, right: outdoors ? 24 : 110 }}
+      >
+        {notes.map((note, i) => (
           <StickyNote key={note.id} note={note} tilt={((i * 47) % 9) - 4} />
         ))}
-        {extra > 0 ? (
-          <a
-            href={cell.url}
-            target="_blank"
-            rel="noreferrer"
-            data-stop-walk
-            className="sticky-note font-pixel flex h-28 w-16 shrink-0 items-center justify-center text-[12px] font-bold text-[#5a4a1e] transition-transform hover:-translate-y-1"
-            aria-label={`${extra} more notes on GitHub`}
-          >
-            +{extra}
-          </a>
-        ) : null}
       </div>
       <div className="absolute inset-x-0 bottom-0 h-2.5 bg-black/25" />
       <span className="sr-only">wall width {width}</span>
@@ -162,9 +178,9 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
   );
 }
 
-function Floor({ cell, width, height }: { cell: Cell; width: number; height: number }) {
+function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height: number; ai: boolean }) {
   const { slug } = useVillageUi();
-  const { spec, loading } = useRoomSpec(slug, cell.id);
+  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const campsite = cell.kind === 'issue';
   const plaza = cell.kind === 'inbox';
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
@@ -177,12 +193,20 @@ function Floor({ cell, width, height }: { cell: Cell; width: number; height: num
         <Campsite width={width} height={height - WALL_H} />
       ) : (
         <>
-          {/* Every home has a hearth — the room is a house before the commits move in. */}
-          {!plaza ? (
+          {/* Every home has a hearth; the square keeps its well under the open sky. */}
+          {plaza ? (
+            <span
+              aria-hidden
+              className="pixel pointer-events-none absolute"
+              style={{ left: width / 2, top: (height - WALL_H) / 2 - 30, transform: 'translate(-50%, -50%)', zIndex: 1 }}
+            >
+              <PixelSprite art={WELL.art} palette={WELL.palette} scale={6} />
+            </span>
+          ) : (
             <span aria-hidden className="pixel pointer-events-none absolute" style={{ left: width / 2, top: 40, transform: 'translate(-50%, -50%)', zIndex: 1 }}>
               <PixelSprite art={FIREPLACE.art} palette={FIREPLACE.palette} scale={6} />
             </span>
-          ) : null}
+          )}
           {toBuilds(commits, spec?.items).map((build, i) => {
             const slot = tileSlot(i, width);
             return <Furniture key={build.commits[0].sha} build={build} x={slot.x} y={slot.y} />;
@@ -298,22 +322,34 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   );
 }
 
-function Occupants({ cellId, width, height }: { cellId: string; width: number; height: number }) {
+function Occupants({ cell, width, height }: { cell: Cell; width: number; height: number }) {
   const { slug, scrub, setTip } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
-  const here = actors.filter(a => a.cellId === cellId);
+  const here = actors.filter(a => a.cellId === cell.id);
+  const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
   if (here.length === 0) return null;
 
   return (
     <>
       {here.map((a, i) => {
-        const row = Math.floor(i / 8);
-        const col = i % 8;
-        const inRow = Math.min(8, here.length - row * 8);
-        const x = width / 2 + (col - (inRow - 1) / 2) * 78;
-        const y = height - 170 - row * 68;
+        // Outdoors people gather in a ring around the well or fire, never on it.
+        let x: number;
+        let y: number;
+        if (outdoors) {
+          const ring = Math.floor(i / 10);
+          const inRing = Math.min(10, here.length - ring * 10);
+          const angle = ((i % 10) / inRing) * Math.PI * 2 - Math.PI / 2;
+          x = width / 2 + Math.cos(angle) * (185 + ring * 55);
+          y = WALL_H + (height - WALL_H) / 2 - 30 + Math.sin(angle) * (105 + ring * 30);
+        } else {
+          const row = Math.floor(i / 8);
+          const col = i % 8;
+          const inRow = Math.min(8, here.length - row * 8);
+          x = width / 2 + (col - (inRow - 1) / 2) * 78;
+          y = height - 170 - row * 68;
+        }
         return (
           <a
             key={a.login}
@@ -463,9 +499,10 @@ function InteriorPlayer({
   );
 }
 
-function HouseSign({ cell }: { cell: Cell }) {
+function HouseSign({ cell, ai, onAi }: { cell: Cell; ai: boolean; onAi: () => void }) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
+  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
 
   const prs = payload.prs;
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
@@ -491,17 +528,20 @@ function HouseSign({ cell }: { cell: Cell }) {
     }
   }
 
+  // Name the floor you're standing on, not the cell's own chain depth.
+  const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
+  const floorNo = idx >= 0 ? stack.length - idx : 1;
   const chip =
     cell.kind !== 'pr'
       ? null
-      : cell.prState === 'stacked'
-        ? `stack of ${cell.floors} PRs${cell.draft ? ', top still a draft' : ''}`
+      : stack.length > 1
+        ? `floor ${floorNo} of ${stack.length}${cell.draft ? ', a draft' : ''}`
         : cell.prState === 'draft'
           ? 'draft'
           : 'ready for review';
 
   return (
-    <aside className="panel absolute top-4 left-4 z-50 w-80 rounded-sm p-3">
+    <aside className="panel z-50 w-80 shrink-0 rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
       <p className="mt-0.5 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
@@ -510,7 +550,7 @@ function HouseSign({ cell }: { cell: Cell }) {
           <span
             className={cn(
               'font-pixel rounded-sm border-2 border-[#4a3826] px-1 py-px text-[10px] font-bold',
-              cell.prState === 'ready' ? 'bg-[#58a55c] text-white' : cell.prState === 'stacked' ? 'bg-[#8a6a9d] text-white' : 'bg-[#e4c05a] text-[#3a2f22]',
+              stack.length > 1 ? 'bg-[#8a6a9d] text-white' : cell.prState === 'ready' ? 'bg-[#58a55c] text-white' : 'bg-[#e4c05a] text-[#3a2f22]',
             )}
           >
             {chip}
@@ -554,6 +594,21 @@ function HouseSign({ cell }: { cell: Cell }) {
           </ul>
         </div>
       ) : null}
+      {/* AI never runs on its own: the carpenter only works when hired. */}
+      {(ai && loading) || (spec?.aiAvailable && spec.commits.length > 0 && !spec.ai) ? (
+        <button
+          onClick={onAi}
+          disabled={ai && loading}
+          className="font-pixel mt-2 w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
+        >
+          {ai && loading ? 'the carpenter is at work…' : 'draw this room with AI'}
+        </button>
+      ) : null}
+      {spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">room designed by AI, theme: {spec.theme}</p> : null}
+      {ai && !loading && spec && !spec.ai ? (
+        <p className="font-pixel mt-1 text-[11px] text-[#8a4a2b]">the carpenter couldn’t draw this one, showing the standard room</p>
+      ) : null}
+
       <div className="mt-2 flex items-center justify-between border-t-2 border-[#4a3826]/40 pt-2">
         <a href={cell.url} target="_blank" rel="noreferrer" className="font-pixel flex items-center gap-1 text-[12px] font-bold text-[#8a4a2b] hover:underline">
           open on github <ArrowUpRight size={11} strokeWidth={3} />
