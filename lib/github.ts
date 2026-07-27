@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cacheLife, cacheTag } from 'next/cache';
-import type { ActiveBranch, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
+import type { ActiveBranch, BranchCommit, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
 
 const API = 'https://api.github.com';
 
@@ -218,6 +218,43 @@ function mapEvent(e: EventResponse, slug: string): WireEvent | null {
     default:
       return null;
   }
+}
+
+type CommitResponse = {
+  sha: string;
+  html_url: string;
+  commit: { message: string; author: { name?: string; date?: string } | null };
+  author: { login: string } | null;
+};
+
+function mapCommit(c: CommitResponse): BranchCommit {
+  return {
+    sha: c.sha,
+    message: (c.commit?.message ?? '').split('\n')[0],
+    author: c.author?.login ?? c.commit?.author?.name ?? 'someone',
+    at: c.commit?.author?.date ?? '',
+    url: c.html_url,
+  };
+}
+
+// Push events no longer include commit lists, so rooms fetch the real thing.
+export async function getPrCommits(slug: string, number: number): Promise<BranchCommit[]> {
+  'use cache: remote';
+  cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
+  cacheTag(`gh-commits-${slug}`);
+  const [owner, repo] = slug.split('/');
+  const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/commits?per_page=14`);
+  return (list ?? []).map(mapCommit);
+}
+
+export async function getBranchCommits(slug: string, ref: string): Promise<BranchCommit[]> {
+  'use cache: remote';
+  cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
+  cacheTag(`gh-commits-${slug}`);
+  const [owner, repo] = slug.split('/');
+  const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
+  // Newest first from the API; oldest first reads as construction order.
+  return (list ?? []).map(mapCommit).reverse();
 }
 
 // Feature branches with recent pushes — derived from the event stream, no extra API calls.

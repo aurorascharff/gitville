@@ -78,14 +78,9 @@ function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, Villa
   return depth;
 }
 
-// Top 8 PRs by activity get houses; a draft always gets one when it exists.
+// Every open PR gets a house, up to the slots the honeycomb can spare.
 export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
-  const picked = payload.prs.slice(0, 8);
-  if (!picked.some(pr => pr.draft)) {
-    const draft = payload.prs.find(pr => pr.draft);
-    if (draft) return [...picked.slice(0, 7), draft];
-  }
-  return picked;
+  return payload.prs.slice(0, 14);
 }
 
 export function buildCells(payload: VillagePayload, slug: string): Cell[] {

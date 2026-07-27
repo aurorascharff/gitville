@@ -52,7 +52,8 @@ export function aiRoomsEnabled(): boolean {
 
 // The AI is the interior designer AND carpenter: it groups related commits into
 // builds, sizes them by the work, and may draw original pixel art for each.
-// Cached per room-state (args are the cache key) and shared by every visitor.
+// Only successes are cached — a failure (missing key, model error) throws out
+// of the cached scope so the next visit retries instead of serving null for days.
 export async function generateRoomSpec(
   slug: string,
   label: string,
@@ -61,18 +62,31 @@ export async function generateRoomSpec(
   notes: string[] = [],
   state: string | null = null,
 ): Promise<RoomSpec | null> {
+  if (!aiRoomsEnabled()) return null;
+  try {
+    return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
+  } catch {
+    return null;
+  }
+}
+
+async function generateRoomSpecCached(
+  slug: string,
+  label: string,
+  sub: string | null,
+  commits: string[],
+  notes: string[],
+  state: string | null,
+): Promise<RoomSpec> {
   'use cache: remote';
   cacheLife('days');
   cacheTag(`room-ai-${slug}`);
 
-  if (!aiRoomsEnabled()) return null;
+  const { generateObject } = await import('ai');
+  const { createGateway } = await import('@ai-sdk/gateway');
+  const gateway = createGateway({ apiKey: gatewayKey() });
 
-  try {
-    const { generateObject } = await import('ai');
-    const { createGateway } = await import('@ai-sdk/gateway');
-    const gateway = createGateway({ apiKey: gatewayKey() });
-
-    const { object } = await generateObject({
+  const { object } = await generateObject({
       model: gateway('openai/gpt-5-nano'),
       schema: specSchema,
       prompt: [
@@ -94,12 +108,9 @@ export async function generateRoomSpec(
       ]
         .filter(Boolean)
         .join('\n'),
-    });
+  });
 
-    return specSchema.parse(object);
-  } catch {
-    return null;
-  }
+  return specSchema.parse(object);
 }
 
 // The no-token designer: same vocabulary, deterministic picks. Consecutive

@@ -55,6 +55,9 @@ export type WireEvent = {
 
 export type ActiveBranch = { ref: string; actor: string; at: string };
 
+// A real commit (from the commits/PR-commits API — push events no longer carry them).
+export type BranchCommit = { sha: string; message: string; author: string; at: string; url: string };
+
 export type VillagePayload = {
   ok: boolean;
   fetchedAt: string;

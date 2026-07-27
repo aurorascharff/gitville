@@ -280,24 +280,30 @@ export function tentArt(): string[] {
   ];
 }
 
-// The town hall: wide, bannered, unmistakably main.
+// The town hall: clock tower, banners, double doors — the village landmark.
 export function hallArt(): string[] {
   return [
-    '........OOOOOOOOOOOO........',
-    '.....OOORRRRRRRRRRRROOO.....',
-    '...OORRRRRRRRRRRRRRRRRROO...',
-    '.OORRRRRRRRRRRRRRRRRRRRRROO.',
-    'ORRRRRRRRRRRRRRRRRRRRRRRRRRO',
-    'OSSSSSSSSSSSSSSSSSSSSSSSSSSO',
-    '.OWWWWWWWWWWWWWWWWWWWWWWWWO.',
-    '.OWqqWWqqWWWBBBBWWWqqWWqqWO.',
-    '.OWqqWWqqWWWBBBBWWWqqWWqqWO.',
-    '.OWwWWWWWWWWBBBBWWWWWWWWwWO.',
-    '.OWWWWWWWWDDDWWDDDWWWWWWWWO.',
-    '.OWwWWWWWWDDDWWDDDWWWWWWwWO.',
-    '.OWWWWWWWWDDdWWdDDWWWWWWWWO.',
-    '.OWWWWWWWWDDDWWDDDWWWWWWWWO.',
-    '.OOOOOOOOOOOOOOOOOOOOOOOOOO.',
+    '..............OOOOOOOO..............',
+    '.............OORRRRRROO.............',
+    '............ORRRRRRRRRRO............',
+    '............OSSSSSSSSSSO............',
+    '............OWWWWWWWWWWO............',
+    '............OWWccccccWWO............',
+    '............OWWccOcccWWO............',
+    '............OWWcccOccWWO............',
+    '............OWWccccccWWO............',
+    '....OOOOOOOOOWWWWWWWWWWOOOOOOOOO....',
+    '..OORRRRRRRRRRRRRRRRRRRRRRRRRRRROO..',
+    '.ORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRO.',
+    'OSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSO',
+    '.OWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWO.',
+    '.OWqqWWqqWWWBBWWWWWWWWBBWWWqqWWqqWO.',
+    '.OWqqWWqqWWWBBWWWWWWWWBBWWWqqWWqqWO.',
+    '.OWwWWWWWWWWBBWWWWWWWWBBWWWWWWWWwWO.',
+    '.OWWWWWWWWWWWWDDDWWDDDWWWWWWWWWWWWO.',
+    '.OWwWWWWWWWWWWDDDWWDDDWWWWWWWWWWwWO.',
+    '.OWWWWWWWWWWWWDDdWWdDDWWWWWWWWWWWWO.',
+    '.OOOOOOOOOOOOODDDOODDDOOOOOOOOOOOOO.',
   ];
 }
 

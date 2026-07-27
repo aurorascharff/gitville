@@ -65,14 +65,15 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
 
         {cell.kind === 'pr' && cell.prState !== 'draft' && lit ? <ChimneySmoke /> : null}
 
+        {/* One pixel size everywhere — a bigger building means more art, not fatter pixels. */}
         {cell.kind === 'inbox' ? (
-          <DayNightSprite art={WELL.art} palette={WELL.palette} scale={6} lit={lit} />
+          <DayNightSprite art={WELL.art} palette={WELL.palette} scale={5} lit={lit} />
         ) : main ? (
-          <DayNightSprite art={hallArt()} palette={palette} scale={6} lit={lit} />
+          <DayNightSprite art={hallArt()} palette={palette} scale={5} lit={lit} />
         ) : cell.kind === 'branch' ? (
           <DayNightSprite art={cabinArt()} palette={palette} scale={5} lit={lit} />
         ) : cell.kind === 'issue' ? (
-          <DayNightSprite art={tentArt()} palette={palette} scale={6} lit={lit} />
+          <DayNightSprite art={tentArt()} palette={palette} scale={5} lit={lit} />
         ) : (
           <DayNightSprite art={cottageArt(cell.floors ?? 1, Boolean(cell.draft))} palette={palette} scale={5} lit={lit} />
         )}

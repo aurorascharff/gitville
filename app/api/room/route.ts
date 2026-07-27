@@ -1,9 +1,10 @@
 import { fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
 import { buildCells, roomFor } from '@/features/village/village-model';
-import { getVillagePayload, getRepoData } from '@/lib/github';
+import { getBranchCommits, getPrCommits, getRepoData, getVillagePayload } from '@/lib/github';
+import type { BranchCommit } from '@/types/github';
 
-// Room detail, fetched when a door opens. AI-designed with a gateway key (cached for
-// days per room-state), same design system deterministically without one.
+// Room detail, fetched when a door opens: the cell's real commits (push events
+// no longer carry them) plus an AI-designed spec — deterministic without a key.
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const slug = url.searchParams.get('slug') ?? '';
@@ -18,8 +19,13 @@ export async function GET(request: Request): Promise<Response> {
   const cell = cells.find(c => c.id === cellId);
   if (!cell) return Response.json({ ok: false }, { status: 404 });
 
+  let commits: BranchCommit[] = [];
+  if (cell.kind === 'pr') commits = await getPrCommits(repo.slug, Number(cell.id.split(':')[1]));
+  else if (cell.kind === 'branch' && cell.ref) commits = await getBranchCommits(repo.slug, cell.ref);
+  else if (cell.kind === 'main') commits = await getBranchCommits(repo.slug, payload.defaultBranch);
+  commits = commits.slice(-14);
+
   const room = roomFor(payload, cells, cellId);
-  const commitLines = room.commits.map(c => c.detail ?? c.line);
   const noteLines = room.notes.map(n => `${n.actor}: ${(n.body ?? '').slice(0, 120)}`);
 
   const state =
@@ -32,10 +38,17 @@ export async function GET(request: Request): Promise<Response> {
           : null;
 
   const ai =
-    commitLines.length > 0 || noteLines.length > 0 || cell.sub
-      ? await generateRoomSpec(repo.slug, cell.label, cell.sub, commitLines, noteLines, state)
+    commits.length > 0 || noteLines.length > 0 || cell.sub
+      ? await generateRoomSpec(
+          repo.slug,
+          cell.label,
+          cell.sub,
+          commits.map(c => `${c.author}: ${c.message}`),
+          noteLines,
+          state,
+        )
       : null;
-  const spec = ai ?? fallbackSpec(room.theme, room.commits.map(c => ({ id: c.id, actor: c.actor })));
+  const spec = ai ?? fallbackSpec(room.theme, commits.map(c => ({ id: c.sha, actor: c.author })));
 
-  return Response.json({ ok: true, ...spec });
+  return Response.json({ ok: true, ...spec, commits });
 }

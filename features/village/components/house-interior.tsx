@@ -18,7 +18,7 @@ import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel, type RoomSpe
 import { pickedPrs, roomFor, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
-import type { WireEvent } from '@/types/github';
+import type { BranchCommit, WireEvent } from '@/types/github';
 
 const DIMS: Record<'S' | 'M' | 'L', [number, number]> = { S: [780, 560], M: [940, 620], L: [1100, 680] };
 const WALL_H = 150;
@@ -129,14 +129,11 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
 }
 
 function Floor({ cell, width, height }: { cell: Cell; width: number; height: number }) {
-  const { slug, scrub } = useVillageUi();
-  const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { cells } = useWorldModel(payload, slug, asOf);
+  const { slug } = useVillageUi();
   const { spec, loading } = useRoomSpec(slug, cell.id);
   const campsite = cell.kind === 'issue';
   const plaza = cell.kind === 'inbox';
-  const commits = campsite || plaza ? [] : roomFor(payload, cells, cell.id).commits.slice(0, 14);
+  const commits = campsite || plaza ? [] : (spec?.commits ?? []);
 
   if (loading) return <FloorSkeleton />;
 
@@ -147,7 +144,7 @@ function Floor({ cell, width, height }: { cell: Cell; width: number; height: num
       ) : (
         toBuilds(commits, spec?.items).map((build, i) => {
           const slot = tileSlot(i, width);
-          return <Furniture key={build.events[0].id} build={build} x={slot.x} y={slot.y} />;
+          return <Furniture key={build.commits[0].sha} build={build} x={slot.x} y={slot.y} />;
         })
       )}
     </div>
@@ -156,10 +153,11 @@ function Floor({ cell, width, height }: { cell: Cell; width: number; height: num
 
 // Furniture fills the room tile by tile from the back-left corner.
 function tileSlot(i: number, w: number): { x: number; y: number } {
-  const cols = Math.floor((w - TILE * 2) / (TILE * 2));
+  const step = TILE * 2.5;
+  const cols = Math.max(1, Math.floor((w - TILE * 2) / step));
   const row = Math.floor(i / cols);
   const col = i % cols;
-  return { x: TILE + col * TILE * 2 + TILE, y: TILE * 0.6 + row * TILE * 1.9 + TILE / 2 };
+  return { x: TILE + col * step + step / 2, y: TILE * 0.6 + row * TILE * 1.9 + TILE / 2 };
 }
 
 function Campsite({ width, height }: { width: number; height: number }) {
@@ -181,59 +179,58 @@ function Campsite({ width, height }: { width: number; height: number }) {
   );
 }
 
-type Build = { events: WireEvent[]; name?: string; kind?: string; art?: string[] };
+type Build = { commits: BranchCommit[]; name?: string; kind?: string; art?: string[] };
 
 // Related commits become one build; anything the spec didn't cover still shows
 // up as its own piece.
-function toBuilds(commits: WireEvent[], items: RoomSpecItem[] | undefined): Build[] {
-  if (!items?.length) return commits.map(c => ({ events: [c] }));
+function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): Build[] {
+  if (!items?.length) return commits.map(c => ({ commits: [c] }));
   const covered = new Set<number>();
   const builds: Build[] = [];
   for (const item of items) {
-    const events = item.commits.filter(i => i >= 0 && i < commits.length && !covered.has(i)).map(i => commits[i]);
+    const own = item.commits.filter(i => i >= 0 && i < commits.length && !covered.has(i)).map(i => commits[i]);
     item.commits.forEach(i => covered.add(i));
-    if (events.length > 0) builds.push({ events, name: item.name, kind: item.kind, art: item.art });
+    if (own.length > 0) builds.push({ commits: own, name: item.name, kind: item.kind, art: item.art });
   }
   commits.forEach((c, i) => {
-    if (!covered.has(i)) builds.push({ events: [c] });
+    if (!covered.has(i)) builds.push({ commits: [c] });
   });
   return builds;
 }
 
-// The plate names the piece like furniture; the commits live on hover.
+// The plate names the piece like furniture; the real commits live on hover.
 function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const { setTip } = useVillageUi();
-  const primary = build.events[0];
-  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(primary.id);
+  const primary = build.commits[0];
+  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(primary.sha);
   const art = build.art?.length ? build.art : fallback.art;
   const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
   const name = build.name ?? fallback.name;
-  const weight = build.events.reduce((sum, e) => sum + Math.max(1, e.count ?? 1), 0);
-  const scale = weight >= 12 ? 7 : weight >= 6 ? 6 : weight >= 3 ? 5 : 4;
+  const scale = build.commits.length >= 6 ? 7 : build.commits.length >= 4 ? 6 : build.commits.length >= 2 ? 5 : 4;
   const tip = (e: React.MouseEvent) =>
     setTip({
       x: e.clientX,
       y: e.clientY,
-      title: `${name} · by ${primary.actor}`,
-      body: build.events.map(ev => ev.detail ?? ev.line).join('\n'),
-      when: primary.at,
+      title: `${name} · by ${primary.author}`,
+      body: build.commits.map(c => c.message).join('\n'),
+      when: primary.at || null,
     });
   const inner = (
     <>
       <PixelSprite art={art} palette={palette} scale={scale} />
       <span aria-hidden className="mx-auto mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
+      <span className="font-pixel mt-0.5 block max-w-24 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
         {name}
       </span>
-      {build.events.length > 1 ? (
-        <span className="font-pixel absolute -top-2 -right-3 flex items-center gap-1 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold text-[#3a2f22]">
-          <KindBadge kind="push" scale={1} /> {build.events.length} commits
+      {build.commits.length > 1 ? (
+        <span className="font-pixel absolute -top-2 -right-3 flex items-center gap-1 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold whitespace-nowrap text-[#3a2f22]">
+          <KindBadge kind="push" scale={1} /> {build.commits.length} commits
         </span>
       ) : null}
     </>
   );
   const style = { left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) } as const;
-  return primary.url ? (
+  return (
     <a
       href={primary.url}
       target="_blank"
@@ -245,15 +242,6 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
     >
       {inner}
     </a>
-  ) : (
-    <div
-      className="absolute flex cursor-help flex-col items-center transition-transform hover:-translate-y-0.5"
-      style={style}
-      onMouseMove={tip}
-      onMouseLeave={() => setTip(null)}
-    >
-      {inner}
-    </div>
   );
 }
 
@@ -462,7 +450,8 @@ function HouseSign({ cell }: { cell: Cell }) {
   return (
     <aside className="panel absolute top-4 left-4 z-50 w-72 rounded-sm p-3">
       <p className="font-pixel text-[16px] leading-5 font-bold">{cell.label}</p>
-      {cell.sub ? <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-[#5a4a32]">{cell.sub}</p> : null}
+      {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
+      <p className="mt-0.5 line-clamp-2 min-h-8 text-[12px] leading-4 text-[#5a4a32]">{cell.sub}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
         {chip ? (
           <span

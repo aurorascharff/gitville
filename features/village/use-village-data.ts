@@ -10,7 +10,7 @@ import {
   type Actor,
   type Cell,
 } from '@/features/village/village-model';
-import { villageKey, type VillagePayload } from '@/types/github';
+import { villageKey, type BranchCommit, type VillagePayload } from '@/types/github';
 
 const fetcher = async (url: string): Promise<VillagePayload> => {
   const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
@@ -43,13 +43,14 @@ export type RoomSpecPayload = {
   wall: 'cream' | 'sage' | 'sky' | 'stone';
   floor: 'wood' | 'stone' | 'carpet';
   items: RoomSpecItem[];
+  commits: BranchCommit[];
 };
 
 // A failed spec fetch degrades to the default room — never an error for decoration.
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
-    .catch(() => ({ ok: false, theme: '', wall: 'cream' as const, floor: 'wood' as const, items: [] }));
+    .catch(() => ({ ok: false, theme: '', wall: 'cream' as const, floor: 'wood' as const, items: [], commits: [] }));
 
 const roomKey = (slug: string, cellId: string) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}`;

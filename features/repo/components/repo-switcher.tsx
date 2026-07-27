@@ -55,13 +55,13 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
         <GitvilleMark size={26} />
         <RepoAvatar src={repo.ownerAvatar} name={repo.owner} size={20} className="rounded-full" />
         <span className="max-w-44 truncate text-sm font-semibold tracking-tight">{repo.name}</span>
-        <ChevronDown size={14} className={cn('text-muted-foreground transition-transform', open && 'rotate-180')} />
+        <ChevronDown size={14} className={cn('text-[#8a6d2a] transition-transform', open && 'rotate-180')} />
       </button>
 
       {open ? (
         <div className="panel absolute top-13 left-0 z-40 w-72 overflow-hidden rounded-sm">
           <p className="font-pixel px-4 pt-3 pb-1.5 text-[12px] font-bold tracking-wider text-[#8a6d2a] uppercase">
-            Watching
+            villages you watch
           </p>
           <ul className="max-h-72 overflow-y-auto pb-1">
             {pinned.map(slug => {
@@ -93,7 +93,7 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
                         await unpinRepo(slug);
                       })
                     }
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 rounded p-0.5 opacity-0 transition group-hover:opacity-100"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-0.5 text-[#8a6d2a] opacity-0 transition group-hover:opacity-100 hover:text-[#3a2f22]"
                   >
                     <X size={13} />
                   </button>
@@ -101,19 +101,16 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
               );
             })}
           </ul>
-          <form onSubmit={watch} className="relative border-t p-2">
+          <form onSubmit={watch} className="relative border-t-2 border-[#4a3826]/30 p-2">
             <input
               value={value}
               onChange={e => setValue(e.target.value)}
-              placeholder="watch a repo… owner/repo"
+              placeholder="paste a github url or owner/repo"
               disabled={pending}
-              className="placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring h-8 w-full rounded-lg border bg-transparent px-2.5 text-xs focus-visible:ring-1 focus-visible:outline-none"
+              className="font-pixel h-9 w-full rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-2.5 text-[12px] text-[#3a2f22] placeholder:text-[#8a6d2a]/80 focus-visible:bg-white focus-visible:outline-none"
             />
             {pending ? (
-              <Loader2
-                size={13}
-                className="text-muted-foreground absolute top-1/2 right-4 -translate-y-1/2 animate-spin"
-              />
+              <Loader2 size={13} className="absolute top-1/2 right-4 -translate-y-1/2 animate-spin text-[#8a6d2a]" />
             ) : null}
           </form>
         </div>
