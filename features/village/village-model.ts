@@ -4,12 +4,13 @@ import type { VillagePayload, WireEvent } from '@/types/github';
 // A honeycomb: center cell + two rings = 19 slots, laid out in a fixed logical
 // space. Positions are deterministic so cells never jump between polls.
 
-export const WORLD_W = 1460;
-export const WORLD_H = 1040;
+// Big enough that the camera has somewhere to go — walking matters.
+export const WORLD_W = 2200;
+export const WORLD_H = 1560;
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
-const DX = 235;
-const DY = 200;
+const DX = 350;
+const DY = 295;
 
 const AXIAL: [number, number][] = [
   [0, 0],
@@ -42,6 +43,10 @@ function slotPos(i: number): { x: number; y: number } {
 
 export type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
 
+// How a PR's house looks: draft = under construction, ready = finished cottage,
+// stacked = one storey per PR underneath it in the chain.
+export type PrState = 'draft' | 'ready' | 'stacked';
+
 export type Cell = {
   id: string;
   kind: CellKind;
@@ -49,10 +54,29 @@ export type Cell = {
   sub: string | null;
   url: string;
   draft?: boolean;
+  prState?: PrState;
+  floors?: number; // 1 + open-PR ancestors in the base chain
+  stackedOn?: number; // the PR number directly underneath, if stacked
+  author?: string;
   ref?: string; // a PR's head branch — pushes to it land in this room
+  baseRef?: string;
   x: number;
   y: number;
 };
+
+// Walk a PR's base chain through the other open PRs. Depth 1 = based on the
+// default branch; each open PR underneath adds a floor. Visited-set guards cycles.
+function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, VillagePayload['prs'][number]>): number {
+  let depth = 1;
+  const seen = new Set<number>([pr.number]);
+  let parent = byHead.get(pr.baseRef);
+  while (parent && !seen.has(parent.number)) {
+    depth += 1;
+    seen.add(parent.number);
+    parent = byHead.get(parent.baseRef);
+  }
+  return depth;
+}
 
 export function buildCells(payload: VillagePayload, slug: string): Cell[] {
   const cells: Cell[] = [];
@@ -68,7 +92,10 @@ export function buildCells(payload: VillagePayload, slug: string): Cell[] {
   });
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
+  const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
   for (const pr of payload.prs.slice(0, 8)) {
+    const floors = stackDepth(pr, byHead);
+    const under = byHead.get(pr.baseRef);
     cells.push({
       id: `pr:${pr.number}`,
       kind: 'pr',
@@ -76,7 +103,12 @@ export function buildCells(payload: VillagePayload, slug: string): Cell[] {
       sub: pr.title,
       url: pr.url,
       draft: pr.draft,
+      prState: floors > 1 ? 'stacked' : pr.draft ? 'draft' : 'ready',
+      floors,
+      stackedOn: under?.number,
+      author: pr.author,
       ref: pr.branch,
+      baseRef: pr.baseRef,
       ...slotPos(slot++),
     });
   }
@@ -175,17 +207,25 @@ export function actorsAt(payload: VillagePayload, cells: Cell[], t: number): Act
     .sort((a, b) => a.login.localeCompare(b.login));
 }
 
-// Villagers stand in an arc at the foot of their cell, like neighbors at a door.
+// Villagers stand in arcs at the foot of their cell, like neighbors at a door.
+// Outer rings hold more people so crowds spread instead of piling up.
 // Deterministic (sorted by login upstream) so nobody shuffles between polls.
 export function arcOffset(index: number, count: number): { x: number; y: number } {
-  const ring = Math.floor(index / 6);
-  const inRing = index % 6;
-  const ringCount = Math.min(count - ring * 6, 6);
-  const startDeg = 40;
-  const endDeg = 140;
+  let ring = 0;
+  let start = 0;
+  let cap = 6;
+  while (index >= start + cap) {
+    start += cap;
+    ring += 1;
+    cap = 6 + ring * 4;
+  }
+  const inRing = index - start;
+  const ringCount = Math.min(count - start, cap);
+  const startDeg = 25;
+  const endDeg = 155;
   const step = (endDeg - startDeg) / (ringCount + 1);
   const deg = startDeg + step * (inRing + 1);
-  const radius = 72 + ring * 30;
+  const radius = 80 + ring * 40;
   const rad = (deg * Math.PI) / 180;
   return { x: Math.cos(rad) * radius, y: Math.sin(rad) * radius * 0.92 };
 }

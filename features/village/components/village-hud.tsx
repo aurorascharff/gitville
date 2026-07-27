@@ -1,6 +1,6 @@
 'use client';
 
-import { Minus, Plus, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
@@ -40,25 +40,19 @@ export function VillageStatus() {
 }
 
 export function VillageControls() {
-  const { repo, zoom, setZoom, buzzOpen, setBuzzOpen, focusId } = useVillageUi();
+  const { repo, buzzOpen, setBuzzOpen, focusId } = useVillageUi();
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
       <a
         href={`https://github.com/${repo.slug}`}
         target="_blank"
         rel="noreferrer"
-        className="bg-background/80 text-muted-foreground hover:text-foreground flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs backdrop-blur transition-colors"
+        className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
       >
-        <Star size={12} className="fill-muted-foreground/30" /> {formatStars(repo.stars)}
+        <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
       </a>
       {!focusId ? (
         <>
-          <HudButton label="Zoom out" onClick={() => setZoom(z => Math.max(0.6, Math.round((z - 0.2) * 10) / 10))}>
-            <Minus size={13} />
-          </HudButton>
-          <HudButton label="Zoom in" onClick={() => setZoom(z => Math.min(1.6, Math.round((z + 0.2) * 10) / 10))}>
-            <Plus size={13} />
-          </HudButton>
           <button
             onClick={() => setBuzzOpen(o => !o)}
             className={cn(
@@ -66,9 +60,9 @@ export function VillageControls() {
               buzzOpen && 'brightness-90',
             )}
           >
-            the buzz
+            noticeboard
           </button>
-          <div className="bg-background/80 rounded-full border backdrop-blur">
+          <div className="panel flex h-9 items-center rounded-sm">
             <ThemeToggle />
           </div>
         </>
@@ -82,32 +76,20 @@ export function VillageTooltip() {
   if (!tip) return null;
   return (
     <div
-      className="bg-popover/95 pointer-events-none fixed z-50 max-w-72 rounded-xl border px-3 py-2 shadow-2xl backdrop-blur"
+      className="panel pointer-events-none fixed z-50 max-w-72 rounded-sm px-3 py-2"
       style={{
         left: Math.min(tip.x + 16, typeof window !== 'undefined' ? window.innerWidth - 300 : tip.x),
         top: tip.y + 16,
       }}
     >
       <p className="font-pixel text-[14px] font-bold">{tip.title}</p>
-      {tip.body ? <p className="text-muted-foreground mt-0.5 line-clamp-3 text-xs">{tip.body}</p> : null}
+      {tip.body ? <p className="mt-0.5 line-clamp-4 text-xs whitespace-pre-line text-[#6b5b43]">{tip.body}</p> : null}
       {tip.when ? (
-        <p className="text-muted-foreground/70 mt-1 text-[10px]">
+        <p className="mt-1 text-[10px] text-[#8a6d2a]">
           <RelativeTime date={tip.when} /> ago
         </p>
       ) : null}
     </div>
-  );
-}
-
-function HudButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className="bg-background/80 text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur transition-colors"
-    >
-      {children}
-    </button>
   );
 }
 

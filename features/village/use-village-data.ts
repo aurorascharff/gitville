@@ -30,6 +30,35 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
   return { payload: data!, stale: Boolean(error) };
 }
 
+// The AI-designed (or deterministic-fallback) interior for one house. Every
+// interior block calls this with the same key — SWR collapses them into one fetch.
+export type RoomSpecItem = {
+  name: string;
+  kind?: string;
+  art?: string[]; // AI-drawn pixel rows over the shared legend
+  commits: number[]; // indexes into the room's commit list — grouped work, one build
+};
+
+export type RoomSpecPayload = {
+  ok: boolean;
+  theme: string;
+  wall: 'cream' | 'sage' | 'sky' | 'stone';
+  floor: 'wood' | 'stone' | 'carpet';
+  items: RoomSpecItem[];
+};
+
+const specFetcher = (url: string): Promise<RoomSpecPayload> => fetch(url).then(r => r.json());
+
+// Suspends until the room is designed — callers sit behind a <Suspense> door.
+export function useRoomSpec(slug: string, cellId: string): RoomSpecPayload | null {
+  const { data } = useSWR<RoomSpecPayload>(
+    `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}`,
+    specFetcher,
+    { revalidateOnFocus: false, suspense: true },
+  );
+  return data?.ok ? data : null;
+}
+
 export const SCRUB_MAX = 1000;
 
 export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };

@@ -1,0 +1,320 @@
+# Pages and Suspense
+
+How to compose pages, place Suspense boundaries, and prevent layout shift.
+
+## Pages are composition only
+
+Pages in `app/` import feature components and place `<Suspense>` boundaries. They never:
+
+- Fetch data directly (queries live in feature folders)
+- Define new components except thin transition wrappers (e.g. `<ViewTransition>`)
+- Inline route-specific UI (extract it into the feature folder)
+
+## Page function signatures
+
+Type page and layout functions with the generated `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — they're emitted by [`typedRoutes`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) and give you the correct `params` / `searchParams` / `children` shape for that exact route.
+
+```tsx
+// app/post/[id]/page.tsx
+export default function PostPage({ params }: PageProps<'/post/[id]'>) {
+  /* ... */
+}
+```
+
+```tsx
+// app/post/[id]/layout.tsx
+export default function PostLayout({ children, params }: LayoutProps<'/post/[id]'>) {
+  /* ... */
+}
+```
+
+Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types stay in sync with the route, including catch-all and optional segments. Route handlers have their own `RouteContext<'/api/...'>`. Turn on `typedRoutes: true` in `next.config.ts`.
+
+## Keep pages synchronous
+
+Use `params.then()` instead of `await params`. Content above the `.then()` pre-renders into the static shell; content inside it suspends.
+
+```tsx
+import { Suspense } from 'react';
+import { PostDetail, PostDetailSkeleton } from '@/features/post/components/post-detail';
+
+export default function PostPage({ params }: PageProps<'/post/[id]'>) {
+  return (
+    <div>
+      <h1>Post</h1>
+      <Suspense fallback={<PostDetailSkeleton />}>
+        {params.then(({ id }) => (
+          <PostDetail id={id} />
+        ))}
+      </Suspense>
+    </div>
+  );
+}
+```
+
+The `<h1>` sits **above** the `params.then()` so it paints instantly. The `Suspense` fallback covers only the dynamic section.
+
+### Implicit return inside `.then()`
+
+Use an implicit-return arrow function when the callback just renders JSX — e.g. `({ id }) => <PostDetail id={id} />`. Only switch to a block body with `return` when you need to do work first (destructure with defaults, parse a `searchParams` value, branch on a condition). This keeps the JSX-in-page shape readable and matches how the resolved tree will look.
+
+### `searchParams` and combined params
+
+```tsx
+// searchParams only
+export default function SearchPage({ searchParams }: PageProps<'/search'>) {
+  return searchParams.then(sp => {
+    const q = typeof sp.q === 'string' ? sp.q : '';
+    return q ? <SearchResults query={q} /> : <EmptyState />;
+  });
+}
+
+// Both params and searchParams
+export default function ProfilePage({ params, searchParams }: PageProps<'/u/[handle]'>) {
+  return Promise.all([params, searchParams]).then(([{ handle }, sp]) => (
+    <ProfileFeed handle={handle} tab={parseTab(sp.tab)} />
+  ));
+}
+```
+
+### `generateMetadata` can await directly
+
+[`generateMetadata`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-metadata) runs before the page renders, so `await params` is fine there:
+
+```tsx
+export async function generateMetadata({ params }: PageProps<'/post/[id]'>): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPost(id);
+  return { title: post.title, description: post.body.slice(0, 160) };
+}
+```
+
+### `generateStaticParams` for dynamic routes
+
+For `[slug]`-style routes, export [`generateStaticParams`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-static-params) from the page or layout to pre-build a known set of pages. Combined with `cacheComponents` and `'use cache'` on the queries, every listed slug ends up in the static shell:
+
+```tsx
+import { getEvents } from '@/features/event/event-queries';
+
+export async function generateStaticParams() {
+  const events = await getEvents();
+  return events.map(event => ({ slug: event.slug }));
+}
+```
+
+The gotcha: `generateStaticParams` does **not** change the page function signature. `params` is still a Promise; the page still uses `params.then(...)`. The pre-build only affects which slugs prerender at build time.
+
+### `notFound()` from queries
+
+When a query can't find the resource, call [`notFound()`](https://preview.nextjs.org/docs/app/api-reference/functions/not-found):
+
+```ts
+import { notFound } from 'next/navigation';
+
+export const getEventBySlug = cache(async (slug: string) => {
+  const event = await db.event.findUnique({ where: { slug } });
+  if (!event) notFound();
+  return event;
+});
+```
+
+It bubbles to the nearest [`not-found.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/not-found). Don't wrap it in a try/catch — use [`unstable_rethrow`](https://preview.nextjs.org/docs/app/api-reference/functions/unstable_rethrow) from `next/navigation` if you need to.
+
+## The page owns the Suspense boundary
+
+The feature exports the async component **and** its skeleton. The page imports both and places the boundary. Don't pre-wrap inside the feature — that hides the boundary and prevents grouping siblings.
+
+```tsx
+// features/post/components/post-detail.tsx
+export async function PostDetail({ id }: { id: string }) { ... }
+export function PostDetailSkeleton() { ... }
+```
+
+```tsx
+// app/post/[id]/page.tsx
+<Suspense fallback={<PostDetailSkeleton />}>
+  {params.then(({ id }) => (
+    <>
+      <PostDetail id={id} />
+      <ErrorBoundary title="Replies didn't load">
+        <Suspense fallback={<RepliesSkeleton />}>
+          <Replies postId={id} />
+        </Suspense>
+      </ErrorBoundary>
+    </>
+  ))}
+</Suspense>
+```
+
+If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers.
+
+## Don't create page-local wrapper components
+
+Avoid components whose only job is to group boundary content, like `HomeLists` or `HomeListsSkeleton`. Keep the resolved JSX and fallback JSX **inline in the page** so the loading shape, headings, and grouped reveal behavior are visible at the boundary.
+
+```tsx
+// Wrong — hides the structure behind a wrapper
+<Suspense fallback={<HomeListsSkeleton />}>
+  <HomeLists searchParams={searchParams} />
+</Suspense>
+```
+
+```tsx
+// Right — structure visible at the page level
+<Suspense
+  fallback={
+    <>
+      <FeaturedSkeleton />
+      <RecentSkeleton />
+    </>
+  }
+>
+  {searchParams.then(sp => (
+    <>
+      <Featured filter={sp.filter} />
+      <Recent filter={sp.filter} />
+    </>
+  ))}
+</Suspense>
+```
+
+## Suspense boundary placement rules
+
+1. **First section gets its own Suspense** with a known-height skeleton fallback.
+2. **Section headings stay outside Suspense** when their final position is stable.
+3. **Variable-height sections: group everything below them** in the same Suspense, including any headings that would otherwise paint in the wrong vertical position.
+4. **Fixed-height sections: own boundary is safe.**
+5. **Variable-length lists: show 2–5 skeleton items**, not the real count.
+6. **Inner Suspense content stays out of the outer skeleton.** Each boundary owns its own.
+7. **Never `fallback={null}` for visible UI.** If a boundary covers UI, give it a real shaped fallback, or group it with a sibling boundary that already has the correct fallback.
+8. **If the top section's final height is unknown, group the following sections** in the same boundary so they reveal together and don't jump underneath.
+
+## Error boundaries
+
+Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't take down the page. Use `unstable_catchError` from `next/error` (Next.js 16.2+) — it knows about Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and re-fetches server data on retry:
+
+```tsx
+// components/ui/error-boundary.tsx
+'use client';
+
+import { unstable_catchError as catchError, type ErrorInfo } from 'next/error';
+
+function ErrorFallback(props: { title?: string }, { unstable_retry: retry }: ErrorInfo) {
+  return (
+    <div>
+      <p>{props.title ?? 'Something went wrong'}</p>
+      <button onClick={() => retry()}>Try again</button>
+    </div>
+  );
+}
+
+export default catchError(ErrorFallback);
+```
+
+Use it around suspending sections:
+
+```tsx
+import ErrorBoundary from '@/components/ui/error-boundary';
+
+<ErrorBoundary title="Replies didn't load">
+  <Suspense fallback={<RepliesSkeleton />}>
+    <Replies postId={id} />
+  </Suspense>
+</ErrorBoundary>;
+```
+
+Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and `resetErrorBoundary` doesn't re-fetch server data. For background, see [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).
+
+Pair component-level boundaries with [`error.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/error) at the route segment for unrecoverable errors. `error.tsx` also receives an `unstable_retry` callback you can wire to a button.
+
+## Layout-level Suspense
+
+Layouts compose feature components the same way pages do. Use `<Suspense>` for slots that fetch data (auth badge, sidebar):
+
+```tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <Suspense>
+          <AuthGate userPromise={getCurrentUser()} />
+        </Suspense>
+        <main>{children}</main>
+      </body>
+    </html>
+  );
+}
+```
+
+`AuthGate` is a client component that resolves the promise with `use()` so the dialog can render conditionally without server-side branching.
+
+## CLS prevention
+
+Layout shift happens when:
+
+- A skeleton is shorter than the real content
+- A heading sits inside a Suspense boundary whose final height is unknown — it paints in the wrong place, then jumps
+- A variable-length list streams in without a fallback that reserves space
+
+Fixes:
+
+- Match skeleton height to the typical real content height.
+- Move headings **outside** boundaries when their position depends on data above them.
+- For unknown-height top sections, group everything below in one boundary so siblings stream together.
+
+To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
+
+## Opt-in prefetch for high-value routes
+
+With [`cacheComponents`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents) and [`partialPrefetching`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/partialPrefetching) enabled, a visible `<Link>` prefetches the destination's reusable [App Shell](https://preview.nextjs.org/docs/app/glossary#app-shell): shared layouts, Suspense fallbacks, and cached content that doesn't depend on the specific URL. One shell is shared across every link to that route, so it's cheap — and it's enough to commit the navigation instantly. Link-specific content streams in after the click.
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  cacheComponents: true,
+  partialPrefetching: true,
+};
+
+export default nextConfig;
+```
+
+If you can't enable `partialPrefetching` app-wide yet, opt in per route with `export const prefetch = 'partial'` on the destination segment, then remove the per-route exports once the global flag is on. Full option list: [prefetch segment config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch).
+
+The default (`'auto'`) already fetches the shared App Shell, so don't write `prefetch = 'auto'` explicitly. From that baseline you adjust in two directions.
+
+### Prefetch more: `prefetch={true}` + `prefetch = 'allow-runtime'`
+
+Set `<Link prefetch={true}>` on high-value links to also pull the destination's cached page content:
+
+```tsx
+<Link href="/feed" prefetch={true}>
+  Feed
+</Link>
+```
+
+That still doesn't resolve per-link runtime data. Values that depend on `params`, `searchParams`, or the full URL wait until the click unless the destination also opts in with `export const prefetch = 'allow-runtime'`:
+
+```tsx
+// app/track/[id]/page.tsx
+export const prefetch = 'allow-runtime';
+```
+
+```tsx
+<Link href={`/track/${id}`} prefetch={true}>
+  Track
+</Link>
+```
+
+Each such visible link can wake the server for a runtime prerender, so reserve it for routes users predictably visit next and let the rest ride on the App Shell. See [runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching). (The `'allow-runtime'` API is expected to change soon; use it as-is for now.)
+
+### Prefetch nothing: rarely what you want
+
+`<Link prefetch={false}>` — or `export const prefetch = 'force-disabled'` on the segment — skips prefetching entirely, including the App Shell, so you forfeit instant navigation. The App Shell is cheap and shared across every link to the route, so turning it off almost never pays off. Don't reach for it just because a route is low-value; leave those at the default. Reserve it for routes that should genuinely never prefetch, like rarely-visited pages behind auth.
+
+To validate that navigation actually feels instant once you've opted in, see the [`instant` route segment config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant) and the [Instant Navigation guide](https://preview.nextjs.org/docs/app/guides/instant-navigation).
+
+## Never wrap the entire page in a Suspense fallback
+
+Page chrome (header, nav, surrounding layout) should paint instantly. Only data-dependent sections suspend. If you find yourself wrapping `<div>` and everything in it with `<Suspense fallback={<FullPageSkeleton />}>`, restructure: pull static elements out, narrow the boundary to just the dynamic part.

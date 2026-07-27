@@ -1,77 +1,96 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { BUSH, CROPS, FENCE, PixelSprite, ROCK, TREE } from '@/features/village/components/pixel-sprite';
+import { useRef } from 'react';
+import { BUSH, CROPS, FENCE, FLOWER, FLOWER_BLUE, PEBBLES, PixelSprite, POND, ROCK, TREE, TUFT } from '@/features/village/components/pixel-sprite';
 import { Player, travelTo } from '@/features/village/components/player';
-import { VillageHouse } from '@/features/village/components/village-house';
+import { VillageHouse, VillageLamp } from '@/features/village/components/village-house';
 import { VillageRoads } from '@/features/village/components/village-roads';
 import { Villager } from '@/features/village/components/villager';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
-import { WORLD_H, WORLD_W } from '@/features/village/village-model';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
+import { cn } from '@/lib/utils';
 
-function useFitScale(): number {
-  const [fit, setFit] = useState(1);
-  useEffect(() => {
-    const update = () => setFit(Math.min(1, window.innerWidth / (WORLD_W + 60), window.innerHeight / (WORLD_H + 140)));
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-  return fit;
+// A lamp beside each house, alternating sides — pushed wide of the door so it
+// never stands in the villager arc or on the name plate.
+function lampSpots(cells: Cell[]): { x: number; y: number }[] {
+  return cells.filter(c => c.kind !== 'inbox').map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
 
+// The village at fixed scale; the camera (world transform) chases the player.
 export function VillageStage() {
-  const { slug, scrub, zoom, buzzOpen, focusId, setFocusId } = useVillageUi();
+  const { slug, scrub, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
-  const { cells, placed, occupied, weights } = useWorldModel(payload, slug, asOf);
-  const fit = useFitScale();
+  const { cells, placed, occupied } = useWorldModel(payload, slug, asOf);
+  const worldRef = useRef<HTMLDivElement>(null);
 
-  const focusCell = focusId ? cells.find(c => c.id === focusId) : null;
-  const scale = (focusCell ? 1.35 : zoom) * fit;
-  const target = focusCell ?? { x: WORLD_W / 2, y: WORLD_H / 2 };
-  const biasX = !focusCell && buzzOpen ? -140 : 0;
+  const lamps = lampSpots(cells);
+  const litCells = cells.filter(c => (occupied.get(c.id) ?? 0) > 0);
 
   return (
     <div
-      className="absolute inset-0"
+      className={cn('absolute inset-0 overflow-hidden', focusId && 'hidden')}
       onClick={e => {
-        if (e.target !== e.currentTarget) return;
-        if (focusId) {
-          setFocusId(null);
-          return;
-        }
-        const wx = (e.clientX - (window.innerWidth / 2 + biasX - target.x * scale)) / scale;
-        const wy = (e.clientY - (window.innerHeight / 2 - target.y * scale)) / scale;
-        travelTo({ x: wx, y: wy });
+        if ((e.target as Element).closest('button, a, [data-stop-walk]')) return;
+        const rect = worldRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        travelTo({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}
     >
-      <div
-        className="absolute top-0 left-0 transition-transform duration-700 ease-[cubic-bezier(0.3,0.9,0.3,1)]"
-        style={{
-          width: WORLD_W,
-          height: WORLD_H,
-          transformOrigin: '0 0',
-          transform: `translate(calc(50vw + ${biasX - target.x * scale}px), calc(50dvh + ${-target.y * scale}px)) scale(${scale})`,
-        }}
-      >
+      {/* The grass is painted on the world itself, so it scrolls with the camera. */}
+      <div ref={worldRef} className="grass-field absolute top-0 left-0 will-change-transform" style={{ width: WORLD_W, height: WORLD_H }}>
+        <GrassPatches />
         <VillageRoads cells={cells} />
-        <Pond x={210} y={180} />
-        <Pond x={960} y={640} />
+        <GrassDetail />
+        <BorderForest />
+        <Pond x={330} y={270} />
+        <Pond x={1780} y={1190} />
         <Greenery />
+
+        {/* Night falls on the terrain; buildings above carry their own night palettes. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-[#141f4a] opacity-60 mix-blend-multiply dark:block" />
+
+        {lamps.map((l, i) => (
+          <VillageLamp key={i} x={l.x} y={l.y} />
+        ))}
         {cells.map(cell => (
-          <VillageHouse
-            key={cell.id}
-            cell={cell}
-            people={occupied.get(cell.id) ?? 0}
-            built={weights.get(cell.id) ?? 0}
-          />
+          <VillageHouse key={cell.id} cell={cell} people={occupied.get(cell.id) ?? 0} />
         ))}
         {placed.map(({ actor, x, y }) => (
           <Villager key={actor.login} actor={actor} x={x} y={y} />
         ))}
-        <Player cells={cells} />
+        <Player cells={cells} worldRef={worldRef} />
+
+        {/* Small, honest pools of light — not a haze over the whole house. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 hidden dark:block">
+          {lamps.map((l, i) => (
+            <span
+              key={i}
+              className="absolute mix-blend-screen"
+              style={{
+                left: l.x - 65,
+                top: l.y - 70,
+                width: 130,
+                height: 120,
+                background: 'radial-gradient(circle, rgb(255 205 96 / 0.34), rgb(255 190 80 / 0.1) 45%, transparent 68%)',
+              }}
+            />
+          ))}
+          {litCells.map(c => (
+            <span
+              key={c.id}
+              className="absolute mix-blend-screen"
+              style={{
+                left: c.x - 60,
+                top: c.y - 40,
+                width: 120,
+                height: 90,
+                background: 'radial-gradient(circle, rgb(255 200 110 / 0.22), transparent 65%)',
+              }}
+            />
+          ))}
+        </div>
       </div>
       <NightSky />
       <Fireflies />
@@ -80,26 +99,32 @@ export function VillageStage() {
 }
 
 const DECOR: { kind: 'tree' | 'bush' | 'rock' | 'crops' | 'fence'; x: number; y: number }[] = [
-  { kind: 'crops', x: 180, y: 700 },
-  { kind: 'crops', x: 1010, y: 150 },
-  { kind: 'fence', x: 250, y: 690 },
-  { kind: 'fence', x: 110, y: 690 },
-  { kind: 'fence', x: 940, y: 140 },
-  { kind: 'fence', x: 1080, y: 140 },
-  { kind: 'tree', x: 90, y: 120 },
-  { kind: 'tree', x: 1070, y: 90 },
-  { kind: 'tree', x: 60, y: 620 },
-  { kind: 'tree', x: 1100, y: 660 },
-  { kind: 'tree', x: 300, y: 60 },
-  { kind: 'tree', x: 880, y: 740 },
-  { kind: 'bush', x: 200, y: 300 },
-  { kind: 'bush', x: 980, y: 260 },
-  { kind: 'bush', x: 420, y: 720 },
-  { kind: 'bush', x: 760, y: 100 },
-  { kind: 'rock', x: 140, y: 460 },
-  { kind: 'rock', x: 1040, y: 470 },
-  { kind: 'bush', x: 620, y: 60 },
-  { kind: 'tree', x: 480, y: 100 },
+  { kind: 'crops', x: 280, y: 1060 },
+  { kind: 'crops', x: 1520, y: 230 },
+  { kind: 'fence', x: 380, y: 1045 },
+  { kind: 'fence', x: 175, y: 1045 },
+  { kind: 'fence', x: 1415, y: 215 },
+  { kind: 'fence', x: 1625, y: 215 },
+  { kind: 'tree', x: 150, y: 190 },
+  { kind: 'tree', x: 1610, y: 140 },
+  { kind: 'tree', x: 100, y: 930 },
+  { kind: 'tree', x: 1660, y: 990 },
+  { kind: 'tree', x: 460, y: 100 },
+  { kind: 'tree', x: 1330, y: 1110 },
+  { kind: 'tree', x: 730, y: 1300 },
+  { kind: 'tree', x: 1990, y: 620 },
+  { kind: 'tree', x: 2020, y: 1330 },
+  { kind: 'tree', x: 230, y: 1350 },
+  { kind: 'bush', x: 300, y: 460 },
+  { kind: 'bush', x: 1470, y: 390 },
+  { kind: 'bush', x: 640, y: 1090 },
+  { kind: 'bush', x: 1150, y: 150 },
+  { kind: 'bush', x: 930, y: 90 },
+  { kind: 'bush', x: 1890, y: 890 },
+  { kind: 'rock', x: 210, y: 700 },
+  { kind: 'rock', x: 1560, y: 700 },
+  { kind: 'rock', x: 1050, y: 1420 },
+  { kind: 'tree', x: 720, y: 150 },
 ];
 
 function Greenery() {
@@ -107,21 +132,13 @@ function Greenery() {
     <>
       {DECOR.map((d, i) => {
         const sprite =
-          d.kind === 'tree'
-            ? TREE
-            : d.kind === 'bush'
-              ? BUSH
-              : d.kind === 'crops'
-                ? CROPS
-                : d.kind === 'fence'
-                  ? FENCE
-                  : ROCK;
+          d.kind === 'tree' ? TREE : d.kind === 'bush' ? BUSH : d.kind === 'crops' ? CROPS : d.kind === 'fence' ? FENCE : ROCK;
         const scale = d.kind === 'tree' ? 5 : d.kind === 'crops' ? 6 : 4;
         return (
           <span
             key={i}
             aria-hidden
-            className="pixel absolute opacity-90"
+            className="pixel pointer-events-none absolute opacity-90"
             style={{ left: d.x, top: d.y, transform: 'translate(-50%, -50%)' }}
           >
             <PixelSprite art={sprite.art} palette={sprite.palette} scale={scale} />
@@ -134,23 +151,100 @@ function Greenery() {
 
 function Pond({ x, y }: { x: number; y: number }) {
   return (
-    <span aria-hidden className="absolute" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
-      <span className="block h-16 w-28 rounded-[45%] bg-[#3d6f9e] shadow-[inset_0_4px_0_#5a8fc0,inset_0_-4px_0_#2e567c]" />
+    <span aria-hidden className="pixel pointer-events-none absolute" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
+      <PixelSprite art={POND.art} palette={POND.palette} scale={7} />
     </span>
   );
 }
 
+// A forest frames the map, Stardew-style.
+function BorderForest() {
+  const spots: { x: number; y: number }[] = [];
+  const cols = Math.floor(WORLD_W / 100);
+  const rows = Math.floor(WORLD_H / 110);
+  for (let i = 0; i < cols; i++) spots.push({ x: 40 + i * 100 + ((i * 37) % 28), y: 18 + ((i * 53) % 26) });
+  for (let i = 0; i < cols; i++) spots.push({ x: 70 + i * 100 + ((i * 61) % 26), y: WORLD_H - 30 - ((i * 43) % 24) });
+  for (let i = 0; i < rows; i++) spots.push({ x: 22 + ((i * 47) % 24), y: 100 + i * 110 });
+  for (let i = 0; i < rows; i++) spots.push({ x: WORLD_W - 26 - ((i * 59) % 24), y: 130 + i * 110 });
+  return (
+    <>
+      {spots.map((t, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="pixel pointer-events-none absolute"
+          style={{ left: t.x, top: t.y, transform: 'translate(-50%, -50%)' }}
+        >
+          <PixelSprite art={TREE.art} palette={TREE.palette} scale={i % 3 === 0 ? 6 : 5} />
+        </span>
+      ))}
+    </>
+  );
+}
+
+// Mown-tone patches: hard-edged squares of lighter/darker grass in the same
+// checker rhythm — variation in the lawn itself, not shadows hovering over it.
+function GrassPatches() {
+  const patches = [
+    { x: 240, y: 384, w: 456, h: 312, tone: 'light' },
+    { x: 1344, y: 192, w: 504, h: 360, tone: 'dark' },
+    { x: 1584, y: 936, w: 456, h: 384, tone: 'light' },
+    { x: 384, y: 1056, w: 504, h: 336, tone: 'dark' },
+    { x: 960, y: 624, w: 576, h: 456, tone: 'light' },
+  ];
+  return (
+    <>
+      {patches.map((p, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="pointer-events-none absolute"
+          style={{
+            left: p.x,
+            top: p.y,
+            width: p.w,
+            height: p.h,
+            backgroundImage: `repeating-conic-gradient(${
+              p.tone === 'light' ? 'rgb(255 255 255 / 0.055)' : 'rgb(0 0 0 / 0.06)'
+            } 0% 25%, transparent 0% 50%)`,
+            backgroundSize: '24px 24px',
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+// Deterministic grass detail: tufts and flowers scattered between everything.
+function GrassDetail() {
+  return (
+    <>
+      {Array.from({ length: 170 }).map((_, i) => {
+        const x = ((i * 397 + 131) % (WORLD_W - 60)) + 30;
+        const y = ((i * 683 + 71) % (WORLD_H - 60)) + 30;
+        const sprite = i % 9 === 0 ? FLOWER : i % 9 === 4 ? FLOWER_BLUE : i % 9 === 7 ? PEBBLES : TUFT;
+        return (
+          <span key={i} aria-hidden className="pixel pointer-events-none absolute opacity-80" style={{ left: x, top: y }}>
+            <PixelSprite art={sprite.art} palette={sprite.palette} scale={3} />
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// Night: a proper starry sky and moon over the whole scene; day keeps the sun.
 function NightSky() {
   return (
     <>
-      <div aria-hidden className="stars pointer-events-none absolute inset-0 hidden opacity-50 dark:block" />
-      <span
+      <div aria-hidden className="stars pointer-events-none absolute inset-0 hidden dark:block" />
+      <div
         aria-hidden
-        className="pixel absolute top-8 right-24 hidden h-8 w-8 rounded-full bg-[#e8e4d2] shadow-[inset_-6px_-4px_0_#c9c4ae] dark:block"
+        className="pointer-events-none absolute inset-x-0 top-0 hidden h-40 bg-linear-to-b from-[#0a1030]/70 to-transparent dark:block"
       />
       <span
         aria-hidden
-        className="pixel absolute top-8 right-24 block h-8 w-8 rounded-full bg-[#ffd76a] shadow-[0_0_24px_6px_rgb(255_215_106/0.5)] dark:hidden"
+        className="pixel absolute top-10 right-28 hidden h-10 w-10 rounded-full bg-[#e8e4d2] shadow-[inset_-7px_-5px_0_#c9c4ae,0_0_28px_8px_rgb(226_233_255/0.28)] dark:block"
       />
     </>
   );

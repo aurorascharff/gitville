@@ -27,6 +27,7 @@ export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }
       }
       onMouseLeave={() => setTip(null)}
       onClick={() => travelTo({ x: x, y: y + 26, cellId: actor.cellId })}
+      data-stop-walk
       className="absolute z-10 cursor-pointer transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
       style={{ transform: `translate(${x - 16}px, ${y - 30}px)` }}
     >
@@ -42,7 +43,7 @@ export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }
               className="relative z-10 rounded-full border border-black/50 shadow-md"
             />
           ) : (
-            <span className="bg-secondary relative z-10 block h-[26px] w-[26px] rounded-full" />
+            <span className="bg-secondary relative z-10 block h-[26px] w-[26px] rounded-sm border-2 border-[#2e2418]" />
           )}
           <svg width="22" height="16" viewBox="0 0 11 8" className="-mt-1 [image-rendering:pixelated]" aria-hidden>
             <rect x="2" y="0" width="7" height="4" fill={shirt} />

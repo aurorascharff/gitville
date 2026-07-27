@@ -20,6 +20,7 @@ export type VillagePR = {
   author: string;
   authorAvatar: string | null;
   branch: string;
+  baseRef: string;
   draft: boolean;
   updatedAt: string;
 };

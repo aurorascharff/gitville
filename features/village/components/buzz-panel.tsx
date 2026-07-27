@@ -1,63 +1,80 @@
 'use client';
 
+import { ArrowUpRight } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { KindBadge } from '@/features/village/components/pixel-sprite';
-import { useVillageData, useTimeWindow } from '@/features/village/use-village-data';
+import { travelTo } from '@/features/village/components/player';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
+import { cellForEvent, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
+// The village noticeboard: recent goings-on. Click a line to walk to that house.
 export function BuzzPanel() {
   const { slug, scrub, buzzOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
+  const { cells } = useWorldModel(payload, slug, asOf);
   if (!buzzOpen || focusId) return null;
 
   return (
-    <aside className="bg-background/80 absolute top-16 right-4 bottom-24 z-30 hidden w-72 flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-md sm:flex">
-      <>
-        <p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">
-          the buzz
-        </p>
-        <ul className="min-h-0 flex-1 overflow-y-auto py-1">
-          {payload.events.slice(0, 40).map(e => (
-            <BuzzRow key={e.id} event={e} dimmed={new Date(e.at).getTime() > asOf} />
-          ))}
-        </ul>
-      </>
+    <aside className="panel absolute top-16 right-4 bottom-24 z-30 hidden w-72 flex-col overflow-hidden rounded-sm sm:flex">
+      <p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">noticeboard</p>
+      <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+        {payload.events.slice(0, 40).map(e => (
+          <BuzzRow
+            key={e.id}
+            event={e}
+            cell={cells.find(c => c.id === cellForEvent(e, cells, payload.defaultBranch)) ?? null}
+            dimmed={new Date(e.at).getTime() > asOf}
+          />
+        ))}
+      </ul>
     </aside>
   );
 }
 
-function BuzzRow({ event, dimmed }: { event: WireEvent; dimmed: boolean }) {
-  const inner = (
-    <div className={cn('flex items-start gap-2.5 px-4 py-2 transition-opacity', dimmed && 'opacity-30')}>
-      {event.avatar ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={`${event.avatar}?size=64`} alt="" width={18} height={18} className="mt-0.5 rounded-full" />
-      ) : (
-        <span className="bg-secondary mt-0.5 h-[18px] w-[18px] rounded-full" />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px]">
-          <span className="font-bold text-[#3a2f22]">{event.actor}</span>{' '}
-          <span className="text-[#6b5b43]">{event.line}</span>
-        </p>
-        <p className="flex items-center gap-1.5 text-[11px] text-[#8a6d2a]">
-          <KindBadge kind={event.kind} /> <RelativeTime date={event.at} />
-        </p>
-      </div>
-    </div>
-  );
+function BuzzRow({ event, cell, dimmed }: { event: WireEvent; cell: Cell | null; dimmed: boolean }) {
   return (
     <li className="transition-colors hover:bg-black/5">
-      {event.url ? (
-        <a href={event.url} target="_blank" rel="noreferrer">
-          {inner}
-        </a>
-      ) : (
-        inner
-      )}
+      <div className={cn('flex items-start gap-2.5 px-4 py-2 transition-opacity', dimmed && 'opacity-30')}>
+        <button
+          type="button"
+          disabled={!cell}
+          onClick={() => cell && travelTo({ x: cell.x, y: cell.y + 44 })}
+          className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 text-left disabled:cursor-default"
+          aria-label={cell ? `Walk to ${cell.label}` : undefined}
+        >
+          {event.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`${event.avatar}?size=64`} alt="" width={18} height={18} className="mt-0.5 rounded-full" />
+          ) : (
+            <span className="bg-secondary mt-0.5 h-4.5 w-4.5 rounded-full" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px]">
+              <span className="font-bold text-[#3a2f22]">{event.actor}</span>{' '}
+              <span className="text-[#6b5b43]">{event.line}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] text-[#8a6d2a]">
+              <KindBadge kind={event.kind} /> <RelativeTime date={event.at} />
+              {cell ? <span className="truncate">· {cell.label}</span> : null}
+            </span>
+          </span>
+        </button>
+        {event.url ? (
+          <a
+            href={event.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open on GitHub"
+            className="mt-0.5 shrink-0 text-[#8a6d2a] transition-colors hover:text-[#3a2f22]"
+          >
+            <ArrowUpRight size={13} strokeWidth={3} />
+          </a>
+        ) : null}
+      </div>
     </li>
   );
 }

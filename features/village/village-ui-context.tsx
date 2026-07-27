@@ -12,8 +12,6 @@ type VillageUi = {
   pinned: string[];
   scrub: number;
   setScrub: (v: number) => void;
-  zoom: number;
-  setZoom: (fn: (z: number) => number) => void;
   buzzOpen: boolean;
   setBuzzOpen: (fn: (o: boolean) => boolean) => void;
   focusId: string | null;
@@ -40,7 +38,6 @@ export function VillageUiProvider({
   children: React.ReactNode;
 }) {
   const [scrub, setScrub] = useState(1000);
-  const [zoom, setZoomState] = useState(1);
   const [buzzOpen, setBuzzOpenState] = useState(true);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [tip, setTip] = useState<Tooltip | null>(null);
@@ -53,8 +50,6 @@ export function VillageUiProvider({
         pinned,
         scrub,
         setScrub,
-        zoom,
-        setZoom: fn => setZoomState(z => fn(z)),
         buzzOpen,
         setBuzzOpen: fn => setBuzzOpenState(o => fn(o)),
         focusId,

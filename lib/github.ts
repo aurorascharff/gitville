@@ -83,6 +83,7 @@ type PullResponse = {
   updated_at: string;
   user: { login: string; avatar_url: string } | null;
   head: { ref: string };
+  base: { ref: string };
 };
 
 type EventResponse = {
@@ -262,6 +263,7 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     author: pr.user?.login ?? 'someone',
     authorAvatar: pr.user?.avatar_url ?? null,
     branch: pr.head?.ref ?? '',
+    baseRef: pr.base?.ref ?? '',
     draft: Boolean(pr.draft),
     updatedAt: pr.updated_at,
   }));

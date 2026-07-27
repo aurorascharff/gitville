@@ -84,6 +84,52 @@ export const FURNITURE: { name: string; art: string[]; palette: Palette }[] = [
   },
 ];
 
+export const RUG = {
+  name: 'rug',
+  palette: { r: '#a8574f', d: '#8a453e', y: '#e4c05a' },
+  art: ['.rrrrrrrrrr.', 'rdyyyyyyyydr', 'rdyddddddydr', 'rdyyyyyyyydr', '.rrrrrrrrrr.'],
+};
+
+export function furnitureByName(name: string): (typeof FURNITURE)[number] | null {
+  return FURNITURE.find(f => f.name === name) ?? null;
+}
+
+// The legend AI-drawn furniture uses — one letter per color, '.' transparent.
+// Must match ART_LETTERS in room-ai.ts.
+export const AI_ART_PALETTE: Palette = {
+  O: '#2e2418',
+  W: WOOD,
+  w: WOOD_D,
+  m: '#22262e',
+  s: '#6ee7a0',
+  b: '#5b8bff',
+  r: '#c85b5b',
+  y: '#e4c05a',
+  g: '#58a55c',
+  p: '#9a6ab8',
+  c: '#f0ead8',
+};
+
+// Night version of any palette: every tone pulled toward a cold dark blue.
+// Warm lit windows are handled by the caller (skip list), not here.
+export function nightenPalette(palette: Palette, skip: string[] = []): Palette {
+  const out: Palette = {};
+  for (const [key, hex] of Object.entries(palette)) {
+    out[key] = skip.includes(key) ? hex : mixHex(hex, '#141c38', 0.52);
+  }
+  return out;
+}
+
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (sa: number, sb: number) => Math.round(sa + (sb - sa) * t);
+  const r = ch((pa >> 16) & 255, (pb >> 16) & 255);
+  const g = ch((pa >> 8) & 255, (pb >> 8) & 255);
+  const bl = ch(pa & 255, pb & 255);
+  return `#${((r << 16) | (g << 8) | bl).toString(16).padStart(6, '0')}`;
+}
+
 export function furnitureFor(seed: string): (typeof FURNITURE)[number] {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
@@ -136,3 +182,208 @@ export function KindBadge({ kind, scale = 2 }: { kind: string; scale?: number })
   const b = BADGE[kind] ?? BADGE.push;
   return <PixelSprite art={b.art} palette={b.palette} scale={scale} className="pixel" />;
 }
+
+// ── The village tileset: outlined, 3-tone-shaded sprites ────────────────────
+
+// A PR's house tells its story at a glance: finished cottage = ready for review,
+// exposed studs + tarp + scaffolding = draft, extra storeys = PRs stacked underneath.
+export function cottageArt(floors: number, draft: boolean): string[] {
+  const roof = [
+    '...............OCCO...',
+    '...............OCcO...',
+    '......OOOOOOOOOOCCOO..',
+    '....OORRRRRRRRROCCORO.',
+    '...ORRRRRRRRRRRRRRRRO.',
+    '..ORRRRRRRRRRRRRRRRRO.',
+    '.ORRRRRRRRRRRRRRRRRRO.',
+    'ORRRRRRRRRRRRRRRRRRRRO',
+    'OSSSSSSSSSSSSSSSSSSSSO',
+  ];
+  // Draft: no roof yet — ridge beam, a half-pulled tarp, scaffold walkway.
+  const constructionTop = [
+    '.p...................p',
+    '.p.ObbbbbbbbbbbbbbO..p',
+    '.pObTTTTTTTTTbbbbbbO.p',
+    '.pObTTTTTTTTTTbbbbbOpp',
+    'pppppppppppppppppppppp',
+  ];
+  const upperFloor = [
+    '.OWWWWWWWWWWWWWWWWWWO.',
+    '.OWqqWWqqWWWWqqWWqqWO.',
+    '.OWqqWWqqWWWWqqWWqqWO.',
+    '.OWwWWWWWWwWWWWWWWwWO.',
+    '.OwwwwwwwwwwwwwwwwwwO.',
+  ];
+  // Finished ground floor: framed windows, flower boxes, a proper door with a step.
+  const readyGround = [
+    '.OWWWWWWWWWWWWWWWWWWO.',
+    '.OWqqWWWWWWWWWWWWqqWO.',
+    '.OWqqWWWWDDDWWWWWqqWO.',
+    '.OWFfFWWWDDDWWWWFfFWO.',
+    '.OWwWWWWWDDdWWWWWWwWO.',
+    '.OWWWWWWWDDDWWWWWWWWO.',
+    '.OOOOOOOODDDOOOOOOOOO.',
+  ];
+  // Draft ground floor: unpainted studs, a doorless opening, planks piled outside.
+  const draftGround = [
+    '.OWbWWbWWWWWWWbWWbWWO.',
+    '.OWbWWbWWmmmWWbWWbWWO.',
+    '.OWbWWbWWmmmWWbWWbWWO.',
+    '.OWbWWbWWmmmWWbWWbWWO.',
+    '.kkkWWbWWmmmWWbWWbWWO.',
+    'kkkkkOOOOmmmOOOOOOOOO.',
+  ];
+  const mid = Array.from({ length: Math.max(0, Math.min(3, floors - 1)) }, () => upperFloor).flat();
+  return draft ? [...constructionTop, ...mid, ...draftGround] : [...roof, ...mid, ...readyGround];
+}
+
+// A branch is a little log cabin — work happening off the beaten path.
+export function cabinArt(): string[] {
+  return [
+    '.....OOOOOO.....',
+    '...OORRRRRROO...',
+    '..ORRRRRRRRRRO..',
+    '.ORRRRRRRRRRRRO.',
+    'OSSSSSSSSSSSSSSO',
+    '.OwWWwWWwWWwWWO.',
+    '.OwqqWWWWWWqqWO.',
+    '.OwqqWWDDWWqqWO.',
+    '.OwWWWWDdWWWWWO.',
+    '.OwWWwWDDWwWWwO.',
+    '.OOOOOODDOOOOOO.',
+  ];
+}
+
+// Issues camp out in tents — conversations pitched on the green, not construction.
+export function tentArt(): string[] {
+  return [
+    '.......OO.......',
+    '......ORRO......',
+    '.....ORRRRO.....',
+    '....ORSRRSRO....',
+    '...ORRSRRSRRO...',
+    '..ORRRSmmSRRRO..',
+    '.ORRRRSmmSRRRRO.',
+    'OOOOOOOmmOOOOOOO',
+  ];
+}
+
+// The town hall: wide, bannered, unmistakably main.
+export function hallArt(): string[] {
+  return [
+    '........OOOOOOOOOOOO........',
+    '.....OOORRRRRRRRRRRROOO.....',
+    '...OORRRRRRRRRRRRRRRRRROO...',
+    '.OORRRRRRRRRRRRRRRRRRRRRROO.',
+    'ORRRRRRRRRRRRRRRRRRRRRRRRRRO',
+    'OSSSSSSSSSSSSSSSSSSSSSSSSSSO',
+    '.OWWWWWWWWWWWWWWWWWWWWWWWWO.',
+    '.OWqqWWqqWWWBBBBWWWqqWWqqWO.',
+    '.OWqqWWqqWWWBBBBWWWqqWWqqWO.',
+    '.OWwWWWWWWWWBBBBWWWWWWWWwWO.',
+    '.OWWWWWWWWDDDWWDDDWWWWWWWWO.',
+    '.OWwWWWWWWDDDWWDDDWWWWWWwWO.',
+    '.OWWWWWWWWDDdWWdDDWWWWWWWWO.',
+    '.OWWWWWWWWDDDWWDDDWWWWWWWWO.',
+    '.OOOOOOOOOOOOOOOOOOOOOOOOOO.',
+  ];
+}
+
+export function housePalette(roof: string, roofShade: string, lit: boolean) {
+  return {
+    O: '#2e2418',
+    R: roof,
+    S: roofShade,
+    W: '#d8b078',
+    w: '#c39a5f',
+    q: lit ? '#ffd76a' : '#3a3f4a',
+    D: '#6b4630',
+    d: '#e4c05a',
+    B: '#3b6bff',
+    // construction + trim letters
+    C: '#8d939c', // chimney stone
+    c: '#6b7078',
+    b: '#6b4223', // exposed beams / studs
+    T: '#4a76a8', // tarp
+    p: '#a5814e', // scaffold poles + walkway
+    m: '#241c12', // doorless opening
+    k: '#8a5a33', // plank pile
+    F: '#c85b5b', // window-box flowers
+    f: '#3f7a44', // window-box leaves
+  };
+}
+
+// Streetlamps line the roads; `q` swaps warm/dark so night can light them up.
+export function lampArt(): string[] {
+  return [
+    '..OOO..',
+    '.OqqqO.',
+    '.OqqqO.',
+    '..OOO..',
+    '...O...',
+    '...O...',
+    '...O...',
+    '...O...',
+    '...O...',
+    '..OOO..',
+  ];
+}
+
+export function lampPalette(lit: boolean) {
+  return { O: '#2e2418', q: lit ? '#ffd76a' : '#c9cdd4' };
+}
+
+export const WELL = {
+  palette: { O: '#2e2418', R: '#8a4a2b', r: '#6e3a20', G: '#9aa0a8', g: '#7b8188', b: '#2b4d75', h: '#4a76a8', P: '#6b4223', y: '#e4c05a' },
+  art: [
+    '.......OOOO.......',
+    '.....OORRRROO.....',
+    '...OORRRRRRRROO...',
+    '..ORRRRRRRRRRRRO..',
+    '.ORRRRrRRRRrRRRRO.',
+    'OrrrrrrrrrrrrrrrrO',
+    '..OP..........PO..',
+    '..OP....y.....PO..',
+    '..OP....P.....PO..',
+    '.OGGGGGGGGGGGGGGO.',
+    '.OGgbbhbbbbbhbbGO.',
+    '.OGgbbbbhbbbbbbGO.',
+    '.OGgbbbbbbbhbbbGO.',
+    '.OgGGGGGGGGGGGGgO.',
+    '..OOOOOOOOOOOOOO..',
+  ],
+};
+
+export const POND = {
+  palette: { O: '#23405c', b: '#2b5d8f', h: '#5a8fc0', d: '#254c73' },
+  art: [
+    '....OOOOOOOOOOOOOO....',
+    '..OObbbbbbbbbbbbbbOO..',
+    '.ObbbhhbbbbbbbbbbbbO.',
+    'ObbbbbbbbbbbhhbbbbbbO',
+    'ObbdbbbbbbbbbbbbbdbbO',
+    '.ObbbbbbdbbbbbbbbbbO.',
+    '..OObbbbbbbbbbbbOO..',
+    '....OOOOOOOOOOOO....',
+  ],
+};
+
+export const TUFT = {
+  palette: { g: '#3f7a44' },
+  art: ['g.g.g', '.g.g.'],
+};
+
+export const FLOWER = {
+  palette: { w: '#f2ead8', y: '#e4c05a', g: '#3f7a44' },
+  art: ['.w.', 'wyw', '.w.', '.g.'],
+};
+
+export const FLOWER_BLUE = {
+  palette: { w: '#9db9e8', y: '#f2ead8', g: '#3f7a44' },
+  art: ['.w.', 'wyw', '.w.', '.g.'],
+};
+
+export const PEBBLES = {
+  palette: { g: '#87919c', d: '#6e7680' },
+  art: ['gd.g', '.g.d'],
+};
