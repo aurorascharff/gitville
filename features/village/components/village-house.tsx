@@ -3,6 +3,7 @@
 import {
   cabinArt,
   cottageArt,
+  DayNight,
   hallArt,
   housePalette,
   lampArt,
@@ -13,6 +14,7 @@ import {
   tentArt,
   WELL,
 } from '@/features/village/components/pixel-sprite';
+import { Placed } from '@/features/village/components/placed';
 import { travelTo } from '@/features/village/components/player';
 import { preloadRoomSpec } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
@@ -137,14 +139,10 @@ function DayNightSprite({
   lit: boolean;
 }) {
   return (
-    <>
-      <span className="block dark:hidden">
-        <PixelSprite art={art} palette={palette} scale={scale} />
-      </span>
-      <span className="hidden dark:block">
-        <PixelSprite art={art} palette={nightenPalette(palette, lit ? ['q'] : [])} scale={scale} />
-      </span>
-    </>
+    <DayNight
+      day={<PixelSprite art={art} palette={palette} scale={scale} />}
+      night={<PixelSprite art={art} palette={nightenPalette(palette, lit ? ['q'] : [])} scale={scale} />}
+    />
   );
 }
 
@@ -165,13 +163,11 @@ function ChimneySmoke() {
 
 export function VillageLamp({ x, y }: { x: number; y: number }) {
   return (
-    <span aria-hidden className="pixel absolute" style={{ left: x, top: y, transform: 'translate(-50%, -88%)' }}>
-      <span className="hidden dark:block">
-        <PixelSprite art={lampArt()} palette={lampPalette(true)} scale={4} />
-      </span>
-      <span className="block dark:hidden">
-        <PixelSprite art={lampArt()} palette={lampPalette(false)} scale={4} />
-      </span>
-    </span>
+    <Placed x={x} y={y} anchor={[-50, -88]} className="pixel">
+      <DayNight
+        day={<PixelSprite art={lampArt()} palette={lampPalette(false)} scale={4} />}
+        night={<PixelSprite art={lampArt()} palette={lampPalette(true)} scale={4} />}
+      />
+    </Placed>
   );
 }

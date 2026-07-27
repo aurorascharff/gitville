@@ -1,6 +1,7 @@
 import { hashString } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
-type Palette = Record<string, string>;
+export type Palette = Record<string, string>;
 
 export const ROOF = {
   main: ['#3b6bff', '#2b4fc4'],
@@ -40,6 +41,27 @@ export function PixelSprite({
         }),
       )}
     </svg>
+  );
+}
+
+export function Sprite({
+  of,
+  scale,
+  className,
+}: {
+  of: { art: string[]; palette: Palette };
+  scale?: number;
+  className?: string;
+}) {
+  return <PixelSprite art={of.art} palette={of.palette} scale={scale} className={className} />;
+}
+
+export function DayNight({ day, night }: { day: ReactNode; night: ReactNode }) {
+  return (
+    <>
+      <span className="block dark:hidden">{day}</span>
+      <span className="hidden dark:block">{night}</span>
+    </>
   );
 }
 
