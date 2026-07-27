@@ -91,7 +91,9 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
   const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
   const picked = pickedPrs(payload);
-  const tops = picked.filter(pr => !baseRefs.has(pr.branch));
+  // Place by PR number, not GitHub's updated-desc order, so a PR bubbling to the
+  // top of the list on refresh doesn't teleport every house to a new slot.
+  const tops = picked.filter(pr => !baseRefs.has(pr.branch)).sort((a, b) => a.number - b.number);
   const placed = new Set<number>();
 
   for (const pr of tops) {
@@ -148,7 +150,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       if (new Date(e.at).getTime() <= asOf) continue;
       if (!past.has(e.number)) past.set(e.number, e);
     }
-    for (const [number, e] of past) {
+    for (const [number, e] of [...past].sort((a, b) => a[0] - b[0])) {
       if (slot >= 17) break;
       cells.push({
         id: `pr:${number}`,
@@ -165,7 +167,9 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   }
 
   const prRefs = new Set(payload.prs.map(pr => pr.branch));
-  for (const b of payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5)) {
+  // Select the most recent branches, but seat them by name so the set stays put.
+  const branches = payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5);
+  for (const b of branches.sort((x, y) => x.ref.localeCompare(y.ref))) {
     if (slot >= 18) break;
     cells.push({
       id: `branch:${b.ref}`,
@@ -189,11 +193,14 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     if (e.isPr) cur.isPr = true;
     activity.set(e.number, cur);
   }
-  const topActivity = [...activity.entries()].sort((a, b) => b[1].count - a[1].count);
-  for (const [number, info] of topActivity) {
-    if (slot >= 18) break;
-    // Merged/closed PRs may already have a house from the scrub-reopen pass.
-    if (cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`)) continue;
+  // Pick the busiest numbers (skipping any already housed by the scrub-reopen
+  // pass), then seat them by number so a shifting hit count can't reshuffle them.
+  const shown = [...activity.entries()]
+    .filter(([number]) => !cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`))
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, Math.max(0, 18 - slot))
+    .sort((a, b) => a[0] - b[0]);
+  for (const [number, info] of shown) {
     cells.push(
       info.isPr
         ? {
