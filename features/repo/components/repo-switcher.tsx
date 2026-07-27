@@ -1,20 +1,20 @@
 'use client';
 
-import { ChevronDown, Loader2, X } from 'lucide-react';
+import { ChevronDown, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { toast } from 'sonner';
 import { GitvilleMark } from '@/components/gitville-mark';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
-import { pinRepo, unpinRepo } from '@/features/repo/repo-actions';
+import { WatchForm } from '@/features/repo/components/watch-form';
+import { unpinRepo } from '@/features/repo/repo-actions';
 import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
 import type { Route } from 'next';
 
 export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState('');
-  const [pending, startTransition] = useTransition();
+  const [adding, setAdding] = useState(false);
+  const [, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,15 +32,6 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  function watch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!value.trim()) return;
-    startTransition(async () => {
-      const res = await pinRepo(value);
-      if (res && !res.ok) toast.error(res.error);
-    });
-  }
 
   return (
     <div ref={ref} className="relative">
@@ -98,20 +89,50 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
               );
             })}
           </ul>
-          <form onSubmit={watch} className="relative border-t-2 border-[#4a3826]/30 p-2">
-            <input
-              value={value}
-              onChange={e => setValue(e.target.value)}
-              placeholder="paste a github url or owner/repo"
-              disabled={pending}
-              className="font-pixel h-9 w-full rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-2.5 text-[12px] text-[#3a2f22] placeholder:text-[#8a6d2a]/80 focus-visible:bg-white focus-visible:outline-none"
-            />
-            {pending ? (
-              <Loader2 size={13} className="absolute top-1/2 right-4 -translate-y-1/2 animate-spin text-[#8a6d2a]" />
-            ) : null}
-          </form>
+          <button
+            onClick={() => {
+              setOpen(false);
+              setAdding(true);
+            }}
+            className="font-pixel flex h-11 w-full cursor-pointer items-center gap-2 border-t-2 border-[#4a3826]/30 px-4 text-[13px] font-bold text-[#3a2f22] transition-colors hover:bg-black/5"
+          >
+            <Plus size={15} className="text-[#5a8f52]" />
+            watch a new village
+          </button>
         </div>
       ) : null}
+
+      {adding ? <AddVillageModal onClose={() => setAdding(false)} /> : null}
+    </div>
+  );
+}
+
+function AddVillageModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/55 p-4"
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <p className="font-pixel text-center text-[15px] font-bold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+        watch a new village
+      </p>
+      <WatchForm autoFocus />
+      <button
+        onClick={onClose}
+        className="font-pixel cursor-pointer text-[12px] text-white/70 transition-colors hover:text-white"
+      >
+        cancel
+      </button>
     </div>
   );
 }

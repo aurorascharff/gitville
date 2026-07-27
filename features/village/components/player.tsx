@@ -14,6 +14,12 @@ const SPEED = 4.4;
 const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1.3;
 
+// Don't walk the villager while the visitor is typing into a field (repo search, etc).
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+}
+
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
   const { focusId, setFocusId, zoom, setZoom } = useVillageUi();
   const zoomRef = useRef(zoom);
@@ -61,6 +67,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       s.follow = true;
     }
     function onKeyDown(e: KeyboardEvent) {
+      if (isTyping(e.target)) return;
       const k = e.key.toLowerCase();
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
         if (paused.current) return;

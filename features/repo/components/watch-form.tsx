@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { pinRepo } from '@/features/repo/repo-actions';
 
-export function WatchForm() {
+export function WatchForm({ autoFocus = false }: { autoFocus?: boolean } = {}) {
   const [value, setValue] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -24,6 +24,7 @@ export function WatchForm() {
       className="pixel relative mx-auto flex w-full max-w-sm items-stretch overflow-hidden rounded-md border-4 border-[#4a3826] bg-[#f0e6d2] shadow-xl"
     >
       <input
+        autoFocus={autoFocus}
         value={value}
         onChange={e => setValue(e.target.value)}
         placeholder="paste a github url or owner/repo"
