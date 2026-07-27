@@ -19,6 +19,8 @@ type VillageUi = {
   setBuzzOpen: (fn: (o: boolean) => boolean) => void;
   focusId: string | null;
   setFocusId: (id: string | null) => void;
+  aiOn: boolean;
+  setAiOn: (on: boolean) => void;
   tip: Tooltip | null;
   setTip: (t: Tooltip | null) => void;
 };
@@ -45,14 +47,24 @@ export function VillageUiProvider({
   const [buzzOpen, setBuzzOpenState] = useState(true);
   const [tip, setTip] = useState<Tooltip | null>(null);
 
-  // The open house lives in the URL (?house=pr:123) so a room is linkable and
-  // the browser back button walks you out. pushState keeps it a client update.
+  // The open house and its AI mode live in the URL (?house=pr:123&ai=1) so a
+  // room is linkable exactly as seen and the back button walks you out.
   const searchParams = useSearchParams();
   const focusId = searchParams.get('house');
+  const aiOn = searchParams.get('ai') === '1';
   const setFocusId = (id: string | null) => {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('house', id);
-    else url.searchParams.delete('house');
+    else {
+      url.searchParams.delete('house');
+      url.searchParams.delete('ai');
+    }
+    window.history.pushState(null, '', url);
+  };
+  const setAiOn = (on: boolean) => {
+    const url = new URL(window.location.href);
+    if (on) url.searchParams.set('ai', '1');
+    else url.searchParams.delete('ai');
     window.history.pushState(null, '', url);
   };
 
@@ -70,6 +82,8 @@ export function VillageUiProvider({
         setBuzzOpen: fn => setBuzzOpenState(o => fn(o)),
         focusId,
         setFocusId,
+        aiOn,
+        setAiOn,
         tip,
         setTip,
       }}

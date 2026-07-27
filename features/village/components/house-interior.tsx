@@ -55,17 +55,14 @@ function roomDims(cell: Cell): [number, number] {
 // Every block fetches its own data through the shared SWR hooks, so the scene
 // is pure composition and the keys dedupe to one request per poll.
 export function HouseInterior() {
-  const { slug, scrub, focusId, setFocusId } = useVillageUi();
+  const { slug, scrub, focusId, setFocusId, aiOn, setAiOn } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTarget = useRef<{ x: number; y: number } | null>(null);
   const [viewport, setViewport] = useState({ w: 1400, h: 900 });
-  // AI design is remembered per house id, so walking next door resets it
-  // without any effect-driven state juggling.
-  const [aiFor, setAiFor] = useState<string | null>(null);
-  const ai = aiFor === focusId;
+  const ai = aiOn;
 
   useEffect(() => {
     const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -115,7 +112,7 @@ export function HouseInterior() {
           <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
         </div>
       </div>
-      <AiPanel cell={cell} ai={ai} onToggle={on => setAiFor(on ? cell.id : null)} />
+      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
     </div>
   );
 }

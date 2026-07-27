@@ -59,7 +59,7 @@ Optional environment variables in `.env.local`:
 
 ## Credits
 
-Music: "The Old Tower Inn" by RandomMind, released under CC0.
+Music: "The Bard's Tale" by RandomMind, released under CC0.
 
 ## License
 

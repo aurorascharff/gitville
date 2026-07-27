@@ -3,19 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
-// Drop any track you own into public/music.mp3 and the village plays it.
-// Without one, a small generated melody fills in: soft triangle lead with a
-// touch of echo, so there are no bundled audio assets and no licensing.
-// Stepping indoors switches to a slower, lower phrase, like game towns do.
+// One song for the whole village: "The Bard's Tale" by RandomMind (CC0).
+// Stepping indoors doesn't change the record, it muffles it — the same track
+// through a lowpass filter, like hearing the square through the walls.
+// Drop your own track at public/music.mp3 to replace it. A soft generated
+// melody covers the case where no file can play at all.
 const STEP = 0.42;
 const REST = 0;
-const OUTSIDE = [72, 74, 76, REST, 79, 76, 74, 72, 69, REST, 72, 74, 72, REST, 67, REST, 72, 74, 76, 79, 81, REST, 79, 76, 74, 76, 72, REST, 69, 67, 69, REST];
-const INSIDE = [64, REST, 67, 69, REST, 67, 64, REST, 62, REST, 64, 67, 64, REST, 60, REST];
+const LEAD = [72, 74, 76, REST, 79, 76, 74, 72, 69, REST, 72, 74, 72, REST, 67, REST, 72, 74, 76, 79, 81, REST, 79, 76, 74, 76, 72, REST, 69, 67, 69, REST];
 const BASS = [48, 52, 45, 50, 48, 43, 45, 47];
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
-function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number, LEAD: number[]): number {
+function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number): number {
   LEAD.forEach((note, i) => {
     if (note === REST) return;
     const t = t0 + i * STEP;
@@ -30,7 +30,7 @@ function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number, LEAD: number
     osc.start(t);
     osc.stop(t + STEP * 1.5);
   });
-  BASS.slice(0, LEAD.length / 4).forEach((note, i) => {
+  BASS.forEach((note, i) => {
     const t = t0 + i * STEP * 4;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -46,78 +46,78 @@ function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number, LEAD: number
   return LEAD.length * STEP;
 }
 
+type Chain = { audio: HTMLAudioElement; filter: BiquadFilterNode; gain: GainNode };
+
 export function VillageMusic() {
   const { focusId } = useVillageUi();
   const [playing, setPlaying] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioCache = useRef(new Map<string, HTMLAudioElement>());
+  const chainRef = useRef<Chain | null>(null);
+  const synthCleanup = useRef<(() => void) | null>(null);
   const indoors = Boolean(focusId);
 
   useEffect(() => {
     if (!playing) return;
     let cancelled = false;
-    let cleanupSynth: (() => void) | null = null;
-    const melody = indoors ? INSIDE : OUTSIDE;
 
-    // Two CC0 tracks by RandomMind: "The Bard's Tale" in the village and
-    // "The Old Tower Inn" once you step through a door.
     const startSynth = () => {
-      // No real track available: fall back to the generated melody.
-      if (cancelled) return;
+      if (cancelled || synthCleanup.current) return;
       const ctx = ctxRef.current ?? new AudioContext();
       ctxRef.current = ctx;
       void ctx.resume();
       const out = ctx.createGain();
       out.gain.value = 0.5;
       out.connect(ctx.destination);
-      const delay = ctx.createDelay();
-      delay.delayTime.value = STEP * 2;
-      const feedback = ctx.createGain();
-      feedback.gain.value = 0.22;
-      out.connect(delay);
-      delay.connect(feedback).connect(delay);
-      delay.connect(ctx.destination);
-
       let next = ctx.currentTime + 0.1;
-      next += scheduleLoop(ctx, out, next, melody);
+      next += scheduleLoop(ctx, out, next);
       const timer = setInterval(() => {
-        if (next - ctx.currentTime < 1.5) next += scheduleLoop(ctx, out, next, melody);
+        if (next - ctx.currentTime < 1.5) next += scheduleLoop(ctx, out, next);
       }, 500);
-      timerRef.current = timer;
-      cleanupSynth = () => {
+      synthCleanup.current = () => {
         clearInterval(timer);
         out.disconnect();
-        delay.disconnect();
+        synthCleanup.current = null;
       };
     };
 
-    const src = indoors ? '/music-inside.mp3' : '/music.mp3';
-    const audio = audioCache.current.get(src) ?? new Audio(src);
-    audioCache.current.set(src, audio);
-    audio.loop = true;
-    audio.volume = 0.35;
-    audio.play().catch(startSynth);
+    const ensureChain = (): Chain => {
+      if (chainRef.current) return chainRef.current;
+      const ctx = ctxRef.current ?? new AudioContext();
+      ctxRef.current = ctx;
+      const audio = new Audio('/music.mp3');
+      audio.loop = true;
+      const source = ctx.createMediaElementSource(audio);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      const gain = ctx.createGain();
+      source.connect(filter).connect(gain).connect(ctx.destination);
+      chainRef.current = { audio, filter, gain };
+      return chainRef.current;
+    };
 
-    // Warm the other track so stepping through a door switches instantly.
-    const other = indoors ? '/music.mp3' : '/music-inside.mp3';
-    if (!audioCache.current.has(other)) {
-      const preloaded = new Audio(other);
-      preloaded.preload = 'auto';
-      preloaded.loop = true;
-      audioCache.current.set(other, preloaded);
-    }
+    const chain = ensureChain();
+    void ctxRef.current?.resume();
+    chain.audio.play().catch(startSynth);
 
     return () => {
       cancelled = true;
-      audio.pause();
-      cleanupSynth?.();
+      chainRef.current?.audio.pause();
+      synthCleanup.current?.();
     };
-  }, [playing, indoors]);
+  }, [playing]);
+
+  // Indoors the same song plays on, just muffled and a touch quieter.
+  useEffect(() => {
+    const chain = chainRef.current;
+    const ctx = ctxRef.current;
+    if (!chain || !ctx) return;
+    chain.filter.frequency.setTargetAtTime(indoors ? 700 : 20000, ctx.currentTime, 0.15);
+    chain.gain.gain.setTargetAtTime(indoors ? 0.55 : 0.75, ctx.currentTime, 0.15);
+  }, [indoors, playing]);
 
   useEffect(
     () => () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      synthCleanup.current?.();
       void ctxRef.current?.close();
     },
     [],

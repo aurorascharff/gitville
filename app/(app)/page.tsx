@@ -94,7 +94,7 @@ async function Villages() {
             key={repo.slug}
             href={`/${repo.slug}` as Route}
             prefetch
-            className="pixel group flex min-h-40 flex-col items-center gap-2 rounded-md border-4 border-[#4a3826] bg-[#f0e6d2] px-3 py-4 text-center shadow-xl transition-transform hover:-translate-y-1"
+            className="pixel group flex min-h-36 flex-col items-center gap-2 rounded-md border-4 border-[#4a3826] bg-[#f0e6d2] px-3 py-3 text-center shadow-xl transition-transform hover:-translate-y-1"
           >
             <RepoAvatar
               src={repo.ownerAvatar}
@@ -130,7 +130,7 @@ function VillagesSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="pixel flex min-h-40 flex-col items-center gap-2 rounded-md border-4 border-[#4a3826]/70 bg-[#f0e6d2]/80 px-3 py-4"
+          className="pixel flex min-h-36 flex-col items-center gap-2 rounded-md border-4 border-[#4a3826]/70 bg-[#f0e6d2]/80 px-3 py-3"
         >
           <Skeleton className="h-10 w-10 rounded-md" />
           <Skeleton className="h-5 w-24" />
