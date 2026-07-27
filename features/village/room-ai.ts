@@ -24,23 +24,36 @@ export type RoomSpec = {
   items: RoomItem[];
 };
 
-const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
-
+// Keep the generation schema plain: regex and min/max constraints get rejected
+// by structured-output providers. We sanitize the result ourselves below.
 const specSchema = z.object({
-  theme: z.string().max(28),
+  theme: z.string(),
   wall: z.enum(WALLS),
   floor: z.enum(FLOORS),
-  items: z
-    .array(
-      z.object({
-        name: z.string().max(30),
-        kind: z.enum(ITEM_KINDS).optional(),
-        art: z.array(z.string().regex(artRow)).min(3).max(12).optional(),
-        commits: z.array(z.number().int().min(0).max(13)).min(1).max(14),
-      }),
-    )
-    .max(10),
+  items: z.array(
+    z.object({
+      name: z.string(),
+      kind: z.enum(ITEM_KINDS).optional(),
+      art: z.array(z.string()).optional(),
+      commits: z.array(z.number()),
+    }),
+  ),
 });
+
+const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
+
+function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
+  const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
+    const art = (item.art ?? []).filter(row => artRow.test(row)).slice(0, 12);
+    return {
+      name: item.name.slice(0, 30),
+      kind: item.kind,
+      art: art.length >= 3 ? art : undefined,
+      commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
+    };
+  });
+  return { theme: raw.theme.slice(0, 28), wall: raw.wall, floor: raw.floor, items: items.filter(i => i.commits.length > 0) };
+}
 
 function gatewayKey(): string | undefined {
   return process.env.VERCEL_AI_GATEWAY_KEY ?? process.env.AI_GATEWAY_API_KEY;
@@ -65,7 +78,9 @@ export async function generateRoomSpec(
   if (!aiRoomsEnabled()) return null;
   try {
     return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
-  } catch {
+  } catch (error) {
+    // Never break a room over decoration, but never fail silently either.
+    console.warn('[room-ai] generation failed:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -110,7 +125,7 @@ async function generateRoomSpecCached(
         .join('\n'),
   });
 
-  return specSchema.parse(object);
+  return sanitizeSpec(specSchema.parse(object));
 }
 
 // The no-token designer: same vocabulary, deterministic picks. Consecutive

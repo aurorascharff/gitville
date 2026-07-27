@@ -6,6 +6,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import {
   AI_ART_PALETTE,
   CAMPFIRE,
+  FIREPLACE,
   furnitureByName,
   furnitureFor,
   KindBadge,
@@ -117,7 +118,7 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
   const notes = roomFor(payload, cells, cell.id).notes;
   const tent = cell.kind === 'issue';
   // Only what fits on one row of the wall; the rest becomes a "+N" note.
-  const maxNotes = Math.max(2, Math.floor((width - (tent ? 60 : 240)) / 104));
+  const maxNotes = Math.max(2, Math.floor((width - (tent ? 60 : 240)) / 124));
   const visible = notes.slice(0, maxNotes);
   const extra = notes.length - visible.length;
 
@@ -148,7 +149,7 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
             target="_blank"
             rel="noreferrer"
             data-stop-walk
-            className="sticky-note font-pixel flex h-24 w-16 shrink-0 items-center justify-center text-[12px] font-bold text-[#5a4a1e] transition-transform hover:scale-110"
+            className="sticky-note font-pixel flex h-28 w-16 shrink-0 items-center justify-center text-[12px] font-bold text-[#5a4a1e] transition-transform hover:-translate-y-1"
             aria-label={`${extra} more notes on GitHub`}
           >
             +{extra}
@@ -175,10 +176,18 @@ function Floor({ cell, width, height }: { cell: Cell; width: number; height: num
       {campsite ? (
         <Campsite width={width} height={height - WALL_H} />
       ) : (
-        toBuilds(commits, spec?.items).map((build, i) => {
-          const slot = tileSlot(i, width);
-          return <Furniture key={build.commits[0].sha} build={build} x={slot.x} y={slot.y} />;
-        })
+        <>
+          {/* Every home has a hearth — the room is a house before the commits move in. */}
+          {!plaza ? (
+            <span aria-hidden className="pixel pointer-events-none absolute" style={{ left: width / 2, top: 40, transform: 'translate(-50%, -50%)', zIndex: 1 }}>
+              <PixelSprite art={FIREPLACE.art} palette={FIREPLACE.palette} scale={6} />
+            </span>
+          ) : null}
+          {toBuilds(commits, spec?.items).map((build, i) => {
+            const slot = tileSlot(i, width);
+            return <Furniture key={build.commits[0].sha} build={build} x={slot.x} y={slot.y} />;
+          })}
+        </>
       )}
     </div>
   );
@@ -231,38 +240,58 @@ function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): B
   return builds;
 }
 
-// One clickable piece per commit. Related commits share a shape and stand
-// together as a set, so grouped work reads as one bigger installation.
+// AI-drawn work is one piece that grows with the commits behind it. Catalog
+// fallbacks render one clickable piece per commit, standing together as a set.
 function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const { setTip } = useVillageUi();
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
-  const art = build.art?.length ? build.art : fallback.art;
-  const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
   const name = build.name ?? fallback.name;
   const n = build.commits.length;
+  const drawn = Boolean(build.art?.length);
 
   return (
     <div className="absolute flex flex-col items-center" style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}>
-      <div className="flex items-end">
-        {build.commits.map((commit, i) => (
-          <a
-            key={commit.sha}
-            href={commit.url}
-            target="_blank"
-            rel="noreferrer"
-            className="transition-transform hover:-translate-y-1"
-            style={{ marginLeft: i === 0 ? 0 : -6, transform: `translateY(${(i % 2) * 4}px)` }}
-            onMouseMove={e =>
-              setTip({ x: e.clientX, y: e.clientY, title: `${name} by ${commit.author}`, body: commit.message, when: commit.at || null })
-            }
-            onMouseLeave={() => setTip(null)}
-          >
-            <PixelSprite art={art} palette={palette} scale={n > 2 ? 4 : 5} />
-          </a>
-        ))}
-      </div>
+      {drawn ? (
+        <a
+          href={build.commits[0].url}
+          target="_blank"
+          rel="noreferrer"
+          className="transition-transform hover:-translate-y-1"
+          onMouseMove={e =>
+            setTip({
+              x: e.clientX,
+              y: e.clientY,
+              title: `${name} by ${build.commits[0].author}`,
+              body: build.commits.map(c => c.message).join('\n'),
+              when: build.commits[0].at || null,
+            })
+          }
+          onMouseLeave={() => setTip(null)}
+        >
+          <PixelSprite art={build.art!} palette={AI_ART_PALETTE} scale={n >= 5 ? 8 : n >= 3 ? 7 : n >= 2 ? 6 : 5} />
+        </a>
+      ) : (
+        <div className="flex items-end">
+          {build.commits.map((commit, i) => (
+            <a
+              key={commit.sha}
+              href={commit.url}
+              target="_blank"
+              rel="noreferrer"
+              className="transition-transform hover:-translate-y-1"
+              style={{ marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
+              onMouseMove={e =>
+                setTip({ x: e.clientX, y: e.clientY, title: `${name} by ${commit.author}`, body: commit.message, when: commit.at || null })
+              }
+              onMouseLeave={() => setTip(null)}
+            >
+              <PixelSprite art={fallback.art} palette={fallback.palette} scale={n > 2 ? 4 : 5} />
+            </a>
+          ))}
+        </div>
+      )}
       <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
+      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
         {name}
       </span>
     </div>
@@ -472,10 +501,10 @@ function HouseSign({ cell }: { cell: Cell }) {
           : 'ready for review';
 
   return (
-    <aside className="panel absolute top-4 left-4 z-50 w-72 rounded-sm p-3">
-      <p className="font-pixel text-[16px] leading-5 font-bold">{cell.label}</p>
+    <aside className="panel absolute top-4 left-4 z-50 w-80 rounded-sm p-3">
+      <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
-      <p className="mt-0.5 line-clamp-2 min-h-8 text-[12px] leading-4 text-[#5a4a32]">{cell.sub}</p>
+      <p className="mt-0.5 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
         {chip ? (
           <span
@@ -497,7 +526,7 @@ function HouseSign({ cell }: { cell: Cell }) {
 
       {stack.length > 1 ? (
         <div className="mt-2 border-t-2 border-[#4a3826]/40 pt-1.5">
-          <p className="font-pixel text-[10px] font-bold text-[#8a6d2a]">the stack, top floor first</p>
+          <p className="font-pixel text-[11px] font-bold text-[#8a6d2a]">the stack, top floor first</p>
           <ul className="mt-1 flex flex-col gap-0.5">
             {stack.map(pr => {
               const here = `pr:${pr.number}` === cell.id;
@@ -514,14 +543,14 @@ function HouseSign({ cell }: { cell: Cell }) {
                       hasHouse && !here && 'cursor-pointer',
                     )}
                   >
-                    <span className="font-pixel shrink-0 text-[11px] font-bold text-[#3a2f22]">#{pr.number}</span>
-                    <span className="truncate text-[11px] text-[#6b5b43]">{pr.title}</span>
-                    {pr.draft ? <span className="font-pixel shrink-0 text-[9px] text-[#8a6d2a]">draft</span> : null}
+                    <span className="font-pixel shrink-0 text-[13px] font-bold text-[#3a2f22]">#{pr.number}</span>
+                    <span className="truncate text-[13px] text-[#6b5b43]">{pr.title}</span>
+                    {pr.draft ? <span className="font-pixel shrink-0 text-[10px] text-[#8a6d2a]">draft</span> : null}
                   </button>
                 </li>
               );
             })}
-            <li className="font-pixel px-1.5 text-[10px] text-[#8a6d2a]">⌂ {stack[stack.length - 1].baseRef} is the ground</li>
+            <li className="font-pixel px-1.5 text-[11px] text-[#8a6d2a]">⌂ {stack[stack.length - 1].baseRef} is the ground</li>
           </ul>
         </div>
       ) : null}
@@ -543,18 +572,18 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
       target="_blank"
       rel="noreferrer"
       data-stop-walk
-      className="sticky-note relative h-24 w-24 shrink-0 p-1.5 text-left transition-transform hover:scale-110 hover:rotate-0"
-      style={{ transform: `rotate(${tilt}deg)` }}
+      className="sticky-note relative h-28 w-28 shrink-0 p-2 pb-4 text-left transition-transform hover:-translate-y-1"
+      style={{ rotate: `${tilt}deg` }}
       onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} ${note.line}`, body: note.body, when: note.at })}
       onMouseLeave={() => setTip(null)}
       aria-label={`Note from ${note.actor}`}
     >
       {note.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`${note.avatar}?size=32`} alt="" width={14} height={14} className="absolute top-1 right-1 rounded-full border border-black/30" />
+        <img src={`${note.avatar}?size=32`} alt="" width={15} height={15} className="absolute top-1.5 right-1.5 rounded-full border border-black/30" />
       ) : null}
-      <span className="line-clamp-6 block font-mono text-[9px] leading-[1.35] wrap-break-word text-[#5a4a1e]">{note.body}</span>
-      <span className="absolute right-0.5 bottom-0.5 font-mono text-[7px] font-bold text-[#8a6d2a]">
+      <span className="line-clamp-5 block font-mono text-[10px] leading-[1.4] wrap-break-word text-[#5a4a1e]">{note.body}</span>
+      <span className="absolute bottom-1 left-2 font-mono text-[8px] font-bold text-[#8a6d2a]">
         <RelativeTime date={note.at} />
       </span>
     </a>

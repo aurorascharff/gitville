@@ -199,18 +199,22 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     'ORRRRRRRRRRRRRRRRRRRRO',
     'OSSSSSSSSSSSSSSSSSSSSO',
   ];
+  // The stack's attic: a narrower top with a dormer window, so the building
+  // steps in as it goes up instead of extruding one dull block.
   const atticRoof = [
-    '...............OCCO...',
-    '...............OCcO...',
-    '......OOOOOOOOOOCCOO..',
-    '....OORRRRRRRRROCCORO.',
-    '...ORRRROOOOOORRRRRRO.',
-    '..ORRRRROqqqqORRRRRRO.',
-    '.ORRRRRROqqqqORRRRRRO.',
-    'ORRRRRRROOOOOORRRRRRRO',
-    'OSSSSSSSSSSSSSSSSSSSSO',
+    '.........OOOO.........',
+    '.......OORRRROO.......',
+    '......ORROqqORRO......',
+    '.....ORRROqqORRRO.....',
+    '....ORRRRROORRRRRO....',
+    '...OSSSSSSSSSSSSSSO...',
   ];
-  const roof = floors > 1 ? atticRoof : plainRoof;
+  const narrowTop = [
+    '...OWWWWWWWWWWWWWWO...',
+    '...OWqqWWWWWWWWqqWO...',
+    '...OWqqWWWWWWWWqqWO...',
+  ];
+  const ledge = ['.OOOOOOOOOOOOOOOOOOOO.'];
   // Draft: no roof yet — ridge beam, a half-pulled tarp, scaffold walkway.
   const constructionTop = [
     '.p...................p',
@@ -219,12 +223,20 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.pObTTTTTTTTTTbbbbbOpp',
     'pppppppppppppppppppppp',
   ];
-  const upperFloor = [
+  // Two middle-storey looks that alternate, so a tall stack reads as floors.
+  const floorA = [
     '.OwwwwwwwwwwwwwwwwwwO.',
     '.OWWWWWWWWWWWWWWWWWWO.',
     '.OWqqWWqqWWWWqqWWqqWO.',
     '.OWqqWWqqWWWWqqWWqqWO.',
     '.OWffWWffWWWWffWWffWO.',
+  ];
+  const floorB = [
+    '.OwwwwwwwwwwwwwwwwwwO.',
+    '.OWWWWWWWWWWWWWWWWWWO.',
+    '.OWbqqbWWbqqbWWbqqbWO.',
+    '.OWbqqbWWbqqbWWbqqbWO.',
+    '.OWWWWWWWWWWWWWWWWWWO.',
   ];
   // Finished ground floor: framed windows, flower boxes, a proper door with a step.
   const readyGround = [
@@ -245,8 +257,11 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.kkkWWbWWmmmWWbWWbWWO.',
     'kkkkkOOOOmmmOOOOOOOOO.',
   ];
-  const mid = Array.from({ length: Math.max(0, Math.min(3, floors - 1)) }, () => upperFloor).flat();
-  return draft ? [...constructionTop, ...mid, ...draftGround] : [...roof, ...mid, ...readyGround];
+  const middles = Math.max(0, Math.min(3, floors - 2));
+  const mid = Array.from({ length: middles }, (_, i) => (i % 2 === 0 ? floorA : floorB)).flat();
+  if (draft) return [...constructionTop, ...mid, ...(floors > 1 ? floorA : []), ...draftGround];
+  if (floors === 1) return [...plainRoof, ...readyGround];
+  return [...atticRoof, ...narrowTop, ...ledge, ...mid, ...readyGround];
 }
 
 // A branch is a little log cabin — work happening off the beaten path.
@@ -421,6 +436,20 @@ export const STUMP = {
 };
 
 // Interior fixtures.
+export const FIREPLACE = {
+  palette: { O: '#2e2418', G: '#9aa0a8', g: '#7b8188', m: '#241c12', y: '#ffd76a', o: '#e0862f', W: '#8a5a33' },
+  art: [
+    'OGGGGGGGGGGO',
+    'OGgGGGGGGgGO',
+    'OGGmmmmmmGGO',
+    'OGGmmyymmGGO',
+    'OGGmyooymGGO',
+    'OGGmoyyomGGO',
+    'OGGWWWWWWGGO',
+    'OggggggggggO',
+  ],
+};
+
 export const WINDOW = {
   palette: { O: '#5a4632', b: '#bfe0f5', n: '#1a2c55' },
   art: ['OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO'],

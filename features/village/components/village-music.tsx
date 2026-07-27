@@ -1,18 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useVillageUi } from '@/features/village/village-ui-context';
 
 // Drop any track you own into public/music.mp3 and the village plays it.
 // Without one, a small generated melody fills in: soft triangle lead with a
 // touch of echo, so there are no bundled audio assets and no licensing.
+// Stepping indoors switches to a slower, lower phrase, like game towns do.
 const STEP = 0.42;
 const REST = 0;
-const LEAD = [72, 74, 76, REST, 79, 76, 74, 72, 69, REST, 72, 74, 72, REST, 67, REST, 72, 74, 76, 79, 81, REST, 79, 76, 74, 76, 72, REST, 69, 67, 69, REST];
+const OUTSIDE = [72, 74, 76, REST, 79, 76, 74, 72, 69, REST, 72, 74, 72, REST, 67, REST, 72, 74, 76, 79, 81, REST, 79, 76, 74, 76, 72, REST, 69, 67, 69, REST];
+const INSIDE = [64, REST, 67, 69, REST, 67, 64, REST, 62, REST, 64, 67, 64, REST, 60, REST];
 const BASS = [48, 52, 45, 50, 48, 43, 45, 47];
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
-function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number): number {
+function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number, LEAD: number[]): number {
   LEAD.forEach((note, i) => {
     if (note === REST) return;
     const t = t0 + i * STEP;
@@ -27,7 +30,7 @@ function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number): number {
     osc.start(t);
     osc.stop(t + STEP * 1.5);
   });
-  BASS.forEach((note, i) => {
+  BASS.slice(0, LEAD.length / 4).forEach((note, i) => {
     const t = t0 + i * STEP * 4;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -44,20 +47,23 @@ function scheduleLoop(ctx: AudioContext, out: GainNode, t0: number): number {
 }
 
 export function VillageMusic() {
+  const { focusId } = useVillageUi();
   const [playing, setPlaying] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const indoors = Boolean(focusId);
 
   useEffect(() => {
     if (!playing) return;
     let cancelled = false;
     let cleanupSynth: (() => void) | null = null;
+    const melody = indoors ? INSIDE : OUTSIDE;
 
     const audio = audioRef.current ?? new Audio('/music.mp3');
     audioRef.current = audio;
     audio.loop = true;
-    audio.volume = 0.35;
+    audio.volume = indoors ? 0.2 : 0.35;
     audio.play().catch(() => {
       // No real track available: fall back to the generated melody.
       if (cancelled) return;
@@ -76,9 +82,9 @@ export function VillageMusic() {
       delay.connect(ctx.destination);
 
       let next = ctx.currentTime + 0.1;
-      next += scheduleLoop(ctx, out, next);
+      next += scheduleLoop(ctx, out, next, melody);
       const timer = setInterval(() => {
-        if (next - ctx.currentTime < 1.5) next += scheduleLoop(ctx, out, next);
+        if (next - ctx.currentTime < 1.5) next += scheduleLoop(ctx, out, next, melody);
       }, 500);
       timerRef.current = timer;
       cleanupSynth = () => {
@@ -93,7 +99,7 @@ export function VillageMusic() {
       audio.pause();
       cleanupSynth?.();
     };
-  }, [playing]);
+  }, [playing, indoors]);
 
   useEffect(
     () => () => {

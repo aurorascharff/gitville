@@ -4,7 +4,7 @@
 
 # Gitville
 
-Every GitHub repo is a tiny pixel village. Open pull requests are houses, contributors are villagers standing where they last worked, and the commits furnish the rooms inside. Walk around, step through a door, and read the real work on the walls.
+Gitville turns a GitHub repo into a small pixel village you can walk around in. Open pull requests are houses, contributors are villagers standing where they last worked, and real commits furnish the rooms inside.
 
 [**Visit a village →**](https://gitville.vercel.app/)
 
@@ -12,14 +12,14 @@ Every GitHub repo is a tiny pixel village. Open pull requests are houses, contri
 
 ---
 
-Gitville is a real project and also a demo. It exists to show how far you can push the [Next.js 16 preview](https://nextjs.org/blog/next-16-3-instant-navigations) and the new [SWR](https://swr.vercel.app) server layer with live third party data. The architecture follows the [Next.js App Architecture](https://github.com/aurorascharff/skills/tree/main/skills/nextjs-app-architecture) skill and the [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) blog post.
+Built on the [Next.js 16 preview](https://nextjs.org/blog/next-16-3-instant-navigations) with the new [SWR](https://swr.vercel.app) server layer and live GitHub data. The architecture follows the [Next.js App Architecture](https://github.com/aurorascharff/skills/tree/main/skills/nextjs-app-architecture) skill and the [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) blog post.
 
 ## How the village works
 
 - The **town hall** is the default branch. Releases and merges land there.
 - A **finished cottage** is an open PR that is ready for review.
 - A house **under construction** with a tarp and scaffolding is a draft PR.
-- A **multi storey house** is a stack of PRs. Every floor is a PR built on the one below, and the attic is the top of the stack.
+- A **multi storey house** is a stack of PRs, one building per stack. Each floor is a PR built on the one below, and the attic is the top of the stack.
 - A **cabin** is an active branch with no PR yet. A **tent** is a busy issue. The **well** marks the town square.
 - **Villagers** are real contributors, placed at the house where their latest activity happened. The world updates live as they work.
 - Step inside a house and the room is furnished from the PR's real commits. Group work becomes bigger furniture. Review comments hang on the wall as notes. With an AI gateway key the furniture is designed and drawn by a model, and without one a deterministic designer does the job.

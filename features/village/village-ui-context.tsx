@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { createContext, useContext, useState } from 'react';
 import type { RepoData } from '@/types/github';
 
@@ -39,8 +40,18 @@ export function VillageUiProvider({
 }) {
   const [scrub, setScrub] = useState(1000);
   const [buzzOpen, setBuzzOpenState] = useState(true);
-  const [focusId, setFocusId] = useState<string | null>(null);
   const [tip, setTip] = useState<Tooltip | null>(null);
+
+  // The open house lives in the URL (?house=pr:123) so a room is linkable and
+  // the browser back button walks you out. pushState keeps it a client update.
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get('house');
+  const setFocusId = (id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('house', id);
+    else url.searchParams.delete('house');
+    window.history.pushState(null, '', url);
+  };
 
   return (
     <VillageUiContext.Provider

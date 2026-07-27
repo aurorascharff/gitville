@@ -63,7 +63,8 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
           </span>
         ) : null}
 
-        {cell.kind === 'pr' && cell.prState !== 'draft' && lit ? <ChimneySmoke /> : null}
+        {/* Only single cottages have a chimney; stacks are topped by the attic. */}
+        {cell.kind === 'pr' && cell.prState === 'ready' && (cell.floors ?? 1) === 1 && lit ? <ChimneySmoke /> : null}
 
         {/* One pixel size everywhere — a bigger building means more art, not fatter pixels. */}
         {cell.kind === 'inbox' ? (

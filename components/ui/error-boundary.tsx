@@ -16,6 +16,12 @@ function ErrorFallback(props: { title?: string }, { retry }: ErrorInfo) {
         >
           try again
         </button>
+        <button
+          onClick={() => window.history.back()}
+          className="font-pixel cursor-pointer rounded-sm border-2 border-[#4a3826] px-2 py-0.5 text-[12px] font-bold text-[#6b5b43] transition-colors hover:bg-[#e0d3b8] hover:text-[#3a2f22]"
+        >
+          go back
+        </button>
       </div>
     </div>
   );
