@@ -10,7 +10,6 @@ import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
-// Click a line to walk to the house where it happened.
 export function BuzzPanel() {
   const { slug, scrub, buzzOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -20,7 +19,9 @@ export function BuzzPanel() {
 
   return (
     <aside className="panel absolute top-16 right-4 bottom-24 z-30 hidden w-72 flex-col overflow-hidden rounded-sm sm:flex">
-      <p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">noticeboard</p>
+      <p className="panel-wood font-pixel shrink-0 border-x-0 border-t-0 px-4 py-1.5 text-[14px] font-bold">
+        noticeboard
+      </p>
       <ul className="min-h-0 flex-1 overflow-y-auto py-1">
         {payload.events.slice(0, 40).map(e => (
           <BuzzRow

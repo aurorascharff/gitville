@@ -63,7 +63,7 @@
   --radius: 0.75rem;
 }
 
-/* Pure black, #0f0f0f cards, #262626 hairlines — the signature Drop dark theme. */
+/* Pure black, #0f0f0f cards, #262626 hairlines: the dark theme. */
 .dark {
   --background: #000000;
   --foreground: #f5f5f5;
@@ -110,7 +110,7 @@
   }
 }
 
-/* Thin, unobtrusive scrollbars — part of the dense, calm feel. */
+/* Thin, unobtrusive scrollbars, part of the dense, calm feel. */
 @layer base {
   * {
     scrollbar-width: thin;
@@ -126,7 +126,7 @@
   }
 }
 
-/* Shimmer skeletons (borrowed from the social-media app — nicer than a flat pulse). */
+/* Shimmer skeletons: nicer than a flat pulse. */
 .shimmer {
   background: color-mix(in oklch, var(--foreground) 8%, transparent);
   background-image: linear-gradient(
@@ -147,15 +147,6 @@
   }
 }
 
-@keyframes flash-in {
-  0% {
-    background-color: color-mix(in oklch, var(--brand) 22%, transparent);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
 /* ── The village (pixel-game layer) ─────────────────────────────────────────── */
 .pixel {
   image-rendering: pixelated;
@@ -165,8 +156,7 @@
 .grass-field {
   background-color: #4d9153;
   background-image:
-    conic-gradient(#58a75f 0 25%, transparent 0),
-    conic-gradient(#448a4b 0 25%, transparent 0),
+    conic-gradient(#58a75f 0 25%, transparent 0), conic-gradient(#448a4b 0 25%, transparent 0),
     repeating-conic-gradient(#55a05c 0% 25%, #4d9153 0% 50%);
   background-size:
     72px 72px,
@@ -180,8 +170,7 @@
 .dark .grass-field {
   background-color: #274f30;
   background-image:
-    conic-gradient(#2d5c38 0 25%, transparent 0),
-    conic-gradient(#204427 0 25%, transparent 0),
+    conic-gradient(#2d5c38 0 25%, transparent 0), conic-gradient(#204427 0 25%, transparent 0),
     repeating-conic-gradient(#2c5836 0% 25%, #274f30 0% 50%);
   background-size:
     72px 72px,
@@ -193,20 +182,13 @@
     0 0;
 }
 
-/* Light = day, dark = night over the village. */
-.village-sun {
-  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgb(255 244 190 / 0.22), transparent 70%);
-}
-.dark .village-sun {
-  background: radial-gradient(ellipse 55% 48% at 50% 46%, rgb(230 238 255 / 0.09), transparent 70%);
-}
 .village-vignette {
   background: radial-gradient(ellipse 95% 85% at 50% 50%, transparent 55%, rgb(20 44 24 / 0.4));
 }
 .dark .village-vignette {
   background: radial-gradient(ellipse 95% 85% at 50% 50%, transparent 45%, rgb(4 10 6 / 0.78));
 }
-/* Lights-off room while the interior spec loads — fades into the real surfaces. */
+/* Lights-off room while the interior spec loads, fades into the real surfaces. */
 .room-dim {
   background-color: #2b241c;
 }
@@ -247,8 +229,7 @@
 .room-wall-hedge {
   background-color: #4e8a4f;
   background-image:
-    conic-gradient(#57975a 0 25%, transparent 0),
-    conic-gradient(#3f7442 0 25%, transparent 0),
+    conic-gradient(#57975a 0 25%, transparent 0), conic-gradient(#3f7442 0 25%, transparent 0),
     repeating-conic-gradient(#539254 0% 25%, #4e8a4f 0% 50%);
   background-size:
     38px 38px,
@@ -295,10 +276,6 @@
   clip-path: polygon(0 0, 100% 0, 100% 76%, 76% 100%, 0 100%);
   box-shadow: 0 3px 6px rgb(0 0 0 / 0.35);
 }
-.window-glow {
-  box-shadow: 0 0 12px 3px rgb(255 214 106 / 0.5);
-}
-
 /* Entering/leaving a house: a quick Stardew screen cut. */
 .scene-in {
   animation: scene-in 280ms ease-out;
@@ -353,8 +330,7 @@
 /* Night sky (dark mode): three star layers, gently twinkling. */
 .stars {
   background-image:
-    radial-gradient(#ffffff 1px, transparent 1.4px),
-    radial-gradient(#ffffffb0 1px, transparent 1.2px),
+    radial-gradient(#ffffff 1px, transparent 1.4px), radial-gradient(#ffffffb0 1px, transparent 1.2px),
     radial-gradient(#9db4ff99 0.8px, transparent 1px);
   background-size:
     260px 220px,
@@ -454,31 +430,13 @@
   .smoke-puff,
   .stars,
   .zzz span,
-  .firefly,
-  .radar-sweep {
+  .firefly {
     animation: none;
   }
 }
 
-/* Radar sweep: a slow rotating conic highlight inside the live indicator. */
-.radar-sweep {
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 300deg,
-    color-mix(in oklch, var(--brand) 85%, transparent) 360deg
-  );
-  animation: sweep 2.4s linear infinite;
-}
-@keyframes sweep {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .shimmer,
-  .flash-in {
+  .shimmer {
     animation: none;
   }
   ::view-transition-old(*),

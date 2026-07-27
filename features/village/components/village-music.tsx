@@ -3,14 +3,43 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
-// One song for the whole village: "The Bard's Tale" by RandomMind (CC0).
-// Stepping indoors doesn't change the record, it muffles it — the same track
-// through a lowpass filter, like hearing the square through the walls.
-// Drop your own track at public/music.mp3 to replace it. A soft generated
-// melody covers the case where no file can play at all.
+// One looped song (public/music.mp3), lowpass-muffled indoors, with a synth-melody fallback.
 const STEP = 0.42;
 const REST = 0;
-const LEAD = [72, 74, 76, REST, 79, 76, 74, 72, 69, REST, 72, 74, 72, REST, 67, REST, 72, 74, 76, 79, 81, REST, 79, 76, 74, 76, 72, REST, 69, 67, 69, REST];
+const LEAD = [
+  72,
+  74,
+  76,
+  REST,
+  79,
+  76,
+  74,
+  72,
+  69,
+  REST,
+  72,
+  74,
+  72,
+  REST,
+  67,
+  REST,
+  72,
+  74,
+  76,
+  79,
+  81,
+  REST,
+  79,
+  76,
+  74,
+  76,
+  72,
+  REST,
+  69,
+  67,
+  69,
+  REST,
+];
 const BASS = [48, 52, 45, 50, 48, 43, 45, 47];
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
@@ -54,8 +83,8 @@ export function VillageMusic() {
   const [volume, setVolume] = useState(0.3);
   const ctxRef = useRef<AudioContext | null>(null);
   const chainRef = useRef<Chain | null>(null);
-  const synthOut = useRef<GainNode | null>(null);
-  const synthCleanup = useRef<(() => void) | null>(null);
+  const synthOutRef = useRef<GainNode | null>(null);
+  const synthCleanupRef = useRef<(() => void) | null>(null);
   const indoors = Boolean(focusId);
 
   useEffect(() => {
@@ -63,23 +92,23 @@ export function VillageMusic() {
     let cancelled = false;
 
     const startSynth = () => {
-      if (cancelled || synthCleanup.current) return;
+      if (cancelled || synthCleanupRef.current) return;
       const ctx = ctxRef.current ?? new AudioContext();
       ctxRef.current = ctx;
       void ctx.resume();
       const out = ctx.createGain();
       out.gain.value = 0.4;
       out.connect(ctx.destination);
-      synthOut.current = out;
+      synthOutRef.current = out;
       let next = ctx.currentTime + 0.1;
       next += scheduleLoop(ctx, out, next);
       const timer = setInterval(() => {
         if (next - ctx.currentTime < 1.5) next += scheduleLoop(ctx, out, next);
       }, 500);
-      synthCleanup.current = () => {
+      synthCleanupRef.current = () => {
         clearInterval(timer);
         out.disconnect();
-        synthCleanup.current = null;
+        synthCleanupRef.current = null;
       };
     };
 
@@ -106,11 +135,10 @@ export function VillageMusic() {
     return () => {
       cancelled = true;
       chainRef.current?.audio.pause();
-      synthCleanup.current?.();
+      synthCleanupRef.current?.();
     };
   }, [playing]);
 
-  // Indoors the same song plays on, just muffled and a touch quieter.
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -119,12 +147,12 @@ export function VillageMusic() {
       chain.filter.frequency.setTargetAtTime(indoors ? 700 : 20000, ctx.currentTime, 0.15);
       chain.gain.gain.setTargetAtTime(volume * (indoors ? 0.7 : 1), ctx.currentTime, 0.15);
     }
-    synthOut.current?.gain.setTargetAtTime(volume * 1.3, ctx.currentTime, 0.15);
+    synthOutRef.current?.gain.setTargetAtTime(volume * 1.3, ctx.currentTime, 0.15);
   }, [indoors, playing, volume]);
 
   useEffect(
     () => () => {
-      synthCleanup.current?.();
+      synthCleanupRef.current?.();
       void ctxRef.current?.close();
     },
     [],

@@ -6,7 +6,6 @@ import type { RepoData } from '@/types/github';
 
 export type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
 
-// UI-only state. Data lives in the SWR cache — see use-village-data.ts.
 type VillageUi = {
   slug: string;
   repo: RepoData;
@@ -47,13 +46,9 @@ export function VillageUiProvider({
   const [buzzOpen, setBuzzOpenState] = useState(true);
   const [tip, setTip] = useState<Tooltip | null>(null);
 
-  // The open house and its AI mode live in the URL (?house=pr:123&ai=1) so a
-  // room is linkable exactly as seen and the back button walks you out.
   const searchParams = useSearchParams();
   const focusId = searchParams.get('house');
   const aiOn = searchParams.get('ai') === '1';
-  // AI mode is per room: moving to another house (or leaving) always drops it,
-  // so switching floors never auto-starts a generation.
   const setFocusId = (id: string | null) => {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('house', id);

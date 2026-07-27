@@ -1,7 +1,5 @@
 import { getVillagePayload, getRepoData } from '@/lib/github';
 
-// The polling target. `getVillagePayload` is cached remotely (~45s), so every client
-// polling this route shares one upstream GitHub fetch per window.
 export async function GET(_request: Request, { params }: RouteContext<'/api/village/[owner]/[name]'>) {
   const { owner, name } = await params;
   const slug = `${owner}/${name}`;

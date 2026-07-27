@@ -6,7 +6,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
-import { cn } from '@/lib/utils';
+import { cn, formatStars } from '@/lib/utils';
 
 export function VillageStatus() {
   const { slug, repo, pinned, scrub } = useVillageUi();
@@ -95,13 +95,9 @@ export function VillageTooltip() {
       {tip.body ? <p className="mt-0.5 line-clamp-14 text-xs whitespace-pre-line text-[#6b5b43]">{tip.body}</p> : null}
       {tip.when ? (
         <p className="mt-1 text-[10px] text-[#8a6d2a]">
-          <RelativeTime date={tip.when} /> ago
+          <RelativeTime date={tip.when} />
         </p>
       ) : null}
     </div>
   );
-}
-
-function formatStars(n: number): string {
-  return n >= 1000 ? `${Math.round(n / 100) / 10}k` : `${n}`;
 }

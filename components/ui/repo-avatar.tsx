@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-// Owner avatar from GitHub (plain <img> to avoid next/image remote-domain config).
+// Plain <img> to skip next/image remote-domain config.
 export function RepoAvatar({
   src,
   name,

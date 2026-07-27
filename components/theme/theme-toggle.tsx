@@ -32,7 +32,14 @@ export function ThemeToggle() {
 
 function PixelSun() {
   return (
-    <svg width="14" height="14" viewBox="0 0 9 9" shapeRendering="crispEdges" aria-hidden style={{ imageRendering: 'pixelated' }}>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 9 9"
+      shapeRendering="crispEdges"
+      aria-hidden
+      style={{ imageRendering: 'pixelated' }}
+    >
       <rect x="3" y="3" width="3" height="3" fill="currentColor" />
       <rect x="4" y="0" width="1" height="2" fill="currentColor" />
       <rect x="4" y="7" width="1" height="2" fill="currentColor" />
@@ -48,7 +55,14 @@ function PixelSun() {
 
 function PixelMoon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 9 9" shapeRendering="crispEdges" aria-hidden style={{ imageRendering: 'pixelated' }}>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 9 9"
+      shapeRendering="crispEdges"
+      aria-hidden
+      style={{ imageRendering: 'pixelated' }}
+    >
       <rect x="3" y="0" width="3" height="1" fill="currentColor" />
       <rect x="2" y="1" width="2" height="1" fill="currentColor" />
       <rect x="1" y="2" width="2" height="2" fill="currentColor" />

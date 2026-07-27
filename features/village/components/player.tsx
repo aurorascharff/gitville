@@ -11,10 +11,11 @@ export function travelTo(detail: TravelDetail) {
 }
 
 const SPEED = 4.4;
+const ZOOM_MIN = 0.55;
+const ZOOM_MAX = 1.3;
 
-// The camera lives here: each frame the world transform recenters on the player.
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
-  const { focusId, setFocusId, zoom } = useVillageUi();
+  const { focusId, setFocusId, zoom, setZoom } = useVillageUi();
   const zoomRef = useRef(zoom);
 
   useEffect(() => {
@@ -33,6 +34,10 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     pending: null as string | null,
     keys: new Set<string>(),
     dir: 1,
+    // follow=false is free-look: the camera holds where the user panned/zoomed until they move again.
+    follow: true,
+    // Screen point to keep fixed while zoom lerps (cursor for pinch, viewport center for the HUD buttons).
+    anchor: null as { sx: number; sy: number } | null,
   });
   const paused = useRef(false);
   const cellsRef = useRef(cells);
@@ -53,6 +58,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       s.tx = d.x;
       s.ty = d.y;
       s.pending = d.cellId ?? null;
+      s.follow = true;
     }
     function onKeyDown(e: KeyboardEvent) {
       const k = e.key.toLowerCase();
@@ -63,6 +69,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         s.pending = null;
         s.tx = s.x;
         s.ty = s.y;
+        s.follow = true;
       }
       if (k === 'enter' && !paused.current) {
         const near = cellsRef.current
@@ -74,10 +81,31 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     function onKeyUp(e: KeyboardEvent) {
       s.keys.delete(e.key.toLowerCase());
     }
+    // Google-Maps trackpad: pinch (ctrl+wheel) zooms toward the cursor, two-finger scroll pans.
+    function onWheel(e: WheelEvent) {
+      if (paused.current || Number.isNaN(s.camX)) return;
+      e.preventDefault();
+      s.follow = false;
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      if (e.ctrlKey) {
+        const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomRef.current * Math.exp(-e.deltaY * 0.01)));
+        s.anchor = { sx, sy };
+        zoomRef.current = next;
+        setZoom(() => next);
+      } else {
+        s.anchor = null;
+        s.camX -= e.deltaX;
+        s.camY -= e.deltaY;
+      }
+    }
 
+    const stage = worldRef.current?.parentElement;
     window.addEventListener('gv:travel', onTravel);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    stage?.addEventListener('wheel', onWheel, { passive: false });
 
     let raf = 0;
     const tick = () => {
@@ -87,19 +115,31 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         const z = zoomRef.current;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const ww = WORLD_W * z;
-        const wh = WORLD_H * z;
-        const targetX = ww <= vw ? (vw - ww) / 2 : Math.min(0, Math.max(vw - ww, vw / 2 - s.x * z));
-        const targetY = wh <= vh ? (vh - wh) / 2 : Math.min(0, Math.max(vh - wh, vh / 2 - s.y * z));
-        if (Number.isNaN(s.camX)) {
-          s.camX = targetX;
-          s.camY = targetY;
+        const prevZ = Number.isNaN(s.camZ) ? z : s.camZ;
+        s.camZ = prevZ + (z - prevZ) * 0.12;
+        const ww = WORLD_W * s.camZ;
+        const wh = WORLD_H * s.camZ;
+        const clampX = (cx: number) => (ww <= vw ? (vw - ww) / 2 : Math.min(0, Math.max(vw - ww, cx)));
+        const clampY = (cy: number) => (wh <= vh ? (vh - wh) / 2 : Math.min(0, Math.max(vh - wh, cy)));
+        if (s.follow) {
+          const targetX = clampX(vw / 2 - s.x * s.camZ);
+          const targetY = clampY(vh / 2 - s.y * s.camZ);
+          if (Number.isNaN(s.camX)) {
+            s.camX = targetX;
+            s.camY = targetY;
+          } else {
+            s.camX += (targetX - s.camX) * 0.12;
+            s.camY += (targetY - s.camY) * 0.12;
+          }
         } else {
-          s.camX += (targetX - s.camX) * 0.12;
-          s.camY += (targetY - s.camY) * 0.12;
+          // Keep the anchor point (cursor, or viewport center) fixed as the zoom eases toward its target.
+          const ax = s.anchor?.sx ?? vw / 2;
+          const ay = s.anchor?.sy ?? vh / 2;
+          s.camX = clampX(ax - ((ax - s.camX) / prevZ) * s.camZ);
+          s.camY = clampY(ay - ((ay - s.camY) / prevZ) * s.camZ);
+          if (Math.abs(z - s.camZ) < 0.001) s.anchor = null;
         }
-        worldRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${s.camZ + (z - s.camZ) * 0.12})`;
-        s.camZ += (z - s.camZ) * 0.12;
+        worldRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${s.camZ})`;
       }
 
       if (paused.current) return;
@@ -127,8 +167,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         const len = Math.hypot(dx, dy) || 1;
         s.x = Math.max(24, Math.min(WORLD_W - 24, s.x + (dx / len) * SPEED));
         s.y = Math.max(24, Math.min(WORLD_H - 24, s.y + (dy / len) * SPEED));
-        // Keep the goal under the player while keyboard-walking, or releasing
-        // the key walks them back to where they pressed it.
+        // Keep the goal under the player while keyboard-walking, or releasing a key snaps them back.
         if (s.keys.size > 0) {
           s.tx = s.x;
           s.ty = s.y;
@@ -148,17 +187,24 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       window.removeEventListener('gv:travel', onTravel);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      stage?.removeEventListener('wheel', onWheel);
     };
-  }, [setFocusId, worldRef]);
+  }, [setFocusId, setZoom, worldRef]);
 
   return (
-    <div ref={ref} className="absolute z-20" style={{ transform: `translate(${WORLD_W / 2 - 16}px, ${WORLD_H / 2 + 136}px)` }}>
+    <div
+      ref={ref}
+      className="absolute z-20"
+      style={{ transform: `translate(${WORLD_W / 2 - 16}px, ${WORLD_H / 2 + 136}px)` }}
+    >
       <div className="flex flex-col items-center">
         <div ref={inner} className="pixel">
           <PlayerSprite />
         </div>
         <span aria-hidden className="mt-0.5 h-1.5 w-6 rounded-full bg-black/50 blur-[2px]" />
-        <span className="font-pixel mt-0.5 rounded-sm bg-[#3b6bff] px-1 text-[11px] leading-4 font-bold text-white">you</span>
+        <span className="font-pixel mt-0.5 rounded-sm bg-[#3b6bff] px-1 text-[11px] leading-4 font-bold text-white">
+          you
+        </span>
       </div>
     </div>
   );

@@ -1,9 +1,25 @@
 import 'server-only';
 
 import { cacheLife, cacheTag } from 'next/cache';
-import type { ActiveBranch, BranchCommit, RoomNote, VillagePR, VillagePayload, RepoData, WireEvent, WireEventKind } from '@/types/github';
+import type {
+  ActiveBranch,
+  BranchCommit,
+  RoomNote,
+  VillagePR,
+  VillagePayload,
+  RepoData,
+  WireEvent,
+  WireEventKind,
+} from '@/types/github';
 
 const API = 'https://api.github.com';
+
+const UNKNOWN_ACTOR = 'someone';
+
+function splitSlug(slug: string): [owner: string, repo: string] {
+  const [owner, repo] = slug.split('/');
+  return [owner, repo];
+}
 
 function ghHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
@@ -11,7 +27,7 @@ function ghHeaders(): Record<string, string> {
     'User-Agent': 'gitville',
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  // 5000 req/hr with a token vs 60 without — strongly recommended in production.
+  // 5000 req/hr with a token vs 60 without.
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   return headers;
 }
@@ -45,12 +61,11 @@ type RepoResponse = {
   owner: { avatar_url: string };
 };
 
-// Repo identity changes slowly — cache for hours, shared across all users.
 export async function getRepoData(slug: string): Promise<RepoData | null> {
   'use cache: remote';
   cacheLife('hours');
   cacheTag(`gh-repo-${slug}`);
-  const [owner, repo] = slug.split('/');
+  const [owner, repo] = splitSlug(slug);
   const meta = await gh<RepoResponse>(`/repos/${owner}/${repo}`);
   if (!meta) return null;
 
@@ -120,7 +135,7 @@ function shortRef(ref?: string | null): string {
 function mapEvent(e: EventResponse, slug: string): WireEvent | null {
   const base = {
     id: e.id,
-    actor: e.actor?.login ?? 'someone',
+    actor: e.actor?.login ?? UNKNOWN_ACTOR,
     avatar: e.actor?.login ? `https://avatars.githubusercontent.com/${e.actor.login}` : null,
     at: e.created_at,
     detail: null as string | null,
@@ -231,7 +246,7 @@ function mapCommit(c: CommitResponse): BranchCommit {
   return {
     sha: c.sha,
     message: (c.commit?.message ?? '').split('\n')[0],
-    author: c.author?.login ?? c.commit?.author?.name ?? 'someone',
+    author: c.author?.login ?? c.commit?.author?.name ?? UNKNOWN_ACTOR,
     at: c.commit?.author?.date ?? '',
     url: c.html_url,
     size: 0,
@@ -252,18 +267,21 @@ function mapGqlCommit(c: GqlCommit): BranchCommit {
   return {
     sha: c.oid,
     message: c.messageHeadline,
-    author: c.author?.user?.login ?? c.author?.name ?? 'someone',
+    author: c.author?.user?.login ?? c.author?.name ?? UNKNOWN_ACTOR,
     at: c.committedDate,
     url: c.url,
     size: (c.additions ?? 0) + (c.deletions ?? 0),
   };
 }
 
-// Diff sizes only exist on GraphQL (one call) — REST would cost a call per commit.
 async function ghGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
   if (!process.env.GITHUB_TOKEN) return null;
   try {
-    const res = await fetch(`${API}/graphql`, { method: 'POST', headers: ghHeaders(), body: JSON.stringify({ query, variables }) });
+    const res = await fetch(`${API}/graphql`, {
+      method: 'POST',
+      headers: ghHeaders(),
+      body: JSON.stringify({ query, variables }),
+    });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: T };
     return json.data ?? null;
@@ -272,15 +290,15 @@ async function ghGraphQL<T>(query: string, variables: Record<string, unknown>): 
   }
 }
 
-// Push events no longer include commit lists, so rooms fetch the real thing:
-// GraphQL with diff sizes when a token exists, plain REST without one.
 export async function getPrCommits(slug: string, number: number): Promise<BranchCommit[]> {
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
-  const [owner, repo] = slug.split('/');
+  const [owner, repo] = splitSlug(slug);
 
-  const data = await ghGraphQL<{ repository: { pullRequest: { commits: { nodes: { commit: GqlCommit }[] } } | null } | null }>(
+  const data = await ghGraphQL<{
+    repository: { pullRequest: { commits: { nodes: { commit: GqlCommit }[] } } | null } | null;
+  }>(
     `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){
        commits(last:14){ nodes{ commit{ oid messageHeadline additions deletions committedDate url author{ user{ login } name } } } } } } }`,
     { owner, repo, number },
@@ -296,15 +314,20 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
-  const [owner, repo] = slug.split('/');
+  const [owner, repo] = splitSlug(slug);
 
-  const data = await ghGraphQL<{ repository: { ref: { target: { history: { nodes: GqlCommit[] } } | null } | null } | null }>(
+  const data = await ghGraphQL<{
+    repository: { ref: { target: { history: { nodes: GqlCommit[] } } | null } | null } | null;
+  }>(
     `query($owner:String!,$repo:String!,$ref:String!){ repository(owner:$owner,name:$repo){ ref(qualifiedName:$ref){
        target{ ... on Commit { history(first:14){ nodes{ oid messageHeadline additions deletions committedDate url author{ user{ login } name } } } } } } } }`,
     { owner, repo, ref: `refs/heads/${ref}` },
   );
-  const nodes = data?.repository?.ref?.target && 'history' in data.repository.ref.target ? data.repository.ref.target.history.nodes : null;
-  // Newest first from both APIs; oldest first reads as construction order.
+  const nodes =
+    data?.repository?.ref?.target && 'history' in data.repository.ref.target
+      ? data.repository.ref.target.history.nodes
+      : null;
+  // Newest first from the API; reversed so the oldest reads as construction order.
   if (nodes) return nodes.map(mapGqlCommit).reverse();
 
   const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
@@ -320,13 +343,11 @@ type CommentResponse = {
   user: { login: string; avatar_url: string } | null;
 };
 
-// The real thread: conversation comments, plus review bodies for PRs. The
-// events feed only covers a recent window, so rooms fetch the whole wall.
 export async function getThreadNotes(slug: string, number: number, isPr: boolean): Promise<RoomNote[]> {
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-notes-${slug}`);
-  const [owner, repo] = slug.split('/');
+  const [owner, repo] = splitSlug(slug);
   const [comments, reviews] = await Promise.all([
     gh<CommentResponse[]>(`/repos/${owner}/${repo}/issues/${number}/comments?per_page=30`),
     isPr ? gh<CommentResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/reviews?per_page=30`) : Promise.resolve(null),
@@ -335,7 +356,7 @@ export async function getThreadNotes(slug: string, number: number, isPr: boolean
     .filter(c => (c.body ?? '').trim().length > 0 && !(c.user?.login ?? '').endsWith('[bot]'))
     .map(c => ({
       id: String(c.id),
-      author: c.user?.login ?? 'someone',
+      author: c.user?.login ?? UNKNOWN_ACTOR,
       avatar: c.user?.avatar_url ?? null,
       body: trimBody(c.body) ?? '',
       at: c.created_at ?? c.submitted_at ?? '',
@@ -344,28 +365,23 @@ export async function getThreadNotes(slug: string, number: number, isPr: boolean
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
-// Feature branches with recent pushes — derived from the event stream, no extra API calls.
 function deriveBranches(events: EventResponse[], defaultBranch: string): ActiveBranch[] {
   const seen = new Map<string, ActiveBranch>();
   for (const e of events) {
     if (e.type !== 'PushEvent') continue;
     const ref = shortRef(e.payload?.ref);
     if (!ref || ref === defaultBranch) continue;
-    if (!seen.has(ref)) seen.set(ref, { ref, actor: e.actor?.login ?? 'someone', at: e.created_at });
+    if (!seen.has(ref)) seen.set(ref, { ref, actor: e.actor?.login ?? UNKNOWN_ACTOR, at: e.created_at });
   }
   return [...seen.values()].slice(0, 8);
 }
 
-// The village snapshot: open PRs + the event window, in two GitHub calls. Cached remotely for
-// ~45s so every polling client shares one upstream fetch per window (rate-limit safe).
 export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   'use cache: remote';
   cacheLife({ stale: 45, revalidate: 45, expire: 600 });
   cacheTag(`gv-live-${slug}`);
 
-  const [owner, repo] = slug.split('/');
-  // GitHub's events API serves up to 300 events across 3 pages — fetch them all so the
-  // time machine can scrub back days, not hours.
+  const [owner, repo] = splitSlug(slug);
   const [pulls, ...eventPages] = await Promise.all([
     gh<PullResponse[]>(`/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=12`),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
@@ -373,7 +389,7 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
   ]);
   const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
-  // Event pages shift while we fetch — the same event can appear on two pages.
+  // Event pages overlap while paginating; dedupe by id.
   const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
   if (!Array.isArray(pulls) && events.length === 0) {
@@ -384,7 +400,7 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     number: pr.number,
     title: pr.title,
     url: pr.html_url,
-    author: pr.user?.login ?? 'someone',
+    author: pr.user?.login ?? UNKNOWN_ACTOR,
     authorAvatar: pr.user?.avatar_url ?? null,
     branch: pr.head?.ref ?? '',
     baseRef: pr.base?.ref ?? '',
@@ -395,7 +411,6 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
   const wire = (events ?? [])
     .map(e => mapEvent(e, slug))
     .filter((e): e is WireEvent => e !== null)
-    // Bot comment chatter drowns out the humans on busy repos.
     .filter(e => !(e.actor.endsWith('[bot]') && (e.kind === 'comment' || e.kind === 'review')))
     .slice(0, 300);
 

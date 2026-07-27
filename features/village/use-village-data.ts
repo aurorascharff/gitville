@@ -1,25 +1,16 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import {
-  actorsAt,
-  arcOffset,
-  buildCells,
-  commitWeights,
-  type Actor,
-  type Cell,
-} from '@/features/village/village-model';
+import { actorsAt, arcOffset, buildCells, type Actor, type Cell } from '@/features/village/village-model';
 import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
 
 const fetcher = async (url: string): Promise<VillagePayload> => {
   const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
-  // Rate-limited upstream: throw so SWR keeps the previous snapshot on screen.
+  // Throw on rate-limit so SWR keeps the last good snapshot on screen.
   if (!payload.ok) throw new Error('github-unavailable');
   return payload;
 };
 
-// Every component fetches its own data with this hook. SWR dedupes the key to one
-// request, the server seeds it via preload + cacheData, and one poll revalidates all.
 export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean } {
   const { data, error } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
     suspense: true,
@@ -32,7 +23,7 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
 export type RoomSpecItem = {
   name: string;
   kind?: string;
-  pieces?: string[][]; // one drawn segment per commit, joined side by side
+  pieces?: string[][];
   commits: number[];
 };
 
@@ -46,7 +37,6 @@ export type RoomSpecPayload = {
   aiAvailable: boolean;
 };
 
-// A failed spec fetch degrades to the default room — never an error for decoration.
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
@@ -55,15 +45,15 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
 const roomKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
 
-// Warm the cache on intent so the room is usually ready before the door opens.
 export function preloadRoomSpec(slug: string, cellId: string): void {
   void preload(roomKey(slug, cellId, false), specFetcher);
 }
 
-// AI design is opt-in per room: the `ai` flag becomes part of the SWR key, so
-// hiring the carpenter fetches (and server-caches) the designed version.
-// keepPreviousData keeps the plain room on screen while the AI one is drawn.
-export function useRoomSpec(slug: string, cellId: string, ai = false): { spec: RoomSpecPayload | null; loading: boolean } {
+export function useRoomSpec(
+  slug: string,
+  cellId: string,
+  ai = false,
+): { spec: RoomSpecPayload | null; loading: boolean } {
   const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId, ai), specFetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
@@ -75,8 +65,6 @@ export const SCRUB_MAX = 1000;
 
 export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };
 
-// Scrubbing is indexed over events, not wall-clock, so every slider position lands on
-// a moment where something actually happened.
 export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindow {
   if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
   const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
@@ -94,14 +82,11 @@ export type WorldModel = {
   actors: Actor[];
   placed: PlacedActor[];
   occupied: Map<string, number>;
-  weights: Map<string, number>;
 };
 
-// No useMemo anywhere: the React Compiler memoizes this for us.
 export function useWorldModel(payload: VillagePayload, slug: string, asOf: number): WorldModel {
   const cells = buildCells(payload, slug, asOf);
   const actors = actorsAt(payload, cells, asOf);
-  const weights = commitWeights(payload, cells);
 
   const byCell = new Map<string, Actor[]>();
   for (const a of actors) byCell.set(a.cellId, [...(byCell.get(a.cellId) ?? []), a]);
@@ -117,5 +102,5 @@ export function useWorldModel(payload: VillagePayload, slug: string, asOf: numbe
   const occupied = new Map<string, number>();
   for (const a of actors) occupied.set(a.cellId, (occupied.get(a.cellId) ?? 0) + 1);
 
-  return { cells, actors, placed, occupied, weights };
+  return { cells, actors, placed, occupied };
 }

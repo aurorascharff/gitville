@@ -5,12 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Artificial latency so streamed Suspense fallbacks stay visible in the demo.
-export function delay(ms: number, enabled = true) {
-  return enabled ? new Promise(resolve => setTimeout(resolve, ms)) : Promise.resolve();
-}
-
-// "3m", "2h", "just now" — coarse relative time for deployment rows.
 export function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 10) return 'just now';
@@ -23,10 +17,16 @@ export function timeAgo(date: Date): string {
   return `${days}d`;
 }
 
-// "1m 47s" from a millisecond duration.
-export function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return m > 0 ? `${m}m ${s.toString().padStart(2, '0')}s` : `${s}s`;
+export function formatStars(n: number): string {
+  return n >= 1000 ? `${Math.round(n / 100) / 10}k` : `${n}`;
+}
+
+// FNV-1a; callers take their own modulo.
+export function hashString(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }

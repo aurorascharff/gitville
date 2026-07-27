@@ -8,16 +8,16 @@ import {
   hallArt,
   housePalette,
   PixelSprite,
+  ROOF,
   tentArt,
   WELL,
 } from '@/features/village/components/pixel-sprite';
 
-const PR_ROOF = housePalette('#c85b5b', '#9d4444', true);
-const MAIN_ROOF = housePalette('#3b6bff', '#2b4fc4', true);
-const BRANCH_ROOF = housePalette('#b0532e', '#8a4023', false);
-const ISSUE_ROOF = housePalette('#8a6a9d', '#6b5279', false);
+const PR_ROOF = housePalette(...ROOF.pr, true);
+const MAIN_ROOF = housePalette(...ROOF.main, true);
+const BRANCH_ROOF = housePalette(...ROOF.branch, false);
+const ISSUE_ROOF = housePalette(...ROOF.issue, false);
 
-// What every sprite means, one look each.
 export function VillageHelp() {
   const [open, setOpen] = useState(false);
 
@@ -57,9 +57,27 @@ export function VillageHelp() {
               </button>
             </header>
             <ul className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-              <LegendRow art={hallArt()} palette={MAIN_ROOF} scale={2} title="town hall" text="the default branch. releases and merges land here" />
-              <LegendRow art={cottageArt(1, false)} palette={PR_ROOF} scale={2} title="finished cottage" text="an open PR that is ready for review" />
-              <LegendRow art={cottageArt(1, true)} palette={PR_ROOF} scale={2} title="under construction" text="a draft PR. still tarp and scaffolding" />
+              <LegendRow
+                art={hallArt()}
+                palette={MAIN_ROOF}
+                scale={2}
+                title="town hall"
+                text="the default branch. releases and merges land here"
+              />
+              <LegendRow
+                art={cottageArt(1, false)}
+                palette={PR_ROOF}
+                scale={2}
+                title="finished cottage"
+                text="an open PR that is ready for review"
+              />
+              <LegendRow
+                art={cottageArt(1, true)}
+                palette={PR_ROOF}
+                scale={2}
+                title="under construction"
+                text="a draft PR. still tarp and scaffolding"
+              />
               <LegendRow
                 art={cottageArt(3, false)}
                 palette={PR_ROOF}
@@ -67,9 +85,27 @@ export function VillageHelp() {
                 title="multi-storey house"
                 text="a stack of PRs. every floor is a PR built on the one below and the attic is the top of the stack"
               />
-              <LegendRow art={cabinArt()} palette={BRANCH_ROOF} scale={2.5} title="cabin" text="an active branch that has no PR yet" />
-              <LegendRow art={tentArt()} palette={ISSUE_ROOF} scale={2} title="tent" text="a busy issue. people talk here instead of building" />
-              <LegendRow art={WELL.art} palette={WELL.palette} scale={2.5} title="the well" text="the town square. people end up here when their latest work points somewhere else" />
+              <LegendRow
+                art={cabinArt()}
+                palette={BRANCH_ROOF}
+                scale={2.5}
+                title="cabin"
+                text="an active branch that has no PR yet"
+              />
+              <LegendRow
+                art={tentArt()}
+                palette={ISSUE_ROOF}
+                scale={2}
+                title="tent"
+                text="a busy issue. people talk here instead of building"
+              />
+              <LegendRow
+                art={WELL.art}
+                palette={WELL.palette}
+                scale={2.5}
+                title="the well"
+                text="the town square. people end up here when their latest work points somewhere else"
+              />
               <LegendRow
                 art={FURNITURE[1].art}
                 palette={FURNITURE[1].palette}
@@ -87,23 +123,33 @@ export function VillageHelp() {
                 </div>
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
-                villagers stand where they last worked. walk with WASD or click the grass. walk into a door or press Enter to step
-                inside. walk onto the mat or press Esc to leave.
+                villagers stand where they last worked. walk with WASD or click the grass. walk into a door or press
+                Enter to step inside. walk onto the mat or press Esc to leave.
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
                 inside a stacked house the sign lists every floor. click one to visit that PR.
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
-                the draw with AI button rebuilds a room from its real commits, one invented machine per piece of work. drawn rooms
-                are cached and shared.
+                the draw with AI button rebuilds a room from its real commits, one invented machine per piece of work.
+                drawn rooms are cached and shared.
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
                 made by{' '}
-                <a href="https://github.com/aurorascharff" target="_blank" rel="noreferrer" className="font-bold text-[#8a4a2b] hover:underline">
+                <a
+                  href="https://github.com/aurorascharff"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-[#8a4a2b] hover:underline"
+                >
                   aurorascharff
                 </a>
                 . the village itself is a repo too:{' '}
-                <a href="https://github.com/aurorascharff/gitville" target="_blank" rel="noreferrer" className="font-bold text-[#8a4a2b] hover:underline">
+                <a
+                  href="https://github.com/aurorascharff/gitville"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-[#8a4a2b] hover:underline"
+                >
                   view the source
                 </a>
               </li>

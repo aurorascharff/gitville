@@ -27,5 +27,5 @@ function ErrorFallback(props: { title?: string }, { retry }: ErrorInfo) {
   );
 }
 
-// Next-aware boundary: understands notFound()/redirect() throws and re-fetches on retry.
+// Handles notFound()/redirect() throws and re-fetches on retry.
 export default catchError(ErrorFallback);

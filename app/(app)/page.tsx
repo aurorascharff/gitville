@@ -6,13 +6,22 @@ import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WatchForm } from '@/features/repo/components/watch-form';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
-import { BUSH, cottageArt, FLOWER, hallArt, housePalette, PixelSprite, TREE } from '@/features/village/components/pixel-sprite';
+import {
+  BUSH,
+  cottageArt,
+  FLOWER,
+  hallArt,
+  housePalette,
+  PixelSprite,
+  ROOF,
+  TREE,
+} from '@/features/village/components/pixel-sprite';
 import { getRepoData } from '@/lib/github';
+import { formatStars } from '@/lib/utils';
 import type { Route } from 'next';
 
 export const prefetch = 'allow-runtime';
 
-// The world picker: choose which village to visit.
 export default function HomePage() {
   return (
     <div
@@ -55,14 +64,17 @@ export default function HomePage() {
   );
 }
 
-// The home page is a village too: a tree line, a couple of houses, some growth.
 function HomeScenery() {
-  const cottage = housePalette('#c85b5b', '#9d4444', true);
-  const hall = housePalette('#3b6bff', '#2b4fc4', true);
+  const cottage = housePalette(...ROOF.pr, true);
+  const hall = housePalette(...ROOF.main, true);
   return (
     <div aria-hidden className="pixel pointer-events-none absolute inset-0">
       {Array.from({ length: 14 }).map((_, i) => (
-        <span key={i} className="absolute" style={{ left: `${i * 7.5 + ((i * 37) % 4)}%`, bottom: -14 - ((i * 23) % 18) }}>
+        <span
+          key={i}
+          className="absolute"
+          style={{ left: `${i * 7.5 + ((i * 37) % 4)}%`, bottom: -14 - ((i * 23) % 18) }}
+        >
           <PixelSprite art={TREE.art} palette={TREE.palette} scale={i % 3 === 0 ? 6 : 5} />
         </span>
       ))}
@@ -108,7 +120,7 @@ async function Villages() {
             <span className="w-full truncate font-mono text-sm font-bold text-[#3a2f22]">{repo.name}</span>
             <span className="flex items-center gap-1 font-mono text-[10px] text-[#6b5b43]">
               <Star size={10} className="fill-[#c9a227] text-[#8a6d2a]" />
-              {repo.stars >= 1000 ? `${Math.round(repo.stars / 100) / 10}k` : repo.stars}
+              {formatStars(repo.stars)}
             </span>
             <span className="rounded-sm bg-[#5a8f52] px-2 py-0.5 font-mono text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
               enter →

@@ -11,8 +11,6 @@ import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
 import type { Route } from 'next';
 
-// The HUD identity pill: village mark + current repo, opening a panel with the
-// watchlist and a "watch a repo" input.
 export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
@@ -40,7 +38,6 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
     if (!value.trim()) return;
     startTransition(async () => {
       const res = await pinRepo(value);
-      // Only returns on failure — success redirects to the new repo.
       if (res && !res.ok) toast.error(res.error);
     });
   }

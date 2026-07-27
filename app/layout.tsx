@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     'A tiny pixel village for every GitHub repo. Watch real contributors build, review, and chat, then scrub back in time.',
   title: {
     default: 'Gitville',
-    template: '%s · Gitville',
+    template: '%s | Gitville',
   },
 };
 

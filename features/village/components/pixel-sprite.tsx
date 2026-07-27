@@ -1,6 +1,14 @@
-// Hand-drawn pixel-art sprites rendered as SVG rect grids — no assets, crisp at any scale.
+import { hashString } from '@/lib/utils';
 
 type Palette = Record<string, string>;
+
+export const ROOF = {
+  main: ['#3b6bff', '#2b4fc4'],
+  pr: ['#c85b5b', '#9d4444'],
+  branch: ['#b0532e', '#8a4023'],
+  issue: ['#8a6a9d', '#6b5279'],
+  inbox: ['#7d8590', '#5f656e'],
+} as const;
 
 export function PixelSprite({
   art,
@@ -40,7 +48,6 @@ const WOOD_D = '#6b4223';
 const LEAF = '#4e9a4e';
 const LEAF_D = '#2f7a3c';
 
-// The furniture catalog — what commits build. Picked deterministically per commit.
 export const FURNITURE: { name: string; art: string[]; palette: Palette }[] = [
   {
     name: 'plant',
@@ -84,18 +91,11 @@ export const FURNITURE: { name: string; art: string[]; palette: Palette }[] = [
   },
 ];
 
-export const RUG = {
-  name: 'rug',
-  palette: { r: '#a8574f', d: '#8a453e', y: '#e4c05a' },
-  art: ['.rrrrrrrrrr.', 'rdyyyyyyyydr', 'rdyddddddydr', 'rdyyyyyyyydr', '.rrrrrrrrrr.'],
-};
-
 export function furnitureByName(name: string): (typeof FURNITURE)[number] | null {
   return FURNITURE.find(f => f.name === name) ?? null;
 }
 
-// The legend AI-drawn furniture uses — one letter per color, '.' transparent.
-// Must match ART_LETTERS in room-ai.ts.
+// Palette letters must match ART_LETTERS / AI_ART_PALETTE in room-ai.ts.
 export const AI_ART_PALETTE: Palette = {
   O: '#2e2418',
   W: WOOD,
@@ -112,8 +112,6 @@ export const AI_ART_PALETTE: Palette = {
   t: '#3aa8a0',
 };
 
-// Night version of any palette: every tone pulled toward a cold dark blue.
-// Warm lit windows are handled by the caller (skip list), not here.
 export function nightenPalette(palette: Palette, skip: string[] = []): Palette {
   const out: Palette = {};
   for (const [key, hex] of Object.entries(palette)) {
@@ -133,15 +131,9 @@ function mixHex(a: string, b: string, t: number): string {
 }
 
 export function furnitureFor(seed: string): (typeof FURNITURE)[number] {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return FURNITURE[(h >>> 0) % FURNITURE.length];
+  return FURNITURE[hashString(seed) % FURNITURE.length];
 }
 
-// Overworld greenery.
 export const TREE = {
   palette: { l: LEAF_D, e: '#3c8a48', t: WOOD_D },
   art: ['...e...', '..eee..', '.eelee.', '..eee..', '.elele.', 'eeleele', '...t...', '...t...'],
@@ -163,7 +155,6 @@ export const ROCK = {
   art: ['.ggg.', 'gggdg', 'gddgg', '.ggg.'],
 };
 
-// Event-kind badges — tiny pixel glyphs instead of emoji.
 const BADGE: Record<string, { art: string[]; palette: Palette }> = {
   push: { palette: { g: '#9aa2ad', h: '#8a5a33' }, art: ['.gggg.', '.gggg.', '..hh..', '..hh..', '..hh..'] },
   pr_opened: {
@@ -185,10 +176,6 @@ export function KindBadge({ kind, scale = 2 }: { kind: string; scale?: number })
   return <PixelSprite art={b.art} palette={b.palette} scale={scale} className="pixel" />;
 }
 
-// ── The village tileset: outlined, 3-tone-shaded sprites ────────────────────
-
-// A PR's house at a glance: finished cottage = ready, studs + tarp = draft,
-// extra storeys = the stack, topped by an attic with a dormer window.
 export function cottageArt(floors: number, draft: boolean): string[] {
   const plainRoof = [
     '...............OCCO...',
@@ -201,8 +188,6 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     'ORRRRRRRRRRRRRRRRRRRRO',
     'OSSSSSSSSSSSSSSSSSSSSO',
   ];
-  // The stack's attic: a narrower top with a dormer window, so the building
-  // steps in as it goes up instead of extruding one dull block.
   const atticRoof = [
     '.........OOOO.........',
     '.......OORRRROO.......',
@@ -211,13 +196,8 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '....ORRRRROORRRRRO....',
     '...OSSSSSSSSSSSSSSO...',
   ];
-  const narrowTop = [
-    '...OWWWWWWWWWWWWWWO...',
-    '...OWqqWWWWWWWWqqWO...',
-    '...OWqqWWWWWWWWqqWO...',
-  ];
+  const narrowTop = ['...OWWWWWWWWWWWWWWO...', '...OWqqWWWWWWWWqqWO...', '...OWqqWWWWWWWWqqWO...'];
   const ledge = ['.OOOOOOOOOOOOOOOOOOOO.'];
-  // Draft: no roof yet — ridge beam, a half-pulled tarp, scaffold walkway.
   const constructionTop = [
     '.p...................p',
     '.p.ObbbbbbbbbbbbbbO..p',
@@ -225,7 +205,6 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.pObTTTTTTTTTTbbbbbOpp',
     'pppppppppppppppppppppp',
   ];
-  // Two middle-storey looks that alternate, so a tall stack reads as floors.
   const floorA = [
     '.OwwwwwwwwwwwwwwwwwwO.',
     '.OWWWWWWWWWWWWWWWWWWO.',
@@ -240,7 +219,6 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.OWbqqbWWbqqbWWbqqbWO.',
     '.OWWWWWWWWWWWWWWWWWWO.',
   ];
-  // Finished ground floor: framed windows, flower boxes, a proper door with a step.
   const readyGround = [
     '.OWWWWWWWWWWWWWWWWWWO.',
     '.OWqqWWWWWWWWWWWWqqWO.',
@@ -250,7 +228,6 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.OWWWWWWWDDDWWWWWWWWO.',
     '.OOOOOOOODDDOOOOOOOOO.',
   ];
-  // Draft ground floor: unpainted studs, a doorless opening, planks piled outside.
   const draftGround = [
     '.OWbWWbWWWWWWWbWWbWWO.',
     '.OWbWWbWWmmmWWbWWbWWO.',
@@ -266,7 +243,6 @@ export function cottageArt(floors: number, draft: boolean): string[] {
   return [...atticRoof, ...narrowTop, ...ledge, ...mid, ...readyGround];
 }
 
-// A branch is a little log cabin — work happening off the beaten path.
 export function cabinArt(): string[] {
   return [
     '.....OOOOOO.....',
@@ -283,7 +259,6 @@ export function cabinArt(): string[] {
   ];
 }
 
-// Issues camp out in tents — conversations pitched on the green, not construction.
 export function tentArt(): string[] {
   return [
     '...........OO...........',
@@ -301,7 +276,6 @@ export function tentArt(): string[] {
   ];
 }
 
-// The town hall: clock tower, banners, double doors — the village landmark.
 export function hallArt(): string[] {
   return [
     '..............OOOOOOOO..............',
@@ -339,33 +313,20 @@ export function housePalette(roof: string, roofShade: string, lit: boolean) {
     D: '#6b4630',
     d: '#e4c05a',
     B: '#3b6bff',
-    // construction + trim letters
-    C: '#8d939c', // chimney stone
+    C: '#8d939c',
     c: '#6b7078',
-    b: '#6b4223', // exposed beams / studs
-    T: '#4a76a8', // tarp
-    p: '#a5814e', // scaffold poles + walkway
-    m: '#241c12', // doorless opening
-    k: '#8a5a33', // plank pile
-    F: '#c85b5b', // window-box flowers
-    f: '#3f7a44', // window-box leaves
+    b: '#6b4223',
+    T: '#4a76a8',
+    p: '#a5814e',
+    m: '#241c12',
+    k: '#8a5a33',
+    F: '#c85b5b',
+    f: '#3f7a44',
   };
 }
 
-// Streetlamps line the roads; `q` swaps warm/dark so night can light them up.
 export function lampArt(): string[] {
-  return [
-    '..OOO..',
-    '.OqqqO.',
-    '.OqqqO.',
-    '..OOO..',
-    '...O...',
-    '...O...',
-    '...O...',
-    '...O...',
-    '...O...',
-    '..OOO..',
-  ];
+  return ['..OOO..', '.OqqqO.', '.OqqqO.', '..OOO..', '...O...', '...O...', '...O...', '...O...', '...O...', '..OOO..'];
 }
 
 export function lampPalette(lit: boolean) {
@@ -373,7 +334,17 @@ export function lampPalette(lit: boolean) {
 }
 
 export const WELL = {
-  palette: { O: '#2e2418', R: '#8a4a2b', r: '#6e3a20', G: '#9aa0a8', g: '#7b8188', b: '#2b4d75', h: '#4a76a8', P: '#6b4223', y: '#e4c05a' },
+  palette: {
+    O: '#2e2418',
+    R: '#8a4a2b',
+    r: '#6e3a20',
+    G: '#9aa0a8',
+    g: '#7b8188',
+    b: '#2b4d75',
+    h: '#4a76a8',
+    P: '#6b4223',
+    y: '#e4c05a',
+  },
   art: [
     '.......OOOO.......',
     '.....OORRRROO.....',
@@ -437,7 +408,6 @@ export const STUMP = {
   art: ['.WWWW.', 'WwWWwW', 'WWwwWW', 'dWWWWd', '.dddd.'],
 };
 
-// Interior fixtures.
 export const FIREPLACE = {
   palette: { O: '#2e2418', G: '#9aa0a8', g: '#7b8188', m: '#241c12', y: '#ffd76a', o: '#e0862f', W: '#8a5a33' },
   art: [
@@ -452,13 +422,11 @@ export const FIREPLACE = {
   ],
 };
 
-// A construction barrier — the visual for "draft" wherever it appears.
 export const BARRIER = {
   palette: { y: '#e4c05a', d: '#3a2f22', O: '#2e2418' },
   art: ['yyddyydd', 'ddyyddyy', 'yyddyydd', '.O....O.', '.O....O.'],
 };
 
-// The AI carpenter, hammer at the ready.
 export const CARPENTER = {
   palette: { h: '#6b4223', s: '#e8b98a', d: '#2a2d36', r: '#b8564f', a: '#e4c05a', m: '#9aa0a8', w: '#8a5a33' },
   art: [
@@ -475,44 +443,19 @@ export const CARPENTER = {
   ],
 };
 
-// One centerpiece per room type — the anchor nobody walks on.
 export const WORKBENCH = {
   palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', m: '#9aa0a8', y: '#e4c05a' },
-  art: [
-    '.m..........y.',
-    'OWWWWWWWWWWWWO',
-    'OWwWWwwwWWwWWO',
-    'OWWWWWWWWWWWWO',
-    '.OW.........WO',
-    '.OW.........WO',
-  ],
+  art: ['.m..........y.', 'OWWWWWWWWWWWWO', 'OWwWWwwwWWwWWO', 'OWWWWWWWWWWWWO', '.OW.........WO', '.OW.........WO'],
 };
 
 export const BARREL = {
   palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', m: '#7b8188', b: '#4a76a8' },
-  art: [
-    '.OOOOOO.',
-    'OWbbbbWO',
-    'OmmmmmmO',
-    'OWwWWwWO',
-    'OWWwwWWO',
-    'OmmmmmmO',
-    '.OWWWWO.',
-    '..OOOO..',
-  ],
+  art: ['.OOOOOO.', 'OWbbbbWO', 'OmmmmmmO', 'OWwWWwWO', 'OWWwwWWO', 'OmmmmmmO', '.OWWWWO.', '..OOOO..'],
 };
 
 export const CHEST = {
   palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', y: '#e4c05a' },
-  art: [
-    '.OOOOOOOO.',
-    'OWWWWWWWWO',
-    'OWwwwwwwWO',
-    'OOOOyyOOOO',
-    'OWWWyyWWWO',
-    'OWwwwwwwWO',
-    'OOOOOOOOOO',
-  ],
+  art: ['.OOOOOOOO.', 'OWWWWWWWWO', 'OWwwwwwwWO', 'OOOOyyOOOO', 'OWWWyyWWWO', 'OWwwwwwwWO', 'OOOOOOOOOO'],
 };
 
 export const TABLE_LONG = {
@@ -533,16 +476,7 @@ export const WINDOW = {
 
 export const CAMPFIRE = {
   palette: { O: '#2e2418', y: '#ffd76a', o: '#e0862f', r: '#c85b5b', w: '#6b4223', g: '#8d939c' },
-  art: [
-    '....y....',
-    '...yoy...',
-    '..yooor..',
-    '..rooor..',
-    '.rrooorr.',
-    '.wwrwrww.',
-    'wwOwwwOww',
-    '.g.....g.',
-  ],
+  art: ['....y....', '...yoy...', '..yooor..', '..rooor..', '.rrooorr.', '.wwrwrww.', 'wwOwwwOww', '.g.....g.'],
 };
 
 export const LOG_SEAT = {

@@ -6,7 +6,6 @@ import { hashDelay, type Actor } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-// Crisp avatar head on a pixel body; walks (transform transition) when its cell changes.
 export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }) {
   const { setTip, setFocusId } = useVillageUi();
   const delay = hashDelay(actor.login);

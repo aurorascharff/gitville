@@ -3,7 +3,6 @@
 import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
-// The village clock: hands show the viewed moment; drag to wind time back.
 export function TimeMachine() {
   const { slug, scrub, setScrub } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -13,7 +12,9 @@ export function TimeMachine() {
     <div className="absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">
       <div className="panel flex w-full max-w-xl items-center gap-3 rounded-sm py-2 pr-2 pl-3">
         <ClockFace t={asOf} />
-        <span className="hidden shrink-0 font-mono text-[10px] text-[#8a6d2a] sm:inline">{spanLabel(maxT - minT)} ago</span>
+        <span className="hidden shrink-0 font-mono text-[10px] text-[#8a6d2a] sm:inline">
+          {spanLabel(maxT - minT)} ago
+        </span>
         <input
           type="range"
           min={0}
@@ -51,8 +52,26 @@ function ClockFace({ t }: { t: number }) {
       {[0, 90, 180, 270].map(deg => (
         <rect key={deg} x="19" y="5" width="2" height="4" fill="#8a6d2a" transform={`rotate(${deg} 20 20)`} />
       ))}
-      <line x1="20" y1="20" x2="20" y2="12" stroke="#3a2f22" strokeWidth="3" strokeLinecap="round" transform={`rotate(${hourDeg} 20 20)`} />
-      <line x1="20" y1="20" x2="20" y2="8" stroke="#8a4a2b" strokeWidth="2" strokeLinecap="round" transform={`rotate(${minDeg} 20 20)`} />
+      <line
+        x1="20"
+        y1="20"
+        x2="20"
+        y2="12"
+        stroke="#3a2f22"
+        strokeWidth="3"
+        strokeLinecap="round"
+        transform={`rotate(${hourDeg} 20 20)`}
+      />
+      <line
+        x1="20"
+        y1="20"
+        x2="20"
+        y2="8"
+        stroke="#8a4a2b"
+        strokeWidth="2"
+        strokeLinecap="round"
+        transform={`rotate(${minDeg} 20 20)`}
+      />
       <circle cx="20" cy="20" r="1.8" fill="#4a3826" />
     </svg>
   );

@@ -3,8 +3,6 @@ import { buildCells, roomFor } from '@/features/village/village-model';
 import { getBranchCommits, getPrCommits, getRepoData, getThreadNotes, getVillagePayload } from '@/lib/github';
 import type { BranchCommit, RoomNote } from '@/types/github';
 
-// Room detail, fetched when a door opens: the cell's real commits (push events
-// no longer carry them) plus an AI-designed spec — deterministic without a key.
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const slug = url.searchParams.get('slug') ?? '';
@@ -45,8 +43,6 @@ export async function GET(request: Request): Promise<Response> {
           ? 'a pull request ready for review'
           : null;
 
-  // AI design only runs when the visitor asks for it (?ai=1) — the default
-  // room is always the free deterministic one.
   const wantAi = url.searchParams.get('ai') === '1';
   const ai =
     wantAi && (commits.length > 0 || noteLines.length > 0 || cell.sub)
@@ -59,7 +55,12 @@ export async function GET(request: Request): Promise<Response> {
           state,
         )
       : null;
-  const spec = ai ?? fallbackSpec(room.theme, commits.map(c => ({ id: c.sha, actor: c.author })));
+  const spec =
+    ai ??
+    fallbackSpec(
+      room.theme,
+      commits.map(c => ({ id: c.sha, actor: c.author })),
+    );
 
   return Response.json({ ok: true, ...spec, commits, notes, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
 }

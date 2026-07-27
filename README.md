@@ -16,24 +16,23 @@ Built on the [Next.js 16 preview](https://nextjs.org/blog/next-16-3-instant-navi
 
 ## How the village works
 
-- The **town hall** is the default branch. Releases and merges land there.
-- A **finished cottage** is an open PR that is ready for review.
-- A house **under construction** with a tarp and scaffolding is a draft PR.
-- A **multi storey house** is a stack of PRs, one building per stack. Each floor is a PR built on the one below, and the attic is the top of the stack.
-- A **cabin** is an active branch with no PR yet. A **tent** is a busy issue. The **well** marks the town square.
-- **Villagers** are real contributors, placed at the house where their latest activity happened. The world updates live as they work.
-- Step inside a house and the room is furnished from the PR's real commits. Group work becomes bigger furniture. Review comments hang on the wall as notes. With an AI gateway key the furniture is designed and drawn by a model, and without one a deterministic designer does the job.
-- The **clock** at the bottom winds the whole village back in time through the recent event history.
+- The **town hall** is the default branch, where releases and merges land.
+- A **finished cottage** is an open PR ready for review. One **under construction** with tarp and scaffolding is a draft.
+- A **multi-storey house** is a stack of PRs: each floor is a PR built on the one below, and the attic is the top of the stack.
+- A **cabin** is an active branch with no PR yet, a **tent** is a busy issue, and the **well** marks the town square.
+- **Villagers** are real contributors, standing at the house where they last worked. The world updates live.
+- Step inside and the room is furnished from the PR's real commits. Grouped work becomes bigger furniture, and review comments hang on the wall as notes. With an AI gateway key a model designs and draws the room. Without one, a deterministic designer does.
+- The **clock** at the bottom winds the village back through its recent event history.
 
 ## Features
 
-- **[SWR 2.5 server layer](https://swr.vercel.app)** keeps the village alive. The server starts the fetch with the new `preload()` API and hands it to the client through `cacheData` on `<SWRConfig>`. The client hydrates with no refetch and then polls. Every component fetches its own data with the same key, so SWR dedupes the whole village into one request per poll.
-- **[Cache Components](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)** cache the GitHub reads with `'use cache'`, tag them with `cacheTag`, and bound them with `cacheLife`, so a busy village never spends your rate limit twice on the same window.
-- **[Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching)** and **[runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching)** make hopping between villages feel instant.
-- **[Server Functions](https://nextjs.org/docs/app/getting-started/mutating-data)** manage your watchlist and invalidate only the tags they touch.
+- **[SWR 2.5 server layer](https://swr.vercel.app)**: the server starts the fetch with `preload()` and hands it to the client via `cacheData` on `<SWRConfig>`, which hydrates with no refetch and then polls. Every component uses the same key, so SWR dedupes the whole village into one request per poll.
+- **[Cache Components](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)**: GitHub reads are wrapped in `'use cache'`, tagged with `cacheTag`, and bounded with `cacheLife`, so a busy village never spends the rate limit twice on the same window.
+- **[Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching)** and **[runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching)** make hopping between villages instant.
+- **[Server Functions](https://nextjs.org/docs/app/getting-started/mutating-data)** manage the watchlist and invalidate only the tags they touch.
 - **[React Compiler](https://react.dev/learn/react-compiler)** memoizes automatically, so there is no manual `useMemo` or `useCallback` anywhere.
-- **Optional AI interior design** through the [AI SDK](https://ai-sdk.dev) and the Vercel AI Gateway. Only successful generations are cached, and the whole feature degrades cleanly when no key is set.
-- **Hand drawn pixel art** rendered as SVG rect grids. No image assets, crisp at any scale.
+- **Optional AI interior design** via the [AI SDK](https://ai-sdk.dev) and Vercel AI Gateway. Only successful generations are cached, and the room still draws without a key.
+- **Hand-drawn pixel art** rendered as SVG rect grids, with no image assets.
 
 ## Getting started
 

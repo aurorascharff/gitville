@@ -5,7 +5,6 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { pinRepo } from '@/features/repo/repo-actions';
 
-// "Found a new village?" — pin any public repo and walk straight in.
 export function WatchForm() {
   const [value, setValue] = useState('');
   const [pending, startTransition] = useTransition();

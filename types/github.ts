@@ -42,25 +42,28 @@ export type WireEvent = {
   kind: WireEventKind;
   actor: string;
   avatar: string | null;
-  line: string; // "pushed 2 commits to canary"
-  detail: string | null; // e.g. first commit message / PR title
-  body: string | null; // comment/review text — the sticky notes
-  count: number | null; // commits in a push — furniture built
+  line: string;
+  detail: string | null;
+  body: string | null;
+  count: number | null;
   url: string | null;
-  // Machine-usable target so the world can place the actor at a cell.
-  number: number | null; // PR/issue number
-  ref: string | null; // branch name
+  number: number | null;
+  ref: string | null;
   at: string;
 };
 
 export type ActiveBranch = { ref: string; actor: string; at: string };
 
-// A real commit (from the commits/PR-commits API — push events no longer carry
-// them). `size` is the diff (additions + deletions); 0 means unknown.
 export type BranchCommit = { sha: string; message: string; author: string; at: string; url: string; size: number };
 
-// A real comment or review from the PR/issue thread.
-export type RoomNote = { id: string; author: string; avatar: string | null; body: string; at: string; url: string | null };
+export type RoomNote = {
+  id: string;
+  author: string;
+  avatar: string | null;
+  body: string;
+  at: string;
+  url: string | null;
+};
 
 export type VillagePayload = {
   ok: boolean;

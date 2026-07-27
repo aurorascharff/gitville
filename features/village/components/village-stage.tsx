@@ -1,7 +1,21 @@
 'use client';
 
 import { useRef } from 'react';
-import { BUSH, CROPS, FENCE, FLOWER, FLOWER_BLUE, MUSHROOM, PEBBLES, PixelSprite, POND, ROCK, STUMP, TREE, TUFT } from '@/features/village/components/pixel-sprite';
+import {
+  BUSH,
+  CROPS,
+  FENCE,
+  FLOWER,
+  FLOWER_BLUE,
+  MUSHROOM,
+  PEBBLES,
+  PixelSprite,
+  POND,
+  ROCK,
+  STUMP,
+  TREE,
+  TUFT,
+} from '@/features/village/components/pixel-sprite';
 import { Player, travelTo } from '@/features/village/components/player';
 import { VillageHouse, VillageLamp } from '@/features/village/components/village-house';
 import { VillageRoads } from '@/features/village/components/village-roads';
@@ -11,12 +25,12 @@ import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-// Wide of the door so lamps never stand in the villager arc or on the name plate.
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {
-  return cells.filter(c => c.kind !== 'inbox' && !c.hidden).map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
+  return cells
+    .filter(c => c.kind !== 'inbox' && !c.hidden)
+    .map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
 
-// The village at fixed scale; the camera (world transform) chases the player.
 export function VillageStage() {
   const { slug, scrub, focusId, zoom } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -44,7 +58,7 @@ export function VillageStage() {
           width: WORLD_W,
           height: WORLD_H,
           transformOrigin: '0 0',
-          // First paint already centers on the player, so the camera doesn't jump in.
+          // First paint centers on the player so the camera doesn't jump in.
           transform: `translate(calc(50vw - ${WORLD_W / 2}px), calc(50dvh - ${WORLD_H / 2 + 170}px))`,
           boxShadow: 'inset 0 0 140px 80px rgb(14 30 18 / 0.6)',
         }}
@@ -57,8 +71,10 @@ export function VillageStage() {
         <Pond x={1780} y={1190} />
         <Greenery />
 
-        {/* Night falls on the terrain; buildings above carry their own night palettes. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-[#141f4a] opacity-60 mix-blend-multiply dark:block" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden bg-[#141f4a] opacity-60 mix-blend-multiply dark:block"
+        />
 
         {lamps.map((l, i) => (
           <VillageLamp key={i} x={l.x} y={l.y} />
@@ -83,7 +99,8 @@ export function VillageStage() {
                 top: l.y - 70,
                 width: 130,
                 height: 120,
-                background: 'radial-gradient(circle, rgb(255 205 96 / 0.34), rgb(255 190 80 / 0.1) 45%, transparent 68%)',
+                background:
+                  'radial-gradient(circle, rgb(255 205 96 / 0.34), rgb(255 190 80 / 0.1) 45%, transparent 68%)',
               }}
             />
           ))}
@@ -109,7 +126,6 @@ export function VillageStage() {
   );
 }
 
-// Daytime ambience: butterflies drifting over the lawns.
 function Butterflies() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden dark:hidden">
@@ -208,7 +224,11 @@ function Greenery() {
 
 function Pond({ x, y }: { x: number; y: number }) {
   return (
-    <span aria-hidden className="pixel pointer-events-none absolute" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
+    <span
+      aria-hidden
+      className="pixel pointer-events-none absolute"
+      style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
+    >
       <PixelSprite art={POND.art} palette={POND.palette} scale={7} />
     </span>
   );
@@ -277,7 +297,12 @@ function GrassDetail() {
         const y = ((i * 683 + 71) % (WORLD_H - 60)) + 30;
         const sprite = i % 9 === 0 ? FLOWER : i % 9 === 4 ? FLOWER_BLUE : i % 9 === 7 ? PEBBLES : TUFT;
         return (
-          <span key={i} aria-hidden className="pixel pointer-events-none absolute opacity-80" style={{ left: x, top: y }}>
+          <span
+            key={i}
+            aria-hidden
+            className="pixel pointer-events-none absolute opacity-80"
+            style={{ left: x, top: y }}
+          >
             <PixelSprite art={sprite.art} palette={sprite.palette} scale={3} />
           </span>
         );

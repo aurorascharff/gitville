@@ -11,8 +11,6 @@ import { VillageStage } from '@/features/village/components/village-stage';
 import { VillageUiProvider } from '@/features/village/village-ui-context';
 import type { RepoData } from '@/types/github';
 
-// The stage is the app; every other surface floats over it. Each surface has its
-// own boundary so one broken panel never takes the village down with it.
 export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
   return (
     <VillageUiProvider repo={repo} pinned={pinned}>

@@ -1,10 +1,6 @@
+import { hashString } from '@/lib/utils';
 import type { VillagePayload, WireEvent } from '@/types/github';
 
-// ── Layout ────────────────────────────────────────────────────────────────────
-// A honeycomb: center cell + two rings = 19 slots, laid out in a fixed logical
-// space. Positions are deterministic so cells never jump between polls.
-
-// Big enough that the camera has somewhere to go — walking matters.
 export const WORLD_W = 2200;
 export const WORLD_H = 1560;
 const CX = WORLD_W / 2;
@@ -14,14 +10,12 @@ const DY = 295;
 
 const AXIAL: [number, number][] = [
   [0, 0],
-  // ring 1
   [1, 0],
   [0, 1],
   [-1, 1],
   [-1, 0],
   [0, -1],
   [1, -1],
-  // ring 2
   [2, 0],
   [1, 1],
   [0, 2],
@@ -43,8 +37,6 @@ function slotPos(i: number): { x: number; y: number } {
 
 export type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
 
-// How a PR's house looks: draft = under construction, ready = finished cottage,
-// stacked = one storey per PR underneath it in the chain.
 export type PrState = 'draft' | 'ready' | 'stacked';
 
 export type Cell = {
@@ -55,20 +47,17 @@ export type Cell = {
   url: string;
   draft?: boolean;
   prState?: PrState;
-  floors?: number; // 1 + open-PR ancestors in the base chain
-  stackedOn?: number; // the PR number directly underneath, if stacked
+  floors?: number;
+  stackedOn?: number;
   author?: string;
-  ref?: string; // a PR's head branch — pushes to it land in this room
+  ref?: string;
   baseRef?: string;
-  // A stack is ONE building: only its top PR renders a house. The members
-  // below keep invisible cells at the same spot so rooms and villagers work.
+  // A stack is one building: only the top PR renders; members keep invisible cells at the same spot.
   hidden?: boolean;
   x: number;
   y: number;
 };
 
-// Walk a PR's base chain through the other open PRs. Depth 1 = based on the
-// default branch; each open PR underneath adds a floor. Visited-set guards cycles.
 function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, VillagePayload['prs'][number]>): number {
   let depth = 1;
   const seen = new Set<number>([pr.number]);
@@ -81,7 +70,6 @@ function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, Villa
   return depth;
 }
 
-// Every open PR gets a house, up to the slots the honeycomb can spare.
 export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
   return payload.prs.slice(0, 14);
 }
@@ -101,7 +89,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
-  // A PR is a stack top when no other open PR builds on its head branch.
   const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
   const picked = pickedPrs(payload);
   const tops = picked.filter(pr => !baseRefs.has(pr.branch));
@@ -127,7 +114,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       baseRef: pr.baseRef,
       ...pos,
     });
-    // Walk down the chain: members live inside the same building.
     let cur = pr;
     for (;;) {
       const parent = byHead.get(cur.baseRef);
@@ -153,8 +139,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     }
   }
 
-  // Winding the clock back resurrects houses: a PR merged or closed after the
-  // viewed moment was still open then, so it stands in the village again.
+  // Scrubbing back reopens houses closed after the viewed moment.
   if (Number.isFinite(asOf)) {
     const past = new Map<number, WireEvent>();
     for (const e of payload.events) {
@@ -192,8 +177,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     });
   }
 
-  // The busiest issues/discussions get their own houses too — that's where the
-  // conversation villagers actually are.
   const issueActivity = new Map<number, { count: number; title: string | null }>();
   for (const e of payload.events) {
     if (e.number == null || prNumbers.has(e.number)) continue;
@@ -215,7 +198,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     });
   }
 
-  // Whoever's latest work points somewhere older hangs out on the town square.
   cells.push({
     id: 'inbox',
     kind: 'inbox',
@@ -227,8 +209,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
 
   return cells;
 }
-
-// ── Placement ─────────────────────────────────────────────────────────────────
 
 export function cellForEvent(e: WireEvent, cells: Cell[], defaultBranch: string): string {
   if (e.ref) {
@@ -253,7 +233,6 @@ export type Actor = {
   event: WireEvent;
 };
 
-// Where everyone is "as of" a moment: each human's latest event at or before `t`.
 export function actorsAt(payload: VillagePayload, cells: Cell[], t: number): Actor[] {
   const byActor = new Map<string, WireEvent>();
   for (const e of payload.events) {
@@ -273,8 +252,6 @@ export function actorsAt(payload: VillagePayload, cells: Cell[], t: number): Act
     .sort((a, b) => a.login.localeCompare(b.login));
 }
 
-// Arcs at the foot of the cell; outer rings hold more people so crowds spread.
-// Deterministic (sorted by login upstream) so nobody shuffles between polls.
 export function arcOffset(index: number, count: number): { x: number; y: number } {
   let ring = 0;
   let start = 0;
@@ -296,26 +273,12 @@ export function arcOffset(index: number, count: number): { x: number; y: number 
 }
 
 export function hashDelay(login: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < login.length; i++) {
-    h ^= login.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) % 2000;
+  return hashString(login) % 2000;
 }
-
-// Recent events that happened at one cell — powers the inspector's local history.
-export function eventsForCell(payload: VillagePayload, cells: Cell[], cellId: string, limit = 8): WireEvent[] {
-  return payload.events.filter(e => cellForEvent(e, cells, payload.defaultBranch) === cellId).slice(0, limit);
-}
-
-// ── Rooms ─────────────────────────────────────────────────────────────────────
-// A cell's interior: commits are the furniture, reviews/comments are sticky notes,
-// and the whole room is themed by what the crew is building.
 
 export type Room = {
-  commits: WireEvent[]; // push events here — each one built some furniture
-  notes: WireEvent[]; // comments/reviews — sticky notes on the wall
+  commits: WireEvent[];
+  notes: WireEvent[];
   size: 'S' | 'M' | 'L';
   theme: string;
 };
@@ -342,15 +305,4 @@ export function roomFor(payload: VillagePayload, cells: Cell[], cellId: string):
   const theme = THEMES.find(([re]) => re.test(text))?.[1] ?? 'The Workshop';
 
   return { commits, notes, size, theme };
-}
-
-// How much has been built at each cell — drives house size + lit windows on the map.
-export function commitWeights(payload: VillagePayload, cells: Cell[]): Map<string, number> {
-  const weights = new Map<string, number>();
-  for (const e of payload.events) {
-    if (e.kind !== 'push') continue;
-    const id = cellForEvent(e, cells, payload.defaultBranch);
-    weights.set(id, (weights.get(id) ?? 0) + Math.max(1, e.count ?? 1));
-  }
-  return weights;
 }
