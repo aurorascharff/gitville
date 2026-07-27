@@ -2,6 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useSyncExternalStore } from 'react';
+import { THEME_PINNED_KEY } from '@/components/theme/theme-provider';
 import { cn } from '@/lib/utils';
 
 const subscribe = () => () => {};
@@ -18,12 +19,17 @@ export function ThemeToggle() {
   const mounted = useIsMounted();
   const active = mounted ? resolvedTheme : undefined;
 
+  function pick(theme: 'light' | 'dark') {
+    localStorage.setItem(THEME_PINNED_KEY, '1');
+    setTheme(theme);
+  }
+
   return (
     <div className="inline-flex h-full items-center gap-0.5 px-1">
-      <ToggleButton active={active === 'light'} label="Day" onClick={() => setTheme('light')}>
+      <ToggleButton active={active === 'light'} label="Day" onClick={() => pick('light')}>
         <PixelSun />
       </ToggleButton>
-      <ToggleButton active={active === 'dark'} label="Night" onClick={() => setTheme('dark')}>
+      <ToggleButton active={active === 'dark'} label="Night" onClick={() => pick('dark')}>
         <PixelMoon />
       </ToggleButton>
     </div>

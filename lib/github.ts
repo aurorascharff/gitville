@@ -115,7 +115,7 @@ type EventResponse = {
     commits?: { message: string }[];
     action?: string;
     pull_request?: { number: number; title: string; html_url: string; merged?: boolean };
-    issue?: { number: number; title: string; html_url: string };
+    issue?: { number: number; title: string; html_url: string; pull_request?: { html_url?: string } | null };
     release?: { tag_name: string; html_url: string };
     comment?: { html_url: string; body?: string | null };
     review?: { body?: string | null };
@@ -138,6 +138,7 @@ function mapEvent(e: EventResponse, slug: string): WireEvent | null {
     actor: e.actor?.login ?? UNKNOWN_ACTOR,
     avatar: e.actor?.login ? `https://avatars.githubusercontent.com/${e.actor.login}` : null,
     at: e.created_at,
+    isPr: false,
     detail: null as string | null,
     body: null as string | null,
     count: null as number | null,
@@ -179,7 +180,15 @@ function mapEvent(e: EventResponse, slug: string): WireEvent | null {
             : p.action === 'reopened'
               ? 'reopened'
               : 'opened';
-      return { ...base, kind, number: pr.number, line: `${verb} #${pr.number}`, detail: pr.title, url: pr.html_url };
+      return {
+        ...base,
+        kind,
+        isPr: true,
+        number: pr.number,
+        line: `${verb} #${pr.number}`,
+        detail: pr.title,
+        url: pr.html_url,
+      };
     }
     case 'PullRequestReviewEvent': {
       const pr = p.pull_request;
@@ -187,6 +196,7 @@ function mapEvent(e: EventResponse, slug: string): WireEvent | null {
       return {
         ...base,
         kind: 'review',
+        isPr: true,
         body: trimBody(p.review?.body),
         number: pr.number,
         line: `reviewed #${pr.number}`,
@@ -200,11 +210,12 @@ function mapEvent(e: EventResponse, slug: string): WireEvent | null {
       return {
         ...base,
         kind: 'comment',
+        isPr: Boolean(issue.pull_request),
         body: trimBody(p.comment?.body),
         number: issue.number,
         line: `commented on #${issue.number}`,
         detail: issue.title,
-        url: p.comment?.html_url ?? issue.html_url,
+        url: p.comment?.html_url ?? issue.pull_request?.html_url ?? issue.html_url,
       };
     }
     case 'IssuesEvent': {

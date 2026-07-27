@@ -177,25 +177,44 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     });
   }
 
-  const issueActivity = new Map<number, { count: number; title: string | null }>();
+  // Numbered activity for items outside the open-PR window. A number is a PR if
+  // any of its events say so (a PR comment arrives as an IssueCommentEvent, so
+  // trust e.isPr over the kind); otherwise it's a real issue.
+  const activity = new Map<number, { count: number; title: string | null; isPr: boolean }>();
   for (const e of payload.events) {
     if (e.number == null || prNumbers.has(e.number)) continue;
-    const cur = issueActivity.get(e.number) ?? { count: 0, title: null };
+    const cur = activity.get(e.number) ?? { count: 0, title: null, isPr: false };
     cur.count += 1;
     if (!cur.title && e.detail) cur.title = e.detail;
-    issueActivity.set(e.number, cur);
+    if (e.isPr) cur.isPr = true;
+    activity.set(e.number, cur);
   }
-  const topIssues = [...issueActivity.entries()].sort((a, b) => b[1].count - a[1].count);
-  for (const [number, info] of topIssues) {
+  const topActivity = [...activity.entries()].sort((a, b) => b[1].count - a[1].count);
+  for (const [number, info] of topActivity) {
     if (slot >= 18) break;
-    cells.push({
-      id: `issue:${number}`,
-      kind: 'issue',
-      label: `#${number}`,
-      sub: info.title,
-      url: `https://github.com/${slug}/issues/${number}`,
-      ...slotPos(slot++),
-    });
+    // Merged/closed PRs may already have a house from the scrub-reopen pass.
+    if (cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`)) continue;
+    cells.push(
+      info.isPr
+        ? {
+            id: `pr:${number}`,
+            kind: 'pr',
+            label: `#${number}`,
+            sub: info.title,
+            url: `https://github.com/${slug}/pull/${number}`,
+            prState: 'ready',
+            floors: 1,
+            ...slotPos(slot++),
+          }
+        : {
+            id: `issue:${number}`,
+            kind: 'issue',
+            label: `#${number}`,
+            sub: info.title,
+            url: `https://github.com/${slug}/issues/${number}`,
+            ...slotPos(slot++),
+          },
+    );
   }
 
   cells.push({
