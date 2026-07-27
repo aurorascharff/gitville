@@ -51,8 +51,10 @@ type Chain = { audio: HTMLAudioElement; filter: BiquadFilterNode; gain: GainNode
 export function VillageMusic() {
   const { focusId } = useVillageUi();
   const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.3);
   const ctxRef = useRef<AudioContext | null>(null);
   const chainRef = useRef<Chain | null>(null);
+  const synthOut = useRef<GainNode | null>(null);
   const synthCleanup = useRef<(() => void) | null>(null);
   const indoors = Boolean(focusId);
 
@@ -66,8 +68,9 @@ export function VillageMusic() {
       ctxRef.current = ctx;
       void ctx.resume();
       const out = ctx.createGain();
-      out.gain.value = 0.5;
+      out.gain.value = 0.4;
       out.connect(ctx.destination);
+      synthOut.current = out;
       let next = ctx.currentTime + 0.1;
       next += scheduleLoop(ctx, out, next);
       const timer = setInterval(() => {
@@ -90,6 +93,7 @@ export function VillageMusic() {
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       const gain = ctx.createGain();
+      gain.gain.value = 0.3;
       source.connect(filter).connect(gain).connect(ctx.destination);
       chainRef.current = { audio, filter, gain };
       return chainRef.current;
@@ -108,12 +112,15 @@ export function VillageMusic() {
 
   // Indoors the same song plays on, just muffled and a touch quieter.
   useEffect(() => {
-    const chain = chainRef.current;
     const ctx = ctxRef.current;
-    if (!chain || !ctx) return;
-    chain.filter.frequency.setTargetAtTime(indoors ? 700 : 20000, ctx.currentTime, 0.15);
-    chain.gain.gain.setTargetAtTime(indoors ? 0.55 : 0.75, ctx.currentTime, 0.15);
-  }, [indoors, playing]);
+    if (!ctx) return;
+    const chain = chainRef.current;
+    if (chain) {
+      chain.filter.frequency.setTargetAtTime(indoors ? 700 : 20000, ctx.currentTime, 0.15);
+      chain.gain.gain.setTargetAtTime(volume * (indoors ? 0.7 : 1), ctx.currentTime, 0.15);
+    }
+    synthOut.current?.gain.setTargetAtTime(volume * 1.3, ctx.currentTime, 0.15);
+  }, [indoors, playing, volume]);
 
   useEffect(
     () => () => {
@@ -124,14 +131,30 @@ export function VillageMusic() {
   );
 
   return (
-    <button
-      type="button"
-      onClick={() => setPlaying(p => !p)}
-      aria-label={playing ? 'Mute the village music' : 'Play the village music'}
-      aria-pressed={playing}
-      className="panel font-pixel absolute bottom-5 left-16 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
-    >
-      {playing ? '♪' : <span className="opacity-45">♪</span>}
-    </button>
+    <div className="absolute bottom-5 left-16 z-50 flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setPlaying(p => !p)}
+        aria-label={playing ? 'Mute the village music' : 'Play the village music'}
+        aria-pressed={playing}
+        className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+      >
+        {playing ? '♪' : <span className="opacity-45">♪</span>}
+      </button>
+      {playing ? (
+        <div className="panel flex h-9 items-center rounded-sm px-2">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={volume}
+            onChange={e => setVolume(Number(e.target.value))}
+            aria-label="Music volume"
+            className="h-1 w-16 cursor-pointer accent-[#8a4a2b]"
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

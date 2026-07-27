@@ -117,8 +117,7 @@ export function HouseInterior() {
   );
 }
 
-// The carpenter's corner: hiring the AI is its own thing, floating to the
-// right of the room, clearly apart from the PR facts on the left.
+// Hiring the AI is its own thing, floating right of the room.
 function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
   const { slug } = useVillageUi();
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
@@ -126,27 +125,16 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   return (
-    <aside className="panel z-50 w-52 shrink-0 rounded-sm p-3">
-      <p className="font-pixel text-[13px] font-bold">the carpenter</p>
-      <p className="mt-1 text-[11px] leading-snug text-[#6b5b43]">
-        an AI can rebuild the furniture here from the real commits, one invention per piece of work
-      </p>
+    <aside className="panel z-50 w-48 shrink-0 rounded-sm p-2.5">
       <button
         onClick={() => onToggle(!ai)}
         disabled={working}
-        className="font-pixel mt-2 w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
+        className="font-pixel w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
       >
-        {working ? 'at work…' : ai && spec?.ai ? 'show the plain room' : 'draw with AI'}
+        {working ? 'at work…' : ai && spec?.ai ? 'plain room' : 'draw with AI'}
       </button>
-      {working ? (
-        <p className="font-pixel mt-2 text-[11px] leading-snug text-[#8a6d2a]">
-          the carpenter is at work. wander around and come back in a moment
-        </p>
-      ) : null}
-      {!working && spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">theme: {spec.theme}</p> : null}
-      {!working && ai && spec && !spec.ai ? (
-        <p className="font-pixel mt-2 text-[11px] text-[#8a4a2b]">the carpenter couldn’t draw this one</p>
-      ) : null}
+      {!working && spec?.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#8a6d2a]">{spec.theme}</p> : null}
+      {!working && ai && spec && !spec.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#8a4a2b]">couldn’t draw this one</p> : null}
     </aside>
   );
 }
@@ -576,29 +564,26 @@ function HouseSign({ cell }: { cell: Cell }) {
     <aside className="panel z-50 w-80 shrink-0 rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
-      <p className="mt-0.5 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        {chip ? (
-          <span
-            className={cn(
-              'font-pixel rounded-sm border-2 border-[#4a3826] px-1 py-px text-[10px] font-bold',
-              stack.length > 1 ? 'bg-[#8a6a9d] text-white' : cell.prState === 'ready' ? 'bg-[#58a55c] text-white' : 'bg-[#e4c05a] text-[#3a2f22]',
-            )}
-          >
-            {chip}
-          </span>
-        ) : null}
-        {cell.ref ? (
-          <span className="max-w-full truncate font-mono text-[10px] text-[#6b5b43]">
-            {cell.ref} → {cell.baseRef}
-          </span>
-        ) : null}
-      </div>
-      {cell.author ? <p className="mt-1 text-[11px] text-[#6b5b43]">by {cell.author}</p> : null}
+      <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
+      {chip ? (
+        <span
+          className={cn(
+            'font-pixel mt-2 inline-block rounded-sm border-2 border-[#4a3826] px-1.5 py-0.5 text-[10px] font-bold',
+            stack.length > 1 ? 'bg-[#8a6a9d] text-white' : cell.prState === 'ready' ? 'bg-[#58a55c] text-white' : 'bg-[#e4c05a] text-[#3a2f22]',
+          )}
+        >
+          {chip}
+        </span>
+      ) : null}
+      {cell.ref ? (
+        <p className="mt-2 truncate font-mono text-[11px] text-[#6b5b43]">
+          {cell.ref} → {cell.baseRef}
+        </p>
+      ) : null}
+      {cell.author ? <p className="mt-1 text-[12px] text-[#6b5b43]">by {cell.author}</p> : null}
 
       {stack.length > 1 ? (
         <div className="mt-2 border-t-2 border-[#4a3826]/40 pt-1.5">
-          <p className="font-pixel text-[11px] font-bold text-[#8a6d2a]">the stack, top floor first</p>
           <ul className="mt-1 flex flex-col gap-0.5">
             {stack.map(pr => {
               const here = `pr:${pr.number}` === cell.id;
@@ -622,15 +607,13 @@ function HouseSign({ cell }: { cell: Cell }) {
                 </li>
               );
             })}
-            <li className="font-pixel px-1.5 text-[11px] text-[#8a6d2a]">⌂ {stack[stack.length - 1].baseRef} is the ground</li>
           </ul>
         </div>
       ) : null}
-      <div className="mt-2 flex items-center justify-between border-t-2 border-[#4a3826]/40 pt-2">
+      <div className="mt-2 border-t-2 border-[#4a3826]/40 pt-2">
         <a href={cell.url} target="_blank" rel="noreferrer" className="font-pixel flex items-center gap-1 text-[12px] font-bold text-[#8a4a2b] hover:underline">
           open on github <ArrowUpRight size={11} strokeWidth={3} />
         </a>
-        <span className="font-pixel text-[10px] text-[#8a6d2a]">esc to leave</span>
       </div>
     </aside>
   );

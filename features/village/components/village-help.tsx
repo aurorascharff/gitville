@@ -36,13 +36,13 @@ export function VillageHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="What does everything mean?"
-        className="panel font-pixel absolute bottom-5 left-4 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+        className="panel font-pixel absolute bottom-5 left-4 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
       >
         ?
       </button>
       {open ? (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="absolute inset-0 z-60 flex items-center justify-center bg-black/50 p-4"
           onClick={e => e.target === e.currentTarget && setOpen(false)}
         >
           <aside className="panel flex max-h-[80dvh] w-96 flex-col overflow-hidden rounded-sm">
@@ -88,7 +88,14 @@ export function VillageHelp() {
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
                 villagers stand where they last worked. walk with WASD or click the grass. walk into a door or press Enter to step
-                inside. walk onto the mat to leave.
+                inside. walk onto the mat or press Esc to leave.
+              </li>
+              <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
+                inside a stacked house the sign lists every floor. click one to visit that PR.
+              </li>
+              <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
+                the draw with AI button rebuilds a room from its real commits, one invented machine per piece of work. drawn rooms
+                are cached and shared.
               </li>
               <li className="border-t-2 border-[#4a3826]/30 py-2 text-[11px] leading-snug text-[#6b5b43]">
                 made by{' '}
