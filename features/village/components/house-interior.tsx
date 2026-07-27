@@ -6,7 +6,9 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import {
   AI_ART_PALETTE,
   BARREL,
+  BARRIER,
   CAMPFIRE,
+  CARPENTER,
   CHEST,
   FIREPLACE,
   furnitureByName,
@@ -60,7 +62,7 @@ export function HouseInterior() {
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
-  const walkTarget = useRef<{ x: number; y: number } | null>(null);
+  const walkTargetRef = useRef<{ x: number; y: number } | null>(null);
   const [viewport, setViewport] = useState({ w: 1400, h: 900 });
   const ai = aiOn;
 
@@ -82,11 +84,31 @@ export function HouseInterior() {
 
   // A stale click target from the last visit would walk you right back out.
   useEffect(() => {
-    walkTarget.current = null;
+    walkTargetRef.current = null;
   }, [focusId]);
 
   if (!cell) return null;
 
+  return <InteriorScene key={cell.id} cell={cell} ai={ai} setAiOn={setAiOn} setFocusId={setFocusId} viewport={viewport} walkTargetRef={walkTargetRef} />;
+}
+
+function InteriorScene({
+  cell,
+  ai,
+  setAiOn,
+  setFocusId,
+  viewport,
+  walkTargetRef,
+}: {
+  cell: Cell;
+  ai: boolean;
+  setAiOn: (on: boolean) => void;
+  setFocusId: (id: string | null) => void;
+  viewport: { w: number; h: number };
+  walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
+}) {
+  const { slug } = useVillageUi();
+  const { spec } = useRoomSpec(slug, cell.id, ai);
   const [w, h] = roomDims(cell);
   // The sign and the AI panel get their own columns, so the room never sits under either.
   const fit = Math.min(1, (viewport.w - 620) / w, (viewport.h - 48) / h);
@@ -97,19 +119,28 @@ export function HouseInterior() {
       <div className="flex h-full min-w-0 flex-1 items-center justify-center">
         <div
           key={cell.id}
-          className="pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]"
+          className={cn(
+            'pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]',
+            // AI mode is visible on the room itself: a golden frame while it's on.
+            ai && 'ring-4 ring-[#e4c05a]',
+          )}
           style={{ width: w, height: h, transform: `scale(${fit})` }}
           onClick={e => {
             if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
             const rect = e.currentTarget.getBoundingClientRect();
-            walkTarget.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
+            walkTargetRef.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
           }}
         >
           <WallNotes cell={cell} width={w} ai={ai} />
           <Floor cell={cell} width={w} height={h} ai={ai} />
           <Occupants cell={cell} width={w} height={h} />
           <DoorMat width={w} height={h} />
-          <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
+          <InteriorPlayer width={w} height={h} walkTargetRef={walkTargetRef} onExit={() => setFocusId(null)} />
+          {ai ? (
+            <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+              {spec?.ai ? spec.theme : 'AI at work…'}
+            </span>
+          ) : null}
         </div>
       </div>
       <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
@@ -117,24 +148,55 @@ export function HouseInterior() {
   );
 }
 
-// Hiring the AI is its own thing, floating right of the room.
+// The carpenter stands right of the room: click to hire, click to send home.
 function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
-  const { slug } = useVillageUi();
+  const { slug, setTip } = useVillageUi();
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const working = ai && loading;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
+  const label = working ? 'at work…' : ai ? 'AI room' : 'draw this room with AI';
+
   return (
-    <aside className="panel z-50 w-48 shrink-0 rounded-sm p-2.5">
+    <aside className="z-50 w-36 shrink-0">
       <button
         onClick={() => onToggle(!ai)}
-        disabled={working}
-        className="font-pixel w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
+        role="switch"
+        aria-checked={ai}
+        aria-label="Draw this room with AI"
+        onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: label, body: !working && spec?.ai ? spec.theme : null, when: null })}
+        onMouseLeave={() => setTip(null)}
+        className={cn(
+          'panel pixel flex w-full cursor-pointer flex-col items-center rounded-sm p-2.5 transition-transform hover:-translate-y-0.5',
+          ai && 'ring-2 ring-[#e4c05a]',
+          !ai && !working && 'opacity-80',
+        )}
       >
-        {working ? 'at work…' : ai && spec?.ai ? 'plain room' : 'draw with AI'}
+        <span className="relative">
+          {working ? (
+            <span aria-hidden className="absolute -top-1 -right-2">
+              {[0, 1].map(i => (
+                <span key={i} className="smoke-puff absolute h-1.5 w-1.5 rounded-full bg-[#d8c9a8]" style={{ animationDelay: `${i * 800}ms` }} />
+              ))}
+            </span>
+          ) : null}
+          <span className={cn('block', working && 'sprite-bob')}>
+            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={4} />
+          </span>
+        </span>
+        {/* A real switch: track and knob, no guessing which state you're in. */}
+        <span
+          aria-hidden
+          className={cn(
+            'mt-2 flex h-5 w-10 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
+            ai ? 'justify-end bg-[#e4c05a]' : 'justify-start bg-[#b5a687]',
+          )}
+        >
+          <span className="h-3 w-3.5 rounded-xs border border-[#4a3826] bg-[#f7efdc]" />
+        </span>
+        <span className="font-pixel mt-1.5 text-center text-[11px] leading-4 font-bold text-[#3a2f22]">{label}</span>
       </button>
-      {!working && spec?.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#8a6d2a]">{spec.theme}</p> : null}
-      {!working && ai && spec && !spec.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#8a4a2b]">couldn’t draw this one</p> : null}
+      {!working && ai && spec && !spec.ai ? <p className="font-pixel mt-1.5 text-[11px] text-[#f0e6d2]/70">couldn’t draw this one</p> : null}
     </aside>
   );
 }
@@ -192,7 +254,8 @@ function WallNotes({ cell, width, ai }: { cell: Cell; width: number; ai: boolean
   const notes = roomFor(payload, cells, cell.id).notes;
   const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
 
-  if (loading) return <WallSkeleton />;
+  // First entry only — toggling AI must never blank the wall.
+  if (loading && !spec) return <WallSkeleton />;
 
   return (
     <div className={cn('absolute inset-x-0 top-0', wallClass(cell))} style={{ height: WALL_H }}>
@@ -232,11 +295,14 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
   const plaza = cell.kind === 'inbox';
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
 
-  if (loading) return <FloorSkeleton />;
+  // Skeleton only on the very first entry. Toggling AI never locks the room:
+  // the old furniture is carried out and the new set pops in when it's ready.
+  if (loading && !spec) return <FloorSkeleton />;
+  const redecorating = loading && Boolean(spec) && (spec?.ai ?? false) !== ai;
 
   const anchor = campsite ? null : centerpiece(cell);
   const floorH = height - WALL_H;
-  const builds = toBuilds(commits, spec?.items);
+  const builds = redecorating ? [] : toBuilds(commits, spec?.items);
   const slots = furnitureSlots(builds.length, width, floorH);
 
   return (
@@ -252,14 +318,14 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
         </span>
       ) : null}
       {builds.map((build, i) => (
-        <Furniture key={build.commits[0].sha} build={build} x={slots[i].x} y={slots[i].y} />
+        <Furniture key={build.commits[0].sha} build={build} x={slots[i].x} y={slots[i].y} delay={i * 90} />
       ))}
     </div>
   );
 }
 
-// Furniture fills the room tile by tile from the back-left corner, always
-// leaving the middle of the floor to the centerpiece.
+// Furniture fills the room tile by tile from the back-left corner, clear of
+// the wall band above and leaving the middle to the centerpiece.
 function furnitureSlots(count: number, w: number, floorH: number): { x: number; y: number }[] {
   const step = TILE * 2.5;
   const cols = Math.max(1, Math.floor((w - TILE * 2) / step));
@@ -268,7 +334,7 @@ function furnitureSlots(count: number, w: number, floorH: number): { x: number; 
     const row = Math.floor(i / cols);
     const col = i % cols;
     const x = TILE + col * step + step / 2;
-    const y = TILE * 0.6 + row * TILE * 1.9 + TILE / 2;
+    const y = 100 + row * TILE * 1.9;
     if (Math.abs(x - w / 2) < 170 && Math.abs(y - (floorH / 2 - 20)) < 120) continue;
     slots.push({ x, y });
   }
@@ -315,7 +381,7 @@ function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): B
 
 // One clickable segment per commit. AI-drawn segments join flush into one
 // invented machine; catalog fallbacks stand together as a matching set.
-function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
+function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: number; delay?: number }) {
   const { setTip } = useVillageUi();
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
@@ -323,8 +389,13 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const drawn = Boolean(build.pieces?.length);
 
   return (
-    <div className="absolute flex flex-col items-center" style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}>
-      <div className="flex items-end">
+    <div
+      className="absolute flex flex-col items-center"
+      style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}
+    >
+      {/* pop-in animates transform, so it lives inside the positioning wrapper */}
+      <div className="pop-in flex flex-col items-center" style={{ animationDelay: `${delay}ms` }}>
+        <div className="flex items-end">
         {build.commits.map((commit, i) => {
           const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
           const palette = drawn ? AI_ART_PALETTE : fallback.palette;
@@ -345,11 +416,12 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
             </a>
           );
         })}
+        </div>
+        <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
+        <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
+          {name}
+        </span>
       </div>
-      <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
-        {name}
-      </span>
     </div>
   );
 }
@@ -423,12 +495,12 @@ function DoorMat({ width, height }: { width: number; height: number }) {
 function InteriorPlayer({
   width,
   height,
-  walkTarget,
+  walkTargetRef,
   onExit,
 }: {
   width: number;
   height: number;
-  walkTarget: React.RefObject<{ x: number; y: number } | null>;
+  walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
   onExit: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -450,7 +522,7 @@ function InteriorPlayer({
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
         e.preventDefault();
         s.keys.add(k);
-        walkTarget.current = null;
+        walkTargetRef.current = null;
       }
     }
     function onKeyUp(e: KeyboardEvent) {
@@ -469,15 +541,15 @@ function InteriorPlayer({
         if (s.keys.has('arrowright') || s.keys.has('d')) dx += 1;
         if (s.keys.has('arrowup') || s.keys.has('w')) dy -= 1;
         if (s.keys.has('arrowdown') || s.keys.has('s')) dy += 1;
-      } else if (walkTarget.current) {
-        const gx = walkTarget.current.x - s.x;
-        const gy = walkTarget.current.y - s.y;
+      } else if (walkTargetRef.current) {
+        const gx = walkTargetRef.current.x - s.x;
+        const gy = walkTargetRef.current.y - s.y;
         const dist = Math.hypot(gx, gy);
         if (dist > SPEED) {
           dx = gx / dist;
           dy = gy / dist;
         } else {
-          walkTarget.current = null;
+          walkTargetRef.current = null;
         }
       }
       if (dx !== 0 || dy !== 0) {
@@ -506,7 +578,7 @@ function InteriorPlayer({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [width, height, walkTarget]);
+  }, [width, height, walkTargetRef]);
 
   return (
     <div ref={ref} className="absolute" style={{ transform: `translate(${width / 2 - 13}px, ${height - 108}px)` }}>
@@ -551,30 +623,30 @@ function HouseSign({ cell }: { cell: Cell }) {
   // Name the floor you're standing on, not the cell's own chain depth.
   const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
   const floorNo = idx >= 0 ? stack.length - idx : 1;
-  const chip =
-    cell.kind !== 'pr'
-      ? null
-      : stack.length > 1
-        ? `floor ${floorNo} of ${stack.length}${cell.draft ? ', a draft' : ''}`
-        : cell.prState === 'draft'
-          ? 'draft'
-          : 'ready for review';
+  const chip = cell.kind !== 'pr' ? null : stack.length > 1 ? `⌂ ${floorNo}/${stack.length}` : cell.prState === 'ready' ? 'ready' : null;
 
   return (
     <aside className="panel z-50 w-80 shrink-0 rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
       <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
-      {chip ? (
-        <span
-          className={cn(
-            'font-pixel mt-2 inline-block rounded-sm border-2 border-[#4a3826] px-1.5 py-0.5 text-[10px] font-bold',
-            stack.length > 1 ? 'bg-[#8a6a9d] text-white' : cell.prState === 'ready' ? 'bg-[#58a55c] text-white' : 'bg-[#e4c05a] text-[#3a2f22]',
-          )}
-        >
-          {chip}
-        </span>
-      ) : null}
+      <span className="mt-2 flex items-center gap-1.5">
+        {chip ? (
+          <span
+            className={cn(
+              'font-pixel inline-block rounded-sm border-2 border-[#4a3826] px-1.5 py-0.5 text-[11px] font-bold',
+              stack.length > 1 ? 'bg-[#8a6a9d] text-white' : 'bg-[#58a55c] text-white',
+            )}
+          >
+            {chip}
+          </span>
+        ) : null}
+        {cell.draft ? (
+          <span className="pixel" title="draft, under construction">
+            <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
+          </span>
+        ) : null}
+      </span>
       {cell.ref ? (
         <p className="mt-2 truncate font-mono text-[11px] text-[#6b5b43]">
           {cell.ref} → {cell.baseRef}
@@ -602,7 +674,11 @@ function HouseSign({ cell }: { cell: Cell }) {
                   >
                     <span className="font-pixel shrink-0 text-[13px] font-bold text-[#3a2f22]">#{pr.number}</span>
                     <span className="truncate text-[13px] text-[#6b5b43]">{pr.title}</span>
-                    {pr.draft ? <span className="font-pixel shrink-0 text-[10px] text-[#8a6d2a]">draft</span> : null}
+                    {pr.draft ? (
+                      <span className="pixel shrink-0 self-center" title="draft">
+                        <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={2} />
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               );

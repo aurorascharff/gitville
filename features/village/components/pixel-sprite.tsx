@@ -450,6 +450,29 @@ export const FIREPLACE = {
   ],
 };
 
+// A construction barrier — the visual for "draft" wherever it appears.
+export const BARRIER = {
+  palette: { y: '#e4c05a', d: '#3a2f22', O: '#2e2418' },
+  art: ['yyddyydd', 'ddyyddyy', 'yyddyydd', '.O....O.', '.O....O.'],
+};
+
+// The AI carpenter, hammer at the ready.
+export const CARPENTER = {
+  palette: { h: '#6b4223', s: '#e8b98a', d: '#2a2d36', r: '#b8564f', a: '#e4c05a', m: '#9aa0a8', w: '#8a5a33' },
+  art: [
+    '....hhhh..mm',
+    '...hssssh.mm',
+    '...sddsss..w',
+    '...ssssss..w',
+    '..rrrrrrr..w',
+    '.rraaaaarr.w',
+    '.r.aaaaa.r..',
+    '...aaaaa....',
+    '...dd.dd....',
+    '...dd.dd....',
+  ],
+};
+
 // One centerpiece per room type — the anchor nobody walks on.
 export const WORKBENCH = {
   palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', m: '#9aa0a8', y: '#e4c05a' },

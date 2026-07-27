@@ -52,13 +52,13 @@ export function VillageUiProvider({
   const searchParams = useSearchParams();
   const focusId = searchParams.get('house');
   const aiOn = searchParams.get('ai') === '1';
+  // AI mode is per room: moving to another house (or leaving) always drops it,
+  // so switching floors never auto-starts a generation.
   const setFocusId = (id: string | null) => {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('house', id);
-    else {
-      url.searchParams.delete('house');
-      url.searchParams.delete('ai');
-    }
+    else url.searchParams.delete('house');
+    url.searchParams.delete('ai');
     window.history.pushState(null, '', url);
   };
   const setAiOn = (on: boolean) => {
