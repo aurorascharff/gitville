@@ -112,42 +112,63 @@ function InteriorScene({
   const { slug } = useVillageUi();
   const { spec } = useRoomSpec(slug, cell.id, ai);
   const [w, h] = roomDims(cell);
-  // The sign and the AI panel get their own columns, so the room never sits under either.
-  const fit = Math.min(1, (viewport.w - 620) / w, (viewport.h - 48) / h);
+  // Wide screens give the sign and the carpenter their own columns; narrow ones
+  // stack them above a full-width room instead of shrinking it to a stamp.
+  const narrow = viewport.w < 900;
+  const fit = narrow
+    ? Math.min(1, (viewport.w - 24) / w, (viewport.h - 200) / h)
+    : Math.min(1, (viewport.w - 620) / w, (viewport.h - 48) / h);
 
   return (
-    <div className="scene-in absolute inset-0 z-40 flex items-start gap-4 bg-[#0c0a08] p-4">
-      <HouseSign cell={cell} />
-      <div className="flex h-full min-w-0 flex-1 items-center justify-center">
-        <div
-          key={cell.id}
-          className={cn(
-            'pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]',
-            // AI mode is visible on the room itself: a golden frame while it's on.
-            ai && 'ring-4 ring-[#e4c05a]',
-          )}
-          style={{ width: w, height: h, transform: `scale(${fit})` }}
-          onClick={e => {
-            if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            walkTargetRef.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
-          }}
-        >
-          <WallNotes cell={cell} width={w} ai={ai} />
-          <Floor cell={cell} width={w} height={h} ai={ai} />
-          <Occupants cell={cell} width={w} height={h} />
-          <DoorMat width={w} height={h} />
-          <InteriorPlayer width={w} height={h} walkTargetRef={walkTargetRef} onExit={() => setFocusId(null)} />
-          {ai ? (
-            <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-              {spec?.ai ? spec.theme : 'AI at work…'}
-            </span>
-          ) : null}
+    <div
+      className={cn('scene-in absolute inset-0 z-40 gap-4 p-4', narrow ? 'flex flex-col items-center overflow-y-auto' : 'flex items-start')}
+      style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
+    >
+      <div className={narrow ? 'flex w-full max-w-xl items-start gap-3' : 'contents'}>
+        <HouseSign cell={cell} />
+        {narrow ? <AiPanel cell={cell} ai={ai} onToggle={setAiOn} /> : null}
+      </div>
+      <div className={cn('flex min-w-0 items-center justify-center', !narrow && 'h-full flex-1')}>
+        <div style={{ width: w * fit, height: h * fit }}>
+          <div
+            key={cell.id}
+            className={cn(
+              'pixel relative overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]',
+              // AI mode is visible on the room itself: a golden frame while it's on.
+              ai && 'ring-4 ring-[#e4c05a]',
+            )}
+            style={{ width: w, height: h, transform: `scale(${fit})`, transformOrigin: 'top left' }}
+            onClick={e => {
+              if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              walkTargetRef.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
+            }}
+          >
+            <WallNotes cell={cell} width={w} ai={ai} />
+            <Floor cell={cell} width={w} height={h} ai={ai} />
+            <Occupants cell={cell} width={w} height={h} />
+            <DoorMat width={w} height={h} />
+            <InteriorPlayer width={w} height={h} walkTargetRef={walkTargetRef} onExit={() => setFocusId(null)} />
+            {ai ? (
+              <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+                {spec?.ai ? spec.theme : 'AI at work…'}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
-      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
+      {!narrow ? <AiPanel cell={cell} ai={ai} onToggle={setAiOn} /> : null}
     </div>
   );
+}
+
+// The void outside the room takes a faint tint of its floor, not plain black.
+function backdropFor(cell: Cell): string {
+  const floor = floorClass(cell);
+  if (floor.includes('ground')) return '#20301f';
+  if (floor.includes('carpet')) return '#33201d';
+  if (floor.includes('stone')) return '#26282b';
+  return '#33261a';
 }
 
 // The carpenter stands right of the room: click to hire, click to send home.
@@ -670,7 +691,7 @@ function HouseSign({ cell }: { cell: Cell }) {
   const chip = cell.kind !== 'pr' ? null : stack.length > 1 ? `⌂ ${floorNo}/${stack.length}` : cell.prState === 'ready' ? 'ready' : null;
 
   return (
-    <aside className="panel z-50 w-80 shrink-0 rounded-sm p-3">
+    <aside className="panel z-50 w-80 max-w-full min-w-0 shrink rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
       {/* Fixed two-line box so hopping between floors of a stack never shifts the panel. */}
       <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
