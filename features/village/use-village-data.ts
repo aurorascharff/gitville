@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import {
   actorsAt,
   arcOffset,
@@ -30,13 +30,11 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
   return { payload: data!, stale: Boolean(error) };
 }
 
-// The AI-designed (or deterministic-fallback) interior for one house. Every
-// interior block calls this with the same key — SWR collapses them into one fetch.
 export type RoomSpecItem = {
   name: string;
   kind?: string;
-  art?: string[]; // AI-drawn pixel rows over the shared legend
-  commits: number[]; // indexes into the room's commit list — grouped work, one build
+  art?: string[];
+  commits: number[];
 };
 
 export type RoomSpecPayload = {
@@ -47,21 +45,25 @@ export type RoomSpecPayload = {
   items: RoomSpecItem[];
 };
 
-// A failed spec fetch degrades to the default room — never an error screen
-// for what is only decoration.
+// A failed spec fetch degrades to the default room — never an error for decoration.
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
     .catch(() => ({ ok: false, theme: '', wall: 'cream' as const, floor: 'wood' as const, items: [] }));
 
-// Suspends until the room is designed — callers sit behind a <Suspense> door.
-export function useRoomSpec(slug: string, cellId: string): RoomSpecPayload | null {
-  const { data } = useSWR<RoomSpecPayload>(
-    `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}`,
-    specFetcher,
-    { revalidateOnFocus: false, suspense: true },
-  );
-  return data?.ok ? data : null;
+const roomKey = (slug: string, cellId: string) =>
+  `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}`;
+
+// Warm the cache on intent so the room is usually ready before the door opens.
+export function preloadRoomSpec(slug: string, cellId: string): void {
+  void preload(roomKey(slug, cellId), specFetcher);
+}
+
+export function useRoomSpec(slug: string, cellId: string): { spec: RoomSpecPayload | null; loading: boolean } {
+  const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId), specFetcher, {
+    revalidateOnFocus: false,
+  });
+  return { spec: data?.ok ? data : null, loading: isLoading };
 }
 
 export const SCRUB_MAX = 1000;

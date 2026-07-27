@@ -12,8 +12,7 @@ export function travelTo(detail: TravelDetail) {
 
 const SPEED = 4.4;
 
-// You. Walk with WASD/arrows or click the ground; walk to a door and it opens.
-// The camera lives here too: each frame the world transform recenters on you.
+// The camera lives here: each frame the world transform recenters on the player.
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
   const { focusId, setFocusId } = useVillageUi();
   const ref = useRef<HTMLDivElement>(null);
@@ -78,7 +77,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     const tick = () => {
       raf = requestAnimationFrame(tick);
 
-      // Camera chases the player with a soft lerp, clamped to the world edges.
       if (worldRef.current) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
@@ -119,9 +117,9 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         const len = Math.hypot(dx, dy) || 1;
         s.x = Math.max(24, Math.min(WORLD_W - 24, s.x + (dx / len) * SPEED));
         s.y = Math.max(24, Math.min(WORLD_H - 24, s.y + (dy / len) * SPEED));
+        // Keep the goal under the player while keyboard-walking, or releasing
+        // the key walks them back to where they pressed it.
         if (s.keys.size > 0) {
-          // Keyboard walking moves the goal with you — otherwise releasing the
-          // key would send you strolling back to where you pressed it.
           s.tx = s.x;
           s.ty = s.y;
         }
@@ -156,7 +154,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
   );
 }
 
-// Shared between the overworld and house interiors.
 export function PlayerSprite() {
   return (
     <svg width="26" height="34" viewBox="0 0 13 17" shapeRendering="crispEdges" aria-label="Your villager">

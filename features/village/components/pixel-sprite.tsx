@@ -185,10 +185,10 @@ export function KindBadge({ kind, scale = 2 }: { kind: string; scale?: number })
 
 // ── The village tileset: outlined, 3-tone-shaded sprites ────────────────────
 
-// A PR's house tells its story at a glance: finished cottage = ready for review,
-// exposed studs + tarp + scaffolding = draft, extra storeys = PRs stacked underneath.
+// A PR's house at a glance: finished cottage = ready, studs + tarp = draft,
+// extra storeys = the stack, topped by an attic with a dormer window.
 export function cottageArt(floors: number, draft: boolean): string[] {
-  const roof = [
+  const plainRoof = [
     '...............OCCO...',
     '...............OCcO...',
     '......OOOOOOOOOOCCOO..',
@@ -199,6 +199,18 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     'ORRRRRRRRRRRRRRRRRRRRO',
     'OSSSSSSSSSSSSSSSSSSSSO',
   ];
+  const atticRoof = [
+    '...............OCCO...',
+    '...............OCcO...',
+    '......OOOOOOOOOOCCOO..',
+    '....OORRRRRRRRROCCORO.',
+    '...ORRRROOOOOORRRRRRO.',
+    '..ORRRRROqqqqORRRRRRO.',
+    '.ORRRRRROqqqqORRRRRRO.',
+    'ORRRRRRROOOOOORRRRRRRO',
+    'OSSSSSSSSSSSSSSSSSSSSO',
+  ];
+  const roof = floors > 1 ? atticRoof : plainRoof;
   // Draft: no roof yet — ridge beam, a half-pulled tarp, scaffold walkway.
   const constructionTop = [
     '.p...................p',
@@ -386,4 +398,29 @@ export const FLOWER_BLUE = {
 export const PEBBLES = {
   palette: { g: '#87919c', d: '#6e7680' },
   art: ['gd.g', '.g.d'],
+};
+
+// Interior fixtures.
+export const WINDOW = {
+  palette: { O: '#5a4632', b: '#bfe0f5', n: '#1a2c55' },
+  art: ['OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO'],
+};
+
+export const CAMPFIRE = {
+  palette: { O: '#2e2418', y: '#ffd76a', o: '#e0862f', r: '#c85b5b', w: '#6b4223', g: '#8d939c' },
+  art: [
+    '....y....',
+    '...yoy...',
+    '..yooor..',
+    '..rooor..',
+    '.rrooorr.',
+    '.wwrwrww.',
+    'wwOwwwOww',
+    '.g.....g.',
+  ],
+};
+
+export const LOG_SEAT = {
+  palette: { W: '#8a5a33', w: '#6b4223', O: '#2e2418' },
+  art: ['OWWWWWWWWO', 'WwWWwwWWwW', 'OWWWWWWWWO'],
 };

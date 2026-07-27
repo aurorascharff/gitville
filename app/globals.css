@@ -228,6 +228,30 @@
   background-color: #9aa0a8;
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 6px, transparent 6px 36px);
 }
+/* Per-building interiors: tent canvas, cabin logs, the hall's bannered stone. */
+.room-wall-tent {
+  background-color: #8a6a9d;
+  background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.14) 0 24px, transparent 24px 48px);
+}
+.room-wall-log {
+  background-color: #8a5a33;
+  background-image: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.16) 0 6px, transparent 6px 30px);
+}
+.room-wall-hall {
+  background-color: #9aa0a8;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(59 107 255 / 0.35) 0 30px, transparent 30px 120px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 6px, transparent 6px 36px);
+}
+.room-floor-ground {
+  background-color: #6f8f52;
+  background-image:
+    conic-gradient(rgb(0 0 0 / 0.08) 0 25%, transparent 0),
+    repeating-conic-gradient(rgb(255 255 255 / 0.05) 0% 25%, transparent 0% 50%);
+  background-size:
+    72px 72px,
+    24px 24px;
+}
 .room-floor-wood {
   background-color: #93673d;
   background-image:

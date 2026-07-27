@@ -10,7 +10,7 @@ import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
-// The village noticeboard: recent goings-on. Click a line to walk to that house.
+// Click a line to walk to the house where it happened.
 export function BuzzPanel() {
   const { slug, scrub, buzzOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);

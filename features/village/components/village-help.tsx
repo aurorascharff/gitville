@@ -17,8 +17,7 @@ const MAIN_ROOF = housePalette('#3b6bff', '#2b4fc4', true);
 const BRANCH_ROOF = housePalette('#b0532e', '#8a4023', false);
 const ISSUE_ROOF = housePalette('#8a6a9d', '#6b5279', false);
 
-// The field guide: what every sprite in the village means, one look each.
-// Opens as a centered book so it never fights the noticeboard or the clock.
+// What every sprite means, one look each.
 export function VillageHelp() {
   const [open, setOpen] = useState(false);
 

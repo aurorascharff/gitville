@@ -1,22 +1,31 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
-import { Suspense, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { AI_ART_PALETTE, furnitureByName, furnitureFor, KindBadge, PixelSprite, RUG } from '@/features/village/components/pixel-sprite';
+import {
+  AI_ART_PALETTE,
+  CAMPFIRE,
+  furnitureByName,
+  furnitureFor,
+  KindBadge,
+  LOG_SEAT,
+  PixelSprite,
+  WINDOW,
+} from '@/features/village/components/pixel-sprite';
 import { PlayerSprite } from '@/features/village/components/player';
 import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel, type RoomSpecItem } from '@/features/village/use-village-data';
-import { roomFor, type Cell } from '@/features/village/village-model';
+import { pickedPrs, roomFor, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
-// Room canvas per size: [width, height]. The wall band is WALL_H tall; the rest is floor.
 const DIMS: Record<'S' | 'M' | 'L', [number, number]> = { S: [780, 560], M: [940, 620], L: [1100, 680] };
 const WALL_H = 150;
+const TILE = 56;
 
-// Each block below fetches its own data through the shared SWR hooks — the scene
-// is composition, not prop-drilling. Same keys dedupe to one request per poll.
+// Every block fetches its own data through the shared SWR hooks, so the scene
+// is pure composition and the keys dedupe to one request per poll.
 export function HouseInterior() {
   const { slug, scrub, focusId, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -56,13 +65,8 @@ export function HouseInterior() {
           walkTarget.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         }}
       >
-        {/* The door stays dark until the room's design has loaded — no repaint flash. */}
-        <Suspense fallback={<WallSkeleton />}>
-          <WallNotes cellId={cell.id} width={w} />
-        </Suspense>
-        <Suspense fallback={<FloorSkeleton />}>
-          <Floor cell={cell} width={w} height={h} />
-        </Suspense>
+        <WallNotes cell={cell} width={w} />
+        <Floor cell={cell} width={w} height={h} />
         <Occupants cellId={cell.id} width={w} height={h} />
         <DoorMat width={w} height={h} />
         <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
@@ -72,33 +76,51 @@ export function HouseInterior() {
   );
 }
 
-// ── The wall: wallpaper + review notes pinned where everyone can see them ────
-function WallNotes({ cellId, width }: { cellId: string; width: number }) {
+function wallClass(cell: Cell, spec: { wall: string } | null): string {
+  if (cell.kind === 'issue') return 'room-wall-tent';
+  if (cell.kind === 'branch') return 'room-wall-log';
+  if (cell.kind === 'main') return 'room-wall-hall';
+  if (cell.kind === 'inbox') return 'room-wall-stone';
+  return `room-wall-${spec?.wall ?? 'cream'}`;
+}
+
+function floorClass(cell: Cell, spec: { floor: string } | null): string {
+  if (cell.kind === 'issue') return 'room-floor-ground';
+  if (cell.kind === 'branch') return 'room-floor-wood';
+  if (cell.kind === 'inbox' || cell.kind === 'main') return 'room-floor-stone';
+  return `room-floor-${spec?.floor ?? 'wood'}`;
+}
+
+function WallNotes({ cell, width }: { cell: Cell; width: number }) {
   const { slug, scrub } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
-  const spec = useRoomSpec(slug, cellId);
-  const notes = roomFor(payload, cells, cellId).notes.slice(0, 8);
+  const { spec, loading } = useRoomSpec(slug, cell.id);
+  const notes = roomFor(payload, cells, cell.id).notes.slice(0, 8);
+  const tent = cell.kind === 'issue';
+
+  if (loading) return <WallSkeleton />;
 
   return (
-    <div className={cn('absolute inset-x-0 top-0', `room-wall-${spec?.wall ?? 'cream'}`)} style={{ height: WALL_H }}>
-      {/* window with day/night light */}
-      <span aria-hidden className="absolute top-6 left-8 h-16 w-12 border-4 border-[#5a4632] bg-[#bfe0f5] dark:bg-[#1a2c55]">
-        <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 bg-[#5a4632]" />
-        <span className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-[#5a4632]" />
-      </span>
-      <span aria-hidden className="absolute top-6 right-8 h-16 w-12 border-4 border-[#5a4632] bg-[#bfe0f5] dark:bg-[#1a2c55]">
-        <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 bg-[#5a4632]" />
-        <span className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-[#5a4632]" />
-      </span>
+    <div className={cn('absolute inset-x-0 top-0', wallClass(cell, spec))} style={{ height: WALL_H }}>
+      {!tent ? (
+        <>
+          <span className="pixel absolute top-6 left-8">
+            <PixelSprite art={WINDOW.art} palette={WINDOW.palette} scale={8} className="dark:hidden" />
+            <PixelSprite art={WINDOW.art} palette={{ ...WINDOW.palette, b: WINDOW.palette.n }} scale={8} className="hidden dark:block" />
+          </span>
+          <span className="pixel absolute top-6 right-8">
+            <PixelSprite art={WINDOW.art} palette={WINDOW.palette} scale={8} className="dark:hidden" />
+            <PixelSprite art={WINDOW.art} palette={{ ...WINDOW.palette, b: WINDOW.palette.n }} scale={8} className="hidden dark:block" />
+          </span>
+        </>
+      ) : null}
 
-      <div className="absolute top-4 flex flex-wrap gap-2" style={{ left: 90, right: 90 }}>
-        {notes.length === 0 ? (
-          <p className="font-pixel rounded-sm bg-black/25 px-2 py-1 text-[12px] text-white/80">no review notes on the wall yet</p>
-        ) : (
-          notes.map((note, i) => <StickyNote key={note.id} note={note} tilt={((i * 47) % 9) - 4} />)
-        )}
+      <div className="absolute top-4 flex flex-wrap gap-2" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
+        {notes.map((note, i) => (
+          <StickyNote key={note.id} note={note} tilt={((i * 47) % 9) - 4} />
+        ))}
       </div>
       <div className="absolute inset-x-0 bottom-0 h-2.5 bg-black/25" />
       <span className="sr-only">wall width {width}</span>
@@ -106,41 +128,63 @@ function WallNotes({ cellId, width }: { cellId: string; width: number }) {
   );
 }
 
-// ── The floor: one piece of furniture per commit, rug in the middle ──────────
-// The town square is the exception: nothing is built there, people just pass by.
 function Floor({ cell, width, height }: { cell: Cell; width: number; height: number }) {
   const { slug, scrub } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
-  const spec = useRoomSpec(slug, cell.id);
-  const square = cell.kind === 'inbox';
-  const commits = square ? [] : roomFor(payload, cells, cell.id).commits.slice(0, 14);
-  const slots = furnitureSlots(width, height);
+  const { spec, loading } = useRoomSpec(slug, cell.id);
+  const campsite = cell.kind === 'issue';
+  const plaza = cell.kind === 'inbox';
+  const commits = campsite || plaza ? [] : roomFor(payload, cells, cell.id).commits.slice(0, 14);
+
+  if (loading) return <FloorSkeleton />;
 
   return (
-    <div className={cn('absolute inset-x-0 bottom-0', square ? 'room-floor-stone' : `room-floor-${spec?.floor ?? 'wood'}`)} style={{ top: WALL_H }}>
-      {commits.length >= 3 ? (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute opacity-90"
-          style={{ left: width / 2, top: (height - WALL_H) / 2, transform: 'translate(-50%, -50%)', zIndex: 1 }}
-        >
-          <PixelSprite art={RUG.art} palette={RUG.palette} scale={6} />
-        </span>
-      ) : null}
-      {toBuilds(commits, spec?.items).map((build, i) => {
-        const slot = slots[i % slots.length];
-        return <Furniture key={build.events[0].id} build={build} x={slot.x} y={slot.y} />;
-      })}
+    <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell, spec))} style={{ top: WALL_H }}>
+      {campsite ? (
+        <Campsite width={width} height={height - WALL_H} />
+      ) : (
+        toBuilds(commits, spec?.items).map((build, i) => {
+          const slot = tileSlot(i, width);
+          return <Furniture key={build.events[0].id} build={build} x={slot.x} y={slot.y} />;
+        })
+      )}
     </div>
+  );
+}
+
+// Furniture fills the room tile by tile from the back-left corner.
+function tileSlot(i: number, w: number): { x: number; y: number } {
+  const cols = Math.floor((w - TILE * 2) / (TILE * 2));
+  const row = Math.floor(i / cols);
+  const col = i % cols;
+  return { x: TILE + col * TILE * 2 + TILE, y: TILE * 0.6 + row * TILE * 1.9 + TILE / 2 };
+}
+
+function Campsite({ width, height }: { width: number; height: number }) {
+  return (
+    <>
+      <span className="pixel absolute" style={{ left: width / 2, top: height / 2 - 20, transform: 'translate(-50%, -50%)' }}>
+        <PixelSprite art={CAMPFIRE.art} palette={CAMPFIRE.palette} scale={7} />
+      </span>
+      {[
+        { x: width / 2 - 130, y: height / 2 - 30, rot: 90 },
+        { x: width / 2 + 130, y: height / 2 - 30, rot: 90 },
+        { x: width / 2, y: height / 2 + 80, rot: 0 },
+      ].map((s, i) => (
+        <span key={i} className="pixel absolute" style={{ left: s.x, top: s.y, transform: `translate(-50%, -50%) rotate(${s.rot}deg)` }}>
+          <PixelSprite art={LOG_SEAT.art} palette={LOG_SEAT.palette} scale={5} />
+        </span>
+      ))}
+    </>
   );
 }
 
 type Build = { events: WireEvent[]; name?: string; kind?: string; art?: string[] };
 
-// Related commits become one build (the AI groups them); anything the AI didn't
-// cover still shows up as its own piece. Without AI it's one build per commit.
+// Related commits become one build; anything the spec didn't cover still shows
+// up as its own piece.
 function toBuilds(commits: WireEvent[], items: RoomSpecItem[] | undefined): Build[] {
   if (!items?.length) return commits.map(c => ({ events: [c] }));
   const covered = new Set<number>();
@@ -156,30 +200,14 @@ function toBuilds(commits: WireEvent[], items: RoomSpecItem[] | undefined): Buil
   return builds;
 }
 
-// Furniture stands along the walls first, then fills the middle — never on the door.
-function furnitureSlots(w: number, h: number): { x: number; y: number }[] {
-  const floorH = h - WALL_H;
-  const slots: { x: number; y: number }[] = [];
-  for (let x = 100; x <= w - 100; x += 136) slots.push({ x, y: 56 });
-  for (let y = 180; y <= floorH - 120; y += 116) {
-    slots.push({ x: 72, y });
-    slots.push({ x: w - 72, y });
-  }
-  for (let x = 210; x <= w - 210; x += 150) slots.push({ x, y: floorH - 130 });
-  return slots;
-}
-
-// The AI shapes and sizes the piece (drawn art or catalog); the words on and
-// around it stay the real commits' — that's what you came in to read.
+// The plate names the piece like furniture; the commits live on hover.
 function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const { setTip } = useVillageUi();
   const primary = build.events[0];
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(primary.id);
   const art = build.art?.length ? build.art : fallback.art;
   const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
-  // The plate names the piece, like any furniture. The commits live on hover.
   const name = build.name ?? fallback.name;
-  // Bigger work → bigger furniture: scale by commits represented, not hype.
   const weight = build.events.reduce((sum, e) => sum + Math.max(1, e.count ?? 1), 0);
   const scale = weight >= 12 ? 7 : weight >= 6 ? 6 : weight >= 3 ? 5 : 4;
   const tip = (e: React.MouseEvent) =>
@@ -198,8 +226,8 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
         {name}
       </span>
       {build.events.length > 1 ? (
-        <span className="font-pixel absolute -top-2 -right-2 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold text-[#3a2f22]">
-          ×{build.events.length}
+        <span className="font-pixel absolute -top-2 -right-3 flex items-center gap-1 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold text-[#3a2f22]">
+          <KindBadge kind="push" scale={1} /> {build.events.length} commits
         </span>
       ) : null}
     </>
@@ -229,7 +257,6 @@ function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   );
 }
 
-// ── Whoever's working here right now, standing around the room ───────────────
 function Occupants({ cellId, width, height }: { cellId: string; width: number; height: number }) {
   const { slug, scrub, setTip } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -241,7 +268,6 @@ function Occupants({ cellId, width, height }: { cellId: string; width: number; h
   return (
     <>
       {here.map((a, i) => {
-        // Rows of 8, filling upward — a crowd stacks instead of overlapping.
         const row = Math.floor(i / 8);
         const col = i % 8;
         const inRow = Math.min(8, here.length - row * 8);
@@ -286,7 +312,6 @@ function Occupants({ cellId, width, height }: { cellId: string; width: number; h
   );
 }
 
-// ── The way out: walk onto the mat like a Stardew door ───────────────────────
 function DoorMat({ width, height }: { width: number; height: number }) {
   return (
     <div aria-hidden className="pointer-events-none absolute flex flex-col items-center" style={{ left: width / 2, top: height - 4, transform: 'translate(-50%, -100%)', zIndex: 5 }}>
@@ -296,7 +321,7 @@ function DoorMat({ width, height }: { width: number; height: number }) {
   );
 }
 
-// You, indoors. Same controls as outside; stepping on the mat leaves the house.
+// Stepping on the door mat leaves the house.
 function InteriorPlayer({
   width,
   height,
@@ -397,13 +422,10 @@ function InteriorPlayer({
   );
 }
 
-// ── The sign: which PR you're standing in, always visible ────────────────────
 function HouseSign({ cell }: { cell: Cell }) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
 
-  // The whole stack this PR lives in, top floor first: who's stacked on me,
-  // me, and everything I'm stacked on, down to the ground.
   const prs = payload.prs;
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
   const stack: typeof prs = [];
@@ -466,7 +488,7 @@ function HouseSign({ cell }: { cell: Cell }) {
           <ul className="mt-1 flex flex-col gap-0.5">
             {stack.map(pr => {
               const here = `pr:${pr.number}` === cell.id;
-              const hasHouse = Boolean(prs.slice(0, 8).find(p => p.number === pr.number));
+              const hasHouse = pickedPrs(payload).some(p => p.number === pr.number);
               return (
                 <li key={pr.number}>
                   <button
@@ -500,19 +522,6 @@ function HouseSign({ cell }: { cell: Cell }) {
   );
 }
 
-// Dark room while the design loads — the lights come on when it's furnished.
-function WallSkeleton() {
-  return <div aria-hidden className="room-dim absolute inset-x-0 top-0" style={{ height: WALL_H }} />;
-}
-
-function FloorSkeleton() {
-  return (
-    <div className="room-dim absolute inset-x-0 bottom-0" style={{ top: WALL_H }}>
-      <p className="font-pixel absolute top-1/2 left-1/2 -translate-1/2 text-[13px] text-[#f0e6d2]/50">stepping inside…</p>
-    </div>
-  );
-}
-
 function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
   const { setTip } = useVillageUi();
   return (
@@ -536,5 +545,17 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
         <RelativeTime date={note.at} />
       </span>
     </a>
+  );
+}
+
+function WallSkeleton() {
+  return <div aria-hidden className="room-dim absolute inset-x-0 top-0" style={{ height: WALL_H }} />;
+}
+
+function FloorSkeleton() {
+  return (
+    <div className="room-dim absolute inset-x-0 bottom-0" style={{ top: WALL_H }}>
+      <p className="font-pixel absolute top-1/2 left-1/2 -translate-1/2 text-[13px] text-[#f0e6d2]/50">stepping inside…</p>
+    </div>
   );
 }

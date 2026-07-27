@@ -11,8 +11,7 @@ import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-// A lamp beside each house, alternating sides — pushed wide of the door so it
-// never stands in the villager arc or on the name plate.
+// Wide of the door so lamps never stand in the villager arc or on the name plate.
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {
   return cells.filter(c => c.kind !== 'inbox').map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
@@ -38,7 +37,6 @@ export function VillageStage() {
         travelTo({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}
     >
-      {/* The grass is painted on the world itself, so it scrolls with the camera. */}
       <div ref={worldRef} className="grass-field absolute top-0 left-0 will-change-transform" style={{ width: WORLD_W, height: WORLD_H }}>
         <GrassPatches />
         <VillageRoads cells={cells} />
@@ -62,7 +60,6 @@ export function VillageStage() {
         ))}
         <Player cells={cells} worldRef={worldRef} />
 
-        {/* Small, honest pools of light — not a haze over the whole house. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 hidden dark:block">
           {lamps.map((l, i) => (
             <span
@@ -157,7 +154,6 @@ function Pond({ x, y }: { x: number; y: number }) {
   );
 }
 
-// A forest frames the map, Stardew-style.
 function BorderForest() {
   const spots: { x: number; y: number }[] = [];
   const cols = Math.floor(WORLD_W / 100);
@@ -182,8 +178,6 @@ function BorderForest() {
   );
 }
 
-// Mown-tone patches: hard-edged squares of lighter/darker grass in the same
-// checker rhythm — variation in the lawn itself, not shadows hovering over it.
 function GrassPatches() {
   const patches = [
     { x: 240, y: 384, w: 456, h: 312, tone: 'light' },
@@ -215,7 +209,6 @@ function GrassPatches() {
   );
 }
 
-// Deterministic grass detail: tufts and flowers scattered between everything.
 function GrassDetail() {
   return (
     <>
@@ -233,7 +226,6 @@ function GrassDetail() {
   );
 }
 
-// Night: a proper starry sky and moon over the whole scene; day keeps the sun.
 function NightSky() {
   return (
     <>
@@ -250,7 +242,6 @@ function NightSky() {
   );
 }
 
-// Night-only ambience.
 function Fireflies() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 hidden overflow-hidden dark:block">

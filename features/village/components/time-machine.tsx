@@ -3,8 +3,7 @@
 import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
-// The village clock: hands show the moment you're watching. Drag the wooden
-// slider to wind time back; the clock turns with you.
+// The village clock: hands show the viewed moment; drag to wind time back.
 export function TimeMachine() {
   const { slug, scrub, setScrub } = useVillageUi();
   const { payload } = useVillageData(slug);
@@ -42,7 +41,6 @@ export function TimeMachine() {
   );
 }
 
-// A pixel-framed analog face; the hands actually point at the viewed moment.
 function ClockFace({ t }: { t: number }) {
   const d = new Date(t);
   const hourDeg = ((d.getHours() % 12) + d.getMinutes() / 60) * 30;

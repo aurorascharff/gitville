@@ -98,8 +98,9 @@ function VillagesSkeleton() {
           className="pixel flex flex-col items-center gap-2 rounded-md border-4 border-[#4a3826]/70 bg-[#f0e6d2]/80 px-3 py-4"
         >
           <Skeleton className="h-10 w-10 rounded-md" />
-          <Skeleton className="h-3.5 w-20" />
-          <Skeleton className="h-2.5 w-10" />
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-3.75 w-10" />
+          <Skeleton className="h-5.25 w-14 rounded-sm" />
         </div>
       ))}
     </div>

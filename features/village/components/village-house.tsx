@@ -2,6 +2,7 @@
 
 import { cabinArt, cottageArt, hallArt, housePalette, lampArt, lampPalette, nightenPalette, PixelSprite, tentArt, WELL } from '@/features/village/components/pixel-sprite';
 import { travelTo } from '@/features/village/components/player';
+import { preloadRoomSpec } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
@@ -21,7 +22,7 @@ function stateLine(cell: Cell): string | null {
 }
 
 export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
-  const { focusId, setFocusId, setTip } = useVillageUi();
+  const { slug, focusId, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
   const main = cell.kind === 'main';
   const [roof, roofShade] = ROOFS[cell.kind];
@@ -33,8 +34,12 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
       type="button"
       onClick={() => {
         if (focusId === cell.id) setFocusId(null);
-        else travelTo({ x: cell.x, y: cell.y + 44, cellId: cell.id });
+        else {
+          preloadRoomSpec(slug, cell.id);
+          travelTo({ x: cell.x, y: cell.y + 44, cellId: cell.id });
+        }
       }}
+      onMouseEnter={() => preloadRoomSpec(slug, cell.id)}
       onMouseMove={e =>
         setTip({ x: e.clientX, y: e.clientY, title: cell.label, body: [state, cell.sub].filter(Boolean).join(' — ') || null, when: null })
       }
@@ -96,8 +101,7 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
   );
 }
 
-// A real village goes dark at night: the same sprite with its palette pulled
-// toward cold blue — except the windows, which stay warm when someone's home.
+// At night the same sprite renders with a cold palette; lit windows stay warm.
 function DayNightSprite({ art, palette, scale, lit }: { art: string[]; palette: Record<string, string>; scale: number; lit: boolean }) {
   return (
     <>
@@ -111,10 +115,10 @@ function DayNightSprite({ art, palette, scale, lit }: { art: string[]; palette: 
   );
 }
 
-// Occupied finished cottages puff smoke from the chimney, Stardew-style.
+// The chimney sits at ~21% from the sprite's right edge, so the puffs do too.
 function ChimneySmoke() {
   return (
-    <span aria-hidden className="pointer-events-none absolute -top-4 right-[12%] z-10">
+    <span aria-hidden className="pointer-events-none absolute -top-1 right-[21%] z-10">
       {[0, 1, 2].map(i => (
         <span key={i} className="smoke-puff absolute h-2 w-2 rounded-full bg-white/70" style={{ animationDelay: `${i * 1100}ms` }} />
       ))}
@@ -122,7 +126,6 @@ function ChimneySmoke() {
   );
 }
 
-// Roadside lamp — dark post by day, warm glow by night (see .lamp-glow).
 export function VillageLamp({ x, y }: { x: number; y: number }) {
   return (
     <span aria-hidden className="pixel absolute" style={{ left: x, top: y, transform: 'translate(-50%, -88%)' }}>

@@ -2,9 +2,8 @@
 
 import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 
-// Village roads, not a starburst: a ring lane through the inner houses, short
-// lanes from the outer houses to their nearest ring neighbor, and a small
-// plaza path from the hall onto the ring. Corners bend at houses, like a town.
+// A ring lane through the inner houses, lanes from outer houses to their
+// nearest ring neighbor, and a plaza fork from the hall — not a starburst.
 export function VillageRoads({ cells }: { cells: Cell[] }) {
   const main = cells.find(c => c.kind === 'main');
   if (!main) return null;

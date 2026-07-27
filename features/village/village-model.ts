@@ -78,6 +78,16 @@ function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, Villa
   return depth;
 }
 
+// Top 8 PRs by activity get houses; a draft always gets one when it exists.
+export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
+  const picked = payload.prs.slice(0, 8);
+  if (!picked.some(pr => pr.draft)) {
+    const draft = payload.prs.find(pr => pr.draft);
+    if (draft) return [...picked.slice(0, 7), draft];
+  }
+  return picked;
+}
+
 export function buildCells(payload: VillagePayload, slug: string): Cell[] {
   const cells: Cell[] = [];
   let slot = 0;
@@ -93,7 +103,7 @@ export function buildCells(payload: VillagePayload, slug: string): Cell[] {
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
-  for (const pr of payload.prs.slice(0, 8)) {
+  for (const pr of pickedPrs(payload)) {
     const floors = stackDepth(pr, byHead);
     const under = byHead.get(pr.baseRef);
     cells.push({
@@ -207,8 +217,7 @@ export function actorsAt(payload: VillagePayload, cells: Cell[], t: number): Act
     .sort((a, b) => a.login.localeCompare(b.login));
 }
 
-// Villagers stand in arcs at the foot of their cell, like neighbors at a door.
-// Outer rings hold more people so crowds spread instead of piling up.
+// Arcs at the foot of the cell; outer rings hold more people so crowds spread.
 // Deterministic (sorted by login upstream) so nobody shuffles between polls.
 export function arcOffset(index: number, count: number): { x: number; y: number } {
   let ring = 0;

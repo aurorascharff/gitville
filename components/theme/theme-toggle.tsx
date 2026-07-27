@@ -13,7 +13,6 @@ function useIsMounted() {
   );
 }
 
-// Day / night for the village — two suns-worth of options, nothing more.
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useIsMounted();
@@ -31,7 +30,6 @@ export function ThemeToggle() {
   );
 }
 
-// Hand-set pixel icons — lucide's smooth curves don't belong in the village.
 function PixelSun() {
   return (
     <svg width="14" height="14" viewBox="0 0 9 9" shapeRendering="crispEdges" aria-hidden style={{ imageRendering: 'pixelated' }}>
