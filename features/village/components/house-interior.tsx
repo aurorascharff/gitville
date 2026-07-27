@@ -356,13 +356,21 @@ function pieceScale(build: Build): number {
   return n <= 2 ? 6 : n <= 4 ? 5 : 4;
 }
 
+// A commit's piece grows with its diff — a one-liner is a stool, a rewrite a wardrobe.
+function sizeScale(commit: BranchCommit): number {
+  if (commit.size >= 600) return 7;
+  if (commit.size >= 200) return 6;
+  if (commit.size >= 50) return 5;
+  if (commit.size > 0) return 4;
+  return 5; // unknown diff, middle of the road
+}
+
 function buildWidth(build: Build): number {
   if (build.pieces?.length) {
     const scale = pieceScale(build);
     return build.pieces.reduce((sum, piece) => sum + Math.max(...piece.map(r => r.length)) * scale, 0);
   }
-  const n = build.commits.length;
-  return n * 8 * (n > 2 ? 4 : 5);
+  return build.commits.reduce((sum, c) => sum + 8 * sizeScale(c), 0);
 }
 
 // Flow layout: builds take the width they need, wrap into rows, never touch
@@ -441,7 +449,6 @@ function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: num
   const { setTip } = useVillageUi();
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
-  const n = build.commits.length;
   const drawn = Boolean(build.pieces?.length);
 
   return (
@@ -468,7 +475,7 @@ function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: num
               }
               onMouseLeave={() => setTip(null)}
             >
-              <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : n > 2 ? 4 : 5} />
+              <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
             </a>
           );
         })}

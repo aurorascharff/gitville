@@ -234,15 +234,60 @@ function mapCommit(c: CommitResponse): BranchCommit {
     author: c.author?.login ?? c.commit?.author?.name ?? 'someone',
     at: c.commit?.author?.date ?? '',
     url: c.html_url,
+    size: 0,
   };
 }
 
-// Push events no longer include commit lists, so rooms fetch the real thing.
+type GqlCommit = {
+  oid: string;
+  messageHeadline: string;
+  additions: number;
+  deletions: number;
+  committedDate: string;
+  url: string;
+  author: { user: { login: string } | null; name: string | null } | null;
+};
+
+function mapGqlCommit(c: GqlCommit): BranchCommit {
+  return {
+    sha: c.oid,
+    message: c.messageHeadline,
+    author: c.author?.user?.login ?? c.author?.name ?? 'someone',
+    at: c.committedDate,
+    url: c.url,
+    size: (c.additions ?? 0) + (c.deletions ?? 0),
+  };
+}
+
+// Diff sizes only exist on GraphQL (one call) — REST would cost a call per commit.
+async function ghGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
+  if (!process.env.GITHUB_TOKEN) return null;
+  try {
+    const res = await fetch(`${API}/graphql`, { method: 'POST', headers: ghHeaders(), body: JSON.stringify({ query, variables }) });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { data?: T };
+    return json.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Push events no longer include commit lists, so rooms fetch the real thing:
+// GraphQL with diff sizes when a token exists, plain REST without one.
 export async function getPrCommits(slug: string, number: number): Promise<BranchCommit[]> {
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
   const [owner, repo] = slug.split('/');
+
+  const data = await ghGraphQL<{ repository: { pullRequest: { commits: { nodes: { commit: GqlCommit }[] } } | null } | null }>(
+    `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){
+       commits(last:14){ nodes{ commit{ oid messageHeadline additions deletions committedDate url author{ user{ login } name } } } } } } }`,
+    { owner, repo, number },
+  );
+  const nodes = data?.repository?.pullRequest?.commits.nodes;
+  if (nodes) return nodes.map(n => mapGqlCommit(n.commit));
+
   const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/commits?per_page=14`);
   return (list ?? []).map(mapCommit);
 }
@@ -252,8 +297,17 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
   const [owner, repo] = slug.split('/');
+
+  const data = await ghGraphQL<{ repository: { ref: { target: { history: { nodes: GqlCommit[] } } | null } | null } | null }>(
+    `query($owner:String!,$repo:String!,$ref:String!){ repository(owner:$owner,name:$repo){ ref(qualifiedName:$ref){
+       target{ ... on Commit { history(first:14){ nodes{ oid messageHeadline additions deletions committedDate url author{ user{ login } name } } } } } } } }`,
+    { owner, repo, ref: `refs/heads/${ref}` },
+  );
+  const nodes = data?.repository?.ref?.target && 'history' in data.repository.ref.target ? data.repository.ref.target.history.nodes : null;
+  // Newest first from both APIs; oldest first reads as construction order.
+  if (nodes) return nodes.map(mapGqlCommit).reverse();
+
   const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
-  // Newest first from the API; oldest first reads as construction order.
   return (list ?? []).map(mapCommit).reverse();
 }
 

@@ -54,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
           repo.slug,
           cell.label,
           cell.sub,
-          commits.map(c => `${c.author}: ${c.message}`),
+          commits.map(c => `${c.author}: ${c.message}${c.size > 0 ? ` (${c.size} lines changed)` : ''}`),
           noteLines,
           state,
         )
