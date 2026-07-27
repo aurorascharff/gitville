@@ -4,7 +4,7 @@ import { ChevronDown, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { HiveMark } from '@/components/hive-mark';
+import { GitvilleMark } from '@/components/gitville-mark';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { pinRepo, unpinRepo } from '@/features/repo/repo-actions';
 import { cn } from '@/lib/utils';
@@ -50,17 +50,17 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
       <button
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        className="bg-background/75 hover:bg-accent/60 flex h-11 items-center gap-2.5 rounded-full border pr-4 pl-2 shadow-2xl backdrop-blur-md transition-colors"
+        className="panel font-pixel flex h-11 items-center gap-2.5 rounded-sm pr-4 pl-2 text-[15px] transition-transform hover:-translate-y-0.5"
       >
-        <HiveMark size={26} />
+        <GitvilleMark size={26} />
         <RepoAvatar src={repo.ownerAvatar} name={repo.owner} size={20} className="rounded-full" />
         <span className="max-w-44 truncate text-sm font-semibold tracking-tight">{repo.name}</span>
         <ChevronDown size={14} className={cn('text-muted-foreground transition-transform', open && 'rotate-180')} />
       </button>
 
       {open ? (
-        <div className="bg-background/85 absolute top-13 left-0 z-40 w-72 overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-md">
-          <p className="text-muted-foreground/70 px-4 pt-3 pb-1.5 text-[11px] font-medium tracking-wider uppercase">
+        <div className="panel absolute top-13 left-0 z-40 w-72 overflow-hidden rounded-sm">
+          <p className="font-pixel px-4 pt-3 pb-1.5 text-[12px] font-bold tracking-wider text-[#8a6d2a] uppercase">
             Watching
           </p>
           <ul className="max-h-72 overflow-y-auto pb-1">
@@ -74,10 +74,8 @@ export function RepoSwitcher({ repo, pinned }: { repo: RepoData; pinned: string[
                     prefetch
                     onClick={() => setOpen(false)}
                     className={cn(
-                      'flex h-9 items-center gap-2.5 px-4 pr-9 text-sm transition-colors',
-                      active
-                        ? 'bg-accent font-medium'
-                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                      'flex h-9 items-center gap-2.5 px-4 pr-9 text-sm text-[#3a2f22] transition-colors',
+                      active ? 'bg-black/10 font-bold' : 'hover:bg-black/5',
                     )}
                   >
                     <RepoAvatar

@@ -1,5 +1,6 @@
 'use client';
 
+import { travelTo } from '@/features/hive/components/player';
 import { useHiveUi } from '@/features/hive/hive-ui-context';
 import type { Cell } from '@/features/hive/hive-world-model';
 import { cn } from '@/lib/utils';
@@ -19,7 +20,10 @@ export function VillageHouse({ cell, people, built }: { cell: Cell; people: numb
   return (
     <button
       type="button"
-      onClick={() => setFocusId(focusId === cell.id ? null : cell.id)}
+      onClick={() => {
+        if (focusId === cell.id) setFocusId(null);
+        else travelTo({ x: cell.x, y: cell.y + 44, cellId: cell.id });
+      }}
       onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: cell.label, body: cell.sub, when: null })}
       onMouseLeave={() => setTip(null)}
       aria-label={`Enter ${cell.label}`}
@@ -34,10 +38,10 @@ export function VillageHouse({ cell, people, built }: { cell: Cell; people: numb
       <div className="pixel relative flex flex-col items-center">
         {cell.kind === 'inbox' ? <Well lit={lit} /> : <House cell={cell} built={built} lit={lit} />}
 
-        <div className="mt-1.5 flex max-w-40 flex-col items-center rounded-sm border border-black/30 bg-[#f0e6d2] px-1.5 py-0.5 text-center shadow">
-          <p className="w-full truncate font-mono text-[10px] font-bold text-[#3a2f22]">{cell.label}</p>
+        <div className="mt-1.5 flex max-w-48 flex-col items-center rounded-sm border border-black/30 bg-[#f0e6d2] px-1.5 py-0.5 text-center shadow">
+          <p className="w-full truncate font-pixel text-[13px] leading-4 font-bold text-[#3a2f22]">{cell.label}</p>
           {cell.sub && cell.kind !== 'main' ? (
-            <p className="line-clamp-1 w-full text-[8px] leading-tight text-[#6b5b43]">{cell.sub}</p>
+            <p className="line-clamp-1 w-full text-[10px] leading-tight text-[#6b5b43]">{cell.sub}</p>
           ) : null}
         </div>
 

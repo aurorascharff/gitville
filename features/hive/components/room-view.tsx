@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import useSWR from 'swr';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { furnitureFor, PixelSprite } from '@/features/hive/components/pixel-sprite';
+import { KindBadge } from '@/features/hive/components/pixel-sprite';
 import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { roomFor, KIND_EMOJI } from '@/features/hive/hive-world-model';
+import { roomFor } from '@/features/hive/hive-world-model';
 import { useHiveData, useTimeWindow, useWorldModel } from '@/features/hive/use-hive-data';
 import type { WireEvent } from '@/types/github';
 
@@ -59,10 +60,10 @@ export function RoomView() {
       >
         {/* Header plaque */}
         <div className="absolute top-3 left-1/2 z-20 flex max-w-[80%] -translate-x-1/2 flex-col items-center gap-0.5 rounded-sm border border-black/40 bg-[#f0e6d2] px-3 py-1 text-center shadow-lg">
-          <p className="truncate font-mono text-[11px] font-bold whitespace-nowrap text-[#3a2f22]">
+          <p className="truncate font-pixel text-[15px] font-bold whitespace-nowrap text-[#3a2f22]">
             {cell.label} · {theme}
           </p>
-          {spec?.flavor ? <p className="line-clamp-1 text-[8.5px] text-[#6b5b43] italic">{spec.flavor}</p> : null}
+          {spec?.flavor ? <p className="line-clamp-1 text-[11px] text-[#6b5b43] italic">{spec.flavor}</p> : null}
         </div>
         <button
           onClick={() => setFocusId(null)}
@@ -136,7 +137,7 @@ export function RoomView() {
                     ) : (
                       <span className="bg-secondary block h-[30px] w-[30px] rounded-full" />
                     )}
-                    <span className="absolute -top-2 -right-2 text-[12px]">{KIND_EMOJI[a.event.kind]}</span>
+                    <span className="absolute -top-2 -right-2"><KindBadge kind={a.event.kind} /></span>
                   </div>
                   <span className="mt-0.5 rounded bg-black/40 px-1 font-mono text-[9px] text-white/85">{a.login}</span>
                 </a>
@@ -222,12 +223,12 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
       className="sticky-note relative h-14 w-14 p-1 text-left transition-transform hover:scale-110 hover:rotate-0"
       style={{ transform: `rotate(${tilt}deg)` }}
       onMouseMove={e =>
-        setTip({ x: e.clientX, y: e.clientY, title: `📝 ${note.actor} · ${note.line}`, body: note.body, when: note.at })
+        setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} · ${note.line}`, body: note.body, when: note.at })
       }
       onMouseLeave={() => setTip(null)}
       aria-label={`Note from ${note.actor}`}
     >
-      <span className="line-clamp-3 block font-mono text-[7.5px] leading-[1.35] break-words text-[#5a4a1e]">
+      <span className="line-clamp-3 block font-mono text-[8.5px] leading-[1.4] break-words text-[#5a4a1e]">
         {note.body}
       </span>
       <span className="absolute right-0.5 bottom-0.5 font-mono text-[7px] font-bold text-[#8a6d2a]">

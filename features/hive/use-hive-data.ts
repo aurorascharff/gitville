@@ -34,14 +34,17 @@ export const SCRUB_MAX = 1000;
 
 export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };
 
+// Scrubbing is indexed over events, not wall-clock, so every slider position lands on
+// a moment where something actually happened.
 export function useTimeWindow(payload: HivePayload, scrub: number): TimeWindow {
   return useMemo(() => {
     if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
-    const times = payload.events.map(e => new Date(e.at).getTime());
-    const minT = Math.min(...times);
-    const maxT = Math.max(new Date(payload.fetchedAt).getTime(), Math.max(...times));
+    const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
+    const minT = times[0];
+    const maxT = Math.max(new Date(payload.fetchedAt).getTime(), times[times.length - 1]);
     const live = scrub === SCRUB_MAX;
-    return { minT, maxT, live, asOf: live ? maxT : minT + (scrub / SCRUB_MAX) * (maxT - minT) };
+    const idx = Math.min(times.length - 1, Math.floor((scrub / SCRUB_MAX) * (times.length - 1)));
+    return { minT, maxT, live, asOf: live ? maxT : times[idx] };
   }, [payload, scrub]);
 }
 

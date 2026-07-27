@@ -1,7 +1,9 @@
 'use client';
 
+import { KindBadge } from '@/features/hive/components/pixel-sprite';
+import { travelTo } from '@/features/hive/components/player';
 import { useHiveUi } from '@/features/hive/hive-ui-context';
-import { hashDelay, KIND_EMOJI, type Actor } from '@/features/hive/hive-world-model';
+import { hashDelay, type Actor } from '@/features/hive/hive-world-model';
 import { cn } from '@/lib/utils';
 
 // Crisp avatar head on a pixel body; walks (transform transition) when its cell changes.
@@ -24,7 +26,7 @@ export function HiveVillager({ actor, x, y }: { actor: Actor; x: number; y: numb
         })
       }
       onMouseLeave={() => setTip(null)}
-      onClick={() => setFocusId(actor.cellId)}
+      onClick={() => travelTo({ x: x, y: y + 26, cellId: actor.cellId })}
       className="absolute z-10 cursor-pointer transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
       style={{ transform: `translate(${x - 16}px, ${y - 30}px)` }}
     >
@@ -53,15 +55,15 @@ export function HiveVillager({ actor, x, y }: { actor: Actor; x: number; y: numb
           </svg>
           <span
             className={cn(
-              'absolute -top-2.5 -right-4 flex h-5 min-w-5 items-center justify-center text-[12px] drop-shadow',
-              talking && 'bg-popover rounded-full rounded-bl-none border px-1 shadow',
+              'absolute -top-3 -right-4 flex h-5 min-w-5 items-center justify-center drop-shadow',
+              talking && 'rounded-sm border border-black/40 bg-[#f0e6d2] px-0.5 shadow',
             )}
           >
-            {KIND_EMOJI[actor.event.kind]}
+            <KindBadge kind={actor.event.kind} />
           </span>
         </div>
         <span aria-hidden className="mt-0.5 h-1.5 w-6 rounded-full bg-black/50 blur-[2px]" />
-        <span className="mt-0.5 max-w-28 truncate rounded bg-black/45 px-1 font-mono text-[9px] leading-3.5 text-white/90">
+        <span className="mt-0.5 max-w-32 truncate rounded-sm bg-black/50 px-1 font-pixel text-[11px] leading-4 text-white">
           {actor.login}
         </span>
       </div>

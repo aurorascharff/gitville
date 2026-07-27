@@ -3,6 +3,7 @@
 import { HiveRoads } from '@/features/hive/components/hive-roads';
 import { HiveVillager } from '@/features/hive/components/hive-villager';
 import { BUSH, CROPS, FENCE, PixelSprite, ROCK, TREE } from '@/features/hive/components/pixel-sprite';
+import { Player, travelTo } from '@/features/hive/components/player';
 import { VillageHouse } from '@/features/hive/components/village-house';
 import { useHiveUi } from '@/features/hive/hive-ui-context';
 import { WORLD_H, WORLD_W } from '@/features/hive/hive-world-model';
@@ -23,7 +24,14 @@ export function HiveStage() {
     <div
       className="absolute inset-0"
       onClick={e => {
-        if (e.target === e.currentTarget) setFocusId(null);
+        if (e.target !== e.currentTarget) return;
+        if (focusId) {
+          setFocusId(null);
+          return;
+        }
+        const wx = (e.clientX - (window.innerWidth / 2 + biasX - target.x * scale)) / scale;
+        const wy = (e.clientY - (window.innerHeight / 2 - target.y * scale)) / scale;
+        travelTo({ x: wx, y: wy });
       }}
     >
       <div
@@ -50,7 +58,9 @@ export function HiveStage() {
         {placed.map(({ actor, x, y }) => (
           <HiveVillager key={actor.login} actor={actor} x={x} y={y} />
         ))}
+        <Player cells={cells} />
       </div>
+      <NightSky />
       <Fireflies />
     </div>
   );
@@ -114,6 +124,16 @@ function Pond({ x, y }: { x: number; y: number }) {
     <span aria-hidden className="absolute" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
       <span className="block h-16 w-28 rounded-[45%] bg-[#3d6f9e] shadow-[inset_0_4px_0_#5a8fc0,inset_0_-4px_0_#2e567c]" />
     </span>
+  );
+}
+
+function NightSky() {
+  return (
+    <>
+      <div aria-hidden className="stars pointer-events-none absolute inset-0 hidden opacity-50 dark:block" />
+      <span aria-hidden className="pixel absolute top-8 right-24 hidden h-8 w-8 rounded-full bg-[#e8e4d2] shadow-[inset_-6px_-4px_0_#c9c4ae] dark:block" />
+      <span aria-hidden className="pixel absolute top-8 right-24 block h-8 w-8 rounded-full bg-[#ffd76a] shadow-[0_0_24px_6px_rgb(255_215_106/0.5)] dark:hidden" />
+    </>
   );
 }
 

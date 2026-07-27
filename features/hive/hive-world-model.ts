@@ -4,12 +4,12 @@ import type { HivePayload, WireEvent } from '@/types/github';
 // A honeycomb: center cell + two rings = 19 slots, laid out in a fixed logical
 // space. Positions are deterministic so cells never jump between polls.
 
-export const WORLD_W = 1180;
-export const WORLD_H = 820;
+export const WORLD_W = 1460;
+export const WORLD_H = 1040;
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
-const DX = 190;
-const DY = 160;
+const DX = 235;
+const DY = 200;
 
 const AXIAL: [number, number][] = [
   [0, 0],
@@ -245,15 +245,3 @@ export function commitWeights(payload: HivePayload, cells: Cell[]): Map<string, 
   return weights;
 }
 
-export const KIND_EMOJI: Record<WireEvent['kind'], string> = {
-  push: '⚡',
-  pr_opened: '🔀',
-  pr_merged: '🎉',
-  pr_closed: '🚫',
-  review: '👀',
-  comment: '💬',
-  issue: '🐛',
-  release: '🚀',
-  branch_created: '🌱',
-  branch_deleted: '🧹',
-};

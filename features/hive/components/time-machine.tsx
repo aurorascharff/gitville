@@ -46,5 +46,5 @@ function spanLabel(ms: number): string {
 }
 
 function clockLabel(t: number): string {
-  return `⏪ ${new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

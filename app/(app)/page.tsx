@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { HiveMark } from '@/components/hive-mark';
+import { GitvilleMark } from '@/components/gitville-mark';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WatchForm } from '@/features/repo/components/watch-form';
@@ -29,11 +29,11 @@ export default function HomePage() {
       <div className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col items-center justify-center gap-8 px-4 py-14">
         <header className="pixel flex flex-col items-center gap-3 text-center">
           <div className="flex items-center gap-2.5 rounded-md border-4 border-[#4a3826] bg-[#f0e6d2] px-5 py-2.5 shadow-xl">
-            <HiveMark size={26} />
-            <h1 className="font-mono text-xl font-bold tracking-tight text-[#3a2f22]">Hive</h1>
+            <GitvilleMark size={30} />
+            <h1 className="font-pixel text-2xl font-bold tracking-tight text-[#3a2f22]">Gitville</h1>
           </div>
-          <p className="max-w-md rounded bg-black/35 px-3 py-1 font-mono text-xs text-white/90">
-            every repo is a village — walk in and watch the work happen
+          <p className="font-pixel max-w-md rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">
+            every repo is a tiny village. real people, real commits, live.
           </p>
         </header>
 
