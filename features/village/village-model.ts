@@ -60,6 +60,9 @@ export type Cell = {
   author?: string;
   ref?: string; // a PR's head branch — pushes to it land in this room
   baseRef?: string;
+  // A stack is ONE building: only its top PR renders a house. The members
+  // below keep invisible cells at the same spot so rooms and villagers work.
+  hidden?: boolean;
   x: number;
   y: number;
 };
@@ -98,9 +101,17 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
-  for (const pr of pickedPrs(payload)) {
+  // A PR is a stack top when no other open PR builds on its head branch.
+  const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
+  const picked = pickedPrs(payload);
+  const tops = picked.filter(pr => !baseRefs.has(pr.branch));
+  const placed = new Set<number>();
+
+  for (const pr of tops) {
     const floors = stackDepth(pr, byHead);
     const under = byHead.get(pr.baseRef);
+    const pos = slotPos(slot++);
+    placed.add(pr.number);
     cells.push({
       id: `pr:${pr.number}`,
       kind: 'pr',
@@ -114,8 +125,32 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       author: pr.author,
       ref: pr.branch,
       baseRef: pr.baseRef,
-      ...slotPos(slot++),
+      ...pos,
     });
+    // Walk down the chain: members live inside the same building.
+    let cur = pr;
+    for (;;) {
+      const parent = byHead.get(cur.baseRef);
+      if (!parent || placed.has(parent.number)) break;
+      placed.add(parent.number);
+      cells.push({
+        id: `pr:${parent.number}`,
+        kind: 'pr',
+        label: `#${parent.number}`,
+        sub: parent.title,
+        url: parent.url,
+        draft: parent.draft,
+        prState: 'stacked',
+        floors: stackDepth(parent, byHead),
+        stackedOn: byHead.get(parent.baseRef)?.number,
+        author: parent.author,
+        ref: parent.branch,
+        baseRef: parent.baseRef,
+        hidden: true,
+        ...pos,
+      });
+      cur = parent;
+    }
   }
 
   // Winding the clock back resurrects houses: a PR merged or closed after the

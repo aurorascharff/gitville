@@ -110,7 +110,7 @@ type EventResponse = {
 function trimBody(body?: string | null): string | null {
   if (!body) return null;
   const clean = body.replace(/\r/g, '').trim();
-  return clean.length > 280 ? `${clean.slice(0, 277)}…` : clean;
+  return clean.length > 600 ? `${clean.slice(0, 597)}…` : clean;
 }
 
 function shortRef(ref?: string | null): string {

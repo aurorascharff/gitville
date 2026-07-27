@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { BUSH, CROPS, FENCE, FLOWER, FLOWER_BLUE, PEBBLES, PixelSprite, POND, ROCK, TREE, TUFT } from '@/features/village/components/pixel-sprite';
+import { BUSH, CROPS, FENCE, FLOWER, FLOWER_BLUE, MUSHROOM, PEBBLES, PixelSprite, POND, ROCK, STUMP, TREE, TUFT } from '@/features/village/components/pixel-sprite';
 import { Player, travelTo } from '@/features/village/components/player';
 import { VillageHouse, VillageLamp } from '@/features/village/components/village-house';
 import { VillageRoads } from '@/features/village/components/village-roads';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 // Wide of the door so lamps never stand in the villager arc or on the name plate.
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {
-  return cells.filter(c => c.kind !== 'inbox').map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
+  return cells.filter(c => c.kind !== 'inbox' && !c.hidden).map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
 
 // The village at fixed scale; the camera (world transform) chases the player.
@@ -25,7 +25,7 @@ export function VillageStage() {
   const worldRef = useRef<HTMLDivElement>(null);
 
   const lamps = lampSpots(cells);
-  const litCells = cells.filter(c => (occupied.get(c.id) ?? 0) > 0);
+  const litCells = cells.filter(c => !c.hidden && (occupied.get(c.id) ?? 0) > 0);
 
   return (
     <div
@@ -56,9 +56,11 @@ export function VillageStage() {
         {lamps.map((l, i) => (
           <VillageLamp key={i} x={l.x} y={l.y} />
         ))}
-        {cells.map(cell => (
-          <VillageHouse key={cell.id} cell={cell} people={occupied.get(cell.id) ?? 0} />
-        ))}
+        {cells
+          .filter(c => !c.hidden)
+          .map(cell => (
+            <VillageHouse key={cell.id} cell={cell} people={occupied.get(cell.id) ?? 0} />
+          ))}
         {placed.map(({ actor, x, y }) => (
           <Villager key={actor.login} actor={actor} x={x} y={y} />
         ))}
@@ -95,11 +97,46 @@ export function VillageStage() {
       </div>
       <NightSky />
       <Fireflies />
+      <Butterflies />
     </div>
   );
 }
 
-const DECOR: { kind: 'tree' | 'bush' | 'rock' | 'crops' | 'fence'; x: number; y: number }[] = [
+// Daytime ambience: butterflies drifting over the lawns.
+function Butterflies() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden dark:hidden">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <span
+          key={i}
+          className="firefly absolute h-1.5 w-1.5 rounded-[1px]"
+          style={{
+            left: `${(i * 149 + 43) % 100}%`,
+            top: `${(i * 97 + 31) % 100}%`,
+            background: i % 2 === 0 ? '#f2ead8' : '#9db9e8',
+            boxShadow: 'none',
+            animationDelay: `${(i * 811) % 6000}ms`,
+            animationDuration: `${6200 + ((i * 887) % 3800)}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const DECOR: { kind: 'tree' | 'bush' | 'rock' | 'crops' | 'fence' | 'mushroom' | 'stump'; x: number; y: number }[] = [
+  { kind: 'mushroom', x: 520, y: 330 },
+  { kind: 'mushroom', x: 1240, y: 1180 },
+  { kind: 'mushroom', x: 1850, y: 480 },
+  { kind: 'mushroom', x: 370, y: 860 },
+  { kind: 'stump', x: 860, y: 250 },
+  { kind: 'stump', x: 1700, y: 1360 },
+  { kind: 'stump', x: 240, y: 1180 },
+  { kind: 'bush', x: 760, y: 480 },
+  { kind: 'bush', x: 1350, y: 680 },
+  { kind: 'crops', x: 1950, y: 950 },
+  { kind: 'fence', x: 1850, y: 940 },
+  { kind: 'fence', x: 2050, y: 940 },
   { kind: 'crops', x: 280, y: 1060 },
   { kind: 'crops', x: 1520, y: 230 },
   { kind: 'fence', x: 380, y: 1045 },
@@ -133,8 +170,20 @@ function Greenery() {
     <>
       {DECOR.map((d, i) => {
         const sprite =
-          d.kind === 'tree' ? TREE : d.kind === 'bush' ? BUSH : d.kind === 'crops' ? CROPS : d.kind === 'fence' ? FENCE : ROCK;
-        const scale = d.kind === 'tree' ? 5 : d.kind === 'crops' ? 6 : 4;
+          d.kind === 'tree'
+            ? TREE
+            : d.kind === 'bush'
+              ? BUSH
+              : d.kind === 'crops'
+                ? CROPS
+                : d.kind === 'fence'
+                  ? FENCE
+                  : d.kind === 'mushroom'
+                    ? MUSHROOM
+                    : d.kind === 'stump'
+                      ? STUMP
+                      : ROCK;
+        const scale = d.kind === 'tree' ? 5 : d.kind === 'crops' ? 6 : d.kind === 'mushroom' ? 3 : 4;
         return (
           <span
             key={i}

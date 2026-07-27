@@ -21,7 +21,7 @@ export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }
           x: e.clientX,
           y: e.clientY,
           title: actor.login,
-          body: `${actor.event.line}${actor.event.detail ? ` — ${actor.event.detail}` : ''}`,
+          body: `${actor.event.line}${actor.event.detail ? `: ${actor.event.detail}` : ''}`,
           when: actor.event.at,
         })
       }

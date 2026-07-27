@@ -16,8 +16,8 @@ const ROOFS: Record<Cell['kind'], [string, string]> = {
 
 function stateLine(cell: Cell): string | null {
   if (cell.kind !== 'pr') return null;
-  if (cell.prState === 'stacked') return `stacked on #${cell.stackedOn}${cell.draft ? ' · draft' : ''}`;
-  if (cell.prState === 'draft') return 'draft — under construction';
+  if (cell.prState === 'stacked') return `a stack of ${cell.floors} PRs${cell.draft ? ', top floor still a draft' : ''}`;
+  if (cell.prState === 'draft') return 'a draft, still under construction';
   return 'ready for review';
 }
 
@@ -82,7 +82,7 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
           <p className="font-pixel w-full truncate text-[13px] leading-4 font-bold text-[#3a2f22]">
             {cell.label}
             {cell.prState === 'stacked' ? <span className="text-[#8a6d2a]"> ⌂{cell.floors}</span> : null}
-            {cell.draft ? <span className="font-normal text-[#8a6d2a]"> · draft</span> : null}
+            {cell.draft ? <span className="font-normal text-[#8a6d2a]"> draft</span> : null}
           </p>
           {cell.sub && !main ? <p className="line-clamp-1 w-full text-[10px] leading-tight text-[#6b5b43]">{cell.sub}</p> : null}
         </div>

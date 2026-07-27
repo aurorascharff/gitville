@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
   AI_ART_PALETTE,
@@ -20,9 +20,18 @@ import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 import type { BranchCommit, WireEvent } from '@/types/github';
 
-const DIMS: Record<'S' | 'M' | 'L', [number, number]> = { S: [780, 560], M: [940, 620], L: [1100, 680] };
 const WALL_H = 150;
 const TILE = 56;
+
+// The room matches its building: halls are grand, cabins snug, and a stack
+// adds floor space per storey.
+function roomDims(cell: Cell): [number, number] {
+  if (cell.kind === 'main') return [1240, 740];
+  if (cell.kind === 'branch') return [880, 600];
+  if (cell.kind === 'issue') return [920, 600];
+  if (cell.kind === 'inbox') return [1020, 660];
+  return [1080, Math.min(840, 640 + ((cell.floors ?? 1) - 1) * 60)];
+}
 
 // Every block fetches its own data through the shared SWR hooks, so the scene
 // is pure composition and the keys dedupe to one request per poll.
@@ -33,6 +42,14 @@ export function HouseInterior() {
   const { cells } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTarget = useRef<{ x: number; y: number } | null>(null);
+  const [viewport, setViewport] = useState({ w: 1400, h: 900 });
+
+  useEffect(() => {
+    const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   useEffect(() => {
     if (!cell) return;
@@ -50,19 +67,19 @@ export function HouseInterior() {
 
   if (!cell) return null;
 
-  const room = roomFor(payload, cells, cell.id);
-  const [w, h] = DIMS[room.size];
+  const [w, h] = roomDims(cell);
+  const fit = Math.min(1, (viewport.w - 48) / w, (viewport.h - 48) / h);
 
   return (
     <div className="scene-in absolute inset-0 z-40 flex items-center justify-center bg-[#0c0a08] p-4">
       <div
         key={cell.id}
         className="pixel relative shrink-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)]"
-        style={{ width: w, height: h }}
+        style={{ width: w, height: h, transform: `scale(${fit})` }}
         onClick={e => {
           if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
           const rect = e.currentTarget.getBoundingClientRect();
-          walkTarget.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          walkTarget.current = { x: (e.clientX - rect.left) / fit, y: (e.clientY - rect.top) / fit };
         }}
       >
         <WallNotes cell={cell} width={w} />
@@ -97,8 +114,12 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
   const { spec, loading } = useRoomSpec(slug, cell.id);
-  const notes = roomFor(payload, cells, cell.id).notes.slice(0, 8);
+  const notes = roomFor(payload, cells, cell.id).notes;
   const tent = cell.kind === 'issue';
+  // Only what fits on one row of the wall; the rest becomes a "+N" note.
+  const maxNotes = Math.max(2, Math.floor((width - (tent ? 60 : 240)) / 104));
+  const visible = notes.slice(0, maxNotes);
+  const extra = notes.length - visible.length;
 
   if (loading) return <WallSkeleton />;
 
@@ -117,10 +138,22 @@ function WallNotes({ cell, width }: { cell: Cell; width: number }) {
         </>
       ) : null}
 
-      <div className="absolute top-3.5 flex flex-wrap gap-2" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
-        {notes.slice(0, 6).map((note, i) => (
+      <div className="absolute top-3.5 flex gap-2 overflow-hidden" style={{ left: tent ? 24 : 110, right: tent ? 24 : 110 }}>
+        {visible.map((note, i) => (
           <StickyNote key={note.id} note={note} tilt={((i * 47) % 9) - 4} />
         ))}
+        {extra > 0 ? (
+          <a
+            href={cell.url}
+            target="_blank"
+            rel="noreferrer"
+            data-stop-walk
+            className="sticky-note font-pixel flex h-24 w-16 shrink-0 items-center justify-center text-[12px] font-bold text-[#5a4a1e] transition-transform hover:scale-110"
+            aria-label={`${extra} more notes on GitHub`}
+          >
+            +{extra}
+          </a>
+        ) : null}
       </div>
       <div className="absolute inset-x-0 bottom-0 h-2.5 bg-black/25" />
       <span className="sr-only">wall width {width}</span>
@@ -198,51 +231,41 @@ function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): B
   return builds;
 }
 
-// The plate names the piece like furniture; the real commits live on hover.
+// One clickable piece per commit. Related commits share a shape and stand
+// together as a set, so grouped work reads as one bigger installation.
 function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const { setTip } = useVillageUi();
-  const primary = build.commits[0];
-  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(primary.sha);
+  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const art = build.art?.length ? build.art : fallback.art;
   const palette = build.art?.length ? AI_ART_PALETTE : fallback.palette;
   const name = build.name ?? fallback.name;
-  // Same code touched by more commits grows into a bigger piece.
-  const scale = build.commits.length >= 5 ? 8 : build.commits.length >= 3 ? 7 : build.commits.length >= 2 ? 6 : 5;
-  const tip = (e: React.MouseEvent) =>
-    setTip({
-      x: e.clientX,
-      y: e.clientY,
-      title: `${name} · by ${primary.author}`,
-      body: build.commits.map(c => c.message).join('\n'),
-      when: primary.at || null,
-    });
-  const inner = (
-    <>
-      <PixelSprite art={art} palette={palette} scale={scale} />
-      <span aria-hidden className="mx-auto mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-      <span className="font-pixel mt-0.5 block max-w-24 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
+  const n = build.commits.length;
+
+  return (
+    <div className="absolute flex flex-col items-center" style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}>
+      <div className="flex items-end">
+        {build.commits.map((commit, i) => (
+          <a
+            key={commit.sha}
+            href={commit.url}
+            target="_blank"
+            rel="noreferrer"
+            className="transition-transform hover:-translate-y-1"
+            style={{ marginLeft: i === 0 ? 0 : -6, transform: `translateY(${(i % 2) * 4}px)` }}
+            onMouseMove={e =>
+              setTip({ x: e.clientX, y: e.clientY, title: `${name} by ${commit.author}`, body: commit.message, when: commit.at || null })
+            }
+            onMouseLeave={() => setTip(null)}
+          >
+            <PixelSprite art={art} palette={palette} scale={n > 2 ? 4 : 5} />
+          </a>
+        ))}
+      </div>
+      <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
+      <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[10px] leading-4 text-white/90">
         {name}
       </span>
-      {build.commits.length > 1 ? (
-        <span className="font-pixel absolute -top-2 -right-3 flex items-center gap-1 rounded-sm border border-black/40 bg-[#f0e6d2] px-1 text-[10px] font-bold whitespace-nowrap text-[#3a2f22]">
-          <KindBadge kind="push" scale={1} /> {build.commits.length} commits
-        </span>
-      ) : null}
-    </>
-  );
-  const style = { left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) } as const;
-  return (
-    <a
-      href={primary.url}
-      target="_blank"
-      rel="noreferrer"
-      className="absolute flex flex-col items-center transition-transform hover:-translate-y-0.5"
-      style={style}
-      onMouseMove={tip}
-      onMouseLeave={() => setTip(null)}
-    >
-      {inner}
-    </a>
+    </div>
   );
 }
 
@@ -276,7 +299,7 @@ function Occupants({ cellId, width, height }: { cellId: string; width: number; h
                 x: e.clientX,
                 y: e.clientY,
                 title: a.login,
-                body: `${a.event.line}${a.event.detail ? ` — ${a.event.detail}` : ''}`,
+                body: `${a.event.line}${a.event.detail ? `: ${a.event.detail}` : ''}`,
                 when: a.event.at,
               })
             }
@@ -443,7 +466,7 @@ function HouseSign({ cell }: { cell: Cell }) {
     cell.kind !== 'pr'
       ? null
       : cell.prState === 'stacked'
-        ? `stacked on #${cell.stackedOn}${cell.draft ? ' · draft' : ''}`
+        ? `stack of ${cell.floors} PRs${cell.draft ? ', top still a draft' : ''}`
         : cell.prState === 'draft'
           ? 'draft'
           : 'ready for review';
@@ -498,7 +521,7 @@ function HouseSign({ cell }: { cell: Cell }) {
                 </li>
               );
             })}
-            <li className="font-pixel px-1.5 text-[10px] text-[#8a6d2a]">⌂ {stack[stack.length - 1].baseRef} — the ground</li>
+            <li className="font-pixel px-1.5 text-[10px] text-[#8a6d2a]">⌂ {stack[stack.length - 1].baseRef} is the ground</li>
           </ul>
         </div>
       ) : null}
@@ -506,7 +529,7 @@ function HouseSign({ cell }: { cell: Cell }) {
         <a href={cell.url} target="_blank" rel="noreferrer" className="font-pixel flex items-center gap-1 text-[12px] font-bold text-[#8a4a2b] hover:underline">
           open on github <ArrowUpRight size={11} strokeWidth={3} />
         </a>
-        <span className="font-pixel text-[10px] text-[#8a6d2a]">esc · leave</span>
+        <span className="font-pixel text-[10px] text-[#8a6d2a]">esc to leave</span>
       </div>
     </aside>
   );
@@ -520,9 +543,9 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
       target="_blank"
       rel="noreferrer"
       data-stop-walk
-      className="sticky-note relative h-24 w-24 p-1.5 text-left transition-transform hover:scale-110 hover:rotate-0"
+      className="sticky-note relative h-24 w-24 shrink-0 p-1.5 text-left transition-transform hover:scale-110 hover:rotate-0"
       style={{ transform: `rotate(${tilt}deg)` }}
-      onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} · ${note.line}`, body: note.body, when: note.at })}
+      onMouseMove={e => setTip({ x: e.clientX, y: e.clientY, title: `${note.actor} ${note.line}`, body: note.body, when: note.at })}
       onMouseLeave={() => setTip(null)}
       aria-label={`Note from ${note.actor}`}
     >

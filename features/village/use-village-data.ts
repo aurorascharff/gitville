@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import useSWR, { preload } from 'swr';
 import {
   actorsAt,
@@ -74,15 +73,13 @@ export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boole
 // Scrubbing is indexed over events, not wall-clock, so every slider position lands on
 // a moment where something actually happened.
 export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindow {
-  return useMemo(() => {
-    if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
-    const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
-    const minT = times[0];
-    const maxT = Math.max(new Date(payload.fetchedAt).getTime(), times[times.length - 1]);
-    const live = scrub === SCRUB_MAX;
-    const idx = Math.min(times.length - 1, Math.floor((scrub / SCRUB_MAX) * (times.length - 1)));
-    return { minT, maxT, live, asOf: live ? maxT : times[idx] };
-  }, [payload, scrub]);
+  if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
+  const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
+  const minT = times[0];
+  const maxT = Math.max(new Date(payload.fetchedAt).getTime(), times[times.length - 1]);
+  const live = scrub === SCRUB_MAX;
+  const idx = Math.min(times.length - 1, Math.floor((scrub / SCRUB_MAX) * (times.length - 1)));
+  return { minT, maxT, live, asOf: live ? maxT : times[idx] };
 }
 
 export type PlacedActor = { actor: Actor; x: number; y: number };
@@ -95,30 +92,25 @@ export type WorldModel = {
   weights: Map<string, number>;
 };
 
+// No useMemo anywhere: the React Compiler memoizes this for us.
 export function useWorldModel(payload: VillagePayload, slug: string, asOf: number): WorldModel {
-  const cells = useMemo(() => buildCells(payload, slug, asOf), [payload, slug, asOf]);
-  const actors = useMemo(() => actorsAt(payload, cells, asOf), [payload, cells, asOf]);
-  const weights = useMemo(() => commitWeights(payload, cells), [payload, cells]);
+  const cells = buildCells(payload, slug, asOf);
+  const actors = actorsAt(payload, cells, asOf);
+  const weights = commitWeights(payload, cells);
 
-  const placed = useMemo<PlacedActor[]>(() => {
-    const byCell = new Map<string, Actor[]>();
-    for (const a of actors) byCell.set(a.cellId, [...(byCell.get(a.cellId) ?? []), a]);
-    const out: PlacedActor[] = [];
-    for (const [cellId, group] of byCell) {
-      const cell = cells.find(c => c.id === cellId) ?? cells[0];
-      group.forEach((actor, i) => {
-        const off = arcOffset(i, group.length);
-        out.push({ actor, x: cell.x + off.x, y: cell.y + off.y });
-      });
-    }
-    return out;
-  }, [actors, cells]);
+  const byCell = new Map<string, Actor[]>();
+  for (const a of actors) byCell.set(a.cellId, [...(byCell.get(a.cellId) ?? []), a]);
+  const placed: PlacedActor[] = [];
+  for (const [cellId, group] of byCell) {
+    const cell = cells.find(c => c.id === cellId) ?? cells[0];
+    group.forEach((actor, i) => {
+      const off = arcOffset(i, group.length);
+      placed.push({ actor, x: cell.x + off.x, y: cell.y + off.y });
+    });
+  }
 
-  const occupied = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const a of actors) counts.set(a.cellId, (counts.get(a.cellId) ?? 0) + 1);
-    return counts;
-  }, [actors]);
+  const occupied = new Map<string, number>();
+  for (const a of actors) occupied.set(a.cellId, (occupied.get(a.cellId) ?? 0) + 1);
 
   return { cells, actors, placed, occupied, weights };
 }

@@ -59,7 +59,7 @@ function BuzzRow({ event, cell, dimmed }: { event: WireEvent; cell: Cell | null;
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-[#8a6d2a]">
               <KindBadge kind={event.kind} /> <RelativeTime date={event.at} />
-              {cell ? <span className="truncate">· {cell.label}</span> : null}
+              {cell ? <span className="truncate">in {cell.label}</span> : null}
             </span>
           </span>
         </button>

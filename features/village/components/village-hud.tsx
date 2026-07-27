@@ -18,20 +18,15 @@ export function VillageStatus() {
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
       <RepoSwitcher repo={repo} pinned={pinned} />
       <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
-        <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
-          <span className={cn('radar-sweep absolute inset-0 rounded-full', !live && 'opacity-25')} />
-          <span className="bg-brand relative h-1.5 w-1.5 rounded-full" />
-        </span>
+        <span className={cn('h-2 w-2 rounded-full', live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')} />
         {stale ? (
-          'rate limited — showing last sync'
+          'rate limited, showing the last sync'
         ) : live ? (
-          <>
-            {actors.length} villagers about · synced <RelativeTime date={payload.fetchedAt} />
-          </>
+          <>{actors.length} villagers about</>
         ) : (
           <span className="font-mono">
-            viewing {new Date(asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ·{' '}
-            {new Date(asOf).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+            viewing {new Date(asOf).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
+            {new Date(asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
       </p>
@@ -76,14 +71,14 @@ export function VillageTooltip() {
   if (!tip) return null;
   return (
     <div
-      className="panel pointer-events-none fixed z-50 max-w-72 rounded-sm px-3 py-2"
+      className="panel pointer-events-none fixed z-50 max-w-96 rounded-sm px-3 py-2"
       style={{
         left: Math.min(tip.x + 16, typeof window !== 'undefined' ? window.innerWidth - 300 : tip.x),
         top: tip.y + 16,
       }}
     >
       <p className="font-pixel text-[14px] font-bold">{tip.title}</p>
-      {tip.body ? <p className="mt-0.5 line-clamp-4 text-xs whitespace-pre-line text-[#6b5b43]">{tip.body}</p> : null}
+      {tip.body ? <p className="mt-0.5 line-clamp-14 text-xs whitespace-pre-line text-[#6b5b43]">{tip.body}</p> : null}
       {tip.when ? (
         <p className="mt-1 text-[10px] text-[#8a6d2a]">
           <RelativeTime date={tip.when} /> ago

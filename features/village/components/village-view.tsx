@@ -21,11 +21,11 @@ export async function VillageView({ slug }: { slug: string }) {
   );
 }
 
-// Splash screen: a cottage going up while the village loads.
+// Splash screen: a cottage going up while the village loads. The backdrop
+// matches the world's forest edge so the swap to the real map doesn't flash.
 export function VillageViewSkeleton() {
   return (
-    <div className="grass-field relative flex h-dvh w-full items-center justify-center overflow-hidden">
-      <div aria-hidden className="village-vignette absolute inset-0" />
+    <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
       <div className="pixel relative flex flex-col items-center gap-4">
         <div className="relative" style={{ filter: 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25))' }}>
           <span aria-hidden className="pointer-events-none absolute -top-1 right-[21%]">

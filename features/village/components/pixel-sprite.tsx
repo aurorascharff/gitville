@@ -410,6 +410,16 @@ export const PEBBLES = {
   art: ['gd.g', '.g.d'],
 };
 
+export const MUSHROOM = {
+  palette: { r: '#c85b5b', w: '#f2ead8', s: '#d8c9a8' },
+  art: ['.rrr.', 'rwrwr', '.sss.', '.ss..'],
+};
+
+export const STUMP = {
+  palette: { W: '#a5814e', w: '#7c5f38', d: '#6b4223' },
+  art: ['.WWWW.', 'WwWWwW', 'WWwwWW', 'dWWWWd', '.dddd.'],
+};
+
 // Interior fixtures.
 export const WINDOW = {
   palette: { O: '#5a4632', b: '#bfe0f5', n: '#1a2c55' },
