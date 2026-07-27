@@ -6,6 +6,7 @@ import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WatchForm } from '@/features/repo/components/watch-form';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
+import { BUSH, cottageArt, FLOWER, hallArt, housePalette, PixelSprite, TREE } from '@/features/village/components/pixel-sprite';
 import { getRepoData } from '@/lib/github';
 import type { Route } from 'next';
 
@@ -14,17 +15,12 @@ export const prefetch = 'allow-runtime';
 // The world picker: choose which village to visit.
 export default function HomePage() {
   return (
-    <div className="grass-field relative min-h-dvh overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 40%, rgb(255 240 190 / 0.12), transparent 70%)' }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse 95% 85% at 50% 50%, transparent 50%, rgb(12 28 16 / 0.55))' }}
-      />
+    <div
+      className="grass-field relative min-h-dvh overflow-hidden"
+      style={{ backgroundSize: '48px 48px, 68px 68px, 16px 16px' }}
+    >
+      <div aria-hidden className="village-vignette absolute inset-0" />
+      <HomeScenery />
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col items-center justify-center gap-8 px-4 py-14">
         <header className="pixel flex flex-col items-center gap-3 text-center">
@@ -52,6 +48,36 @@ export default function HomePage() {
           gitville is a repo too — view the source
         </a>
       </div>
+    </div>
+  );
+}
+
+// The home page is a village too: a tree line, a couple of houses, some growth.
+function HomeScenery() {
+  const cottage = housePalette('#c85b5b', '#9d4444', true);
+  const hall = housePalette('#3b6bff', '#2b4fc4', true);
+  return (
+    <div aria-hidden className="pixel pointer-events-none absolute inset-0">
+      {Array.from({ length: 14 }).map((_, i) => (
+        <span key={i} className="absolute" style={{ left: `${i * 7.5 + ((i * 37) % 4)}%`, bottom: -14 - ((i * 23) % 18) }}>
+          <PixelSprite art={TREE.art} palette={TREE.palette} scale={i % 3 === 0 ? 6 : 5} />
+        </span>
+      ))}
+      <span className="absolute bottom-24 left-[8%] hidden md:block">
+        <PixelSprite art={cottageArt(1, false)} palette={cottage} scale={4} />
+      </span>
+      <span className="absolute right-[7%] bottom-28 hidden md:block">
+        <PixelSprite art={hallArt()} palette={hall} scale={4} />
+      </span>
+      <span className="absolute top-[18%] left-[14%]">
+        <PixelSprite art={BUSH.art} palette={BUSH.palette} scale={4} />
+      </span>
+      <span className="absolute top-[24%] right-[16%]">
+        <PixelSprite art={FLOWER.art} palette={FLOWER.palette} scale={4} />
+      </span>
+      <span className="absolute top-[64%] left-[6%]">
+        <PixelSprite art={FLOWER.art} palette={FLOWER.palette} scale={3} />
+      </span>
     </div>
   );
 }

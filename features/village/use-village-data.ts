@@ -32,7 +32,7 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
 export type RoomSpecItem = {
   name: string;
   kind?: string;
-  art?: string[];
+  pieces?: string[][]; // one drawn segment per commit, joined side by side
   commits: number[];
 };
 
@@ -60,10 +60,12 @@ export function preloadRoomSpec(slug: string, cellId: string): void {
 }
 
 // AI design is opt-in per room: the `ai` flag becomes part of the SWR key, so
-// clicking "draw with AI" fetches (and server-caches) the designed version.
+// hiring the carpenter fetches (and server-caches) the designed version.
+// keepPreviousData keeps the plain room on screen while the AI one is drawn.
 export function useRoomSpec(slug: string, cellId: string, ai = false): { spec: RoomSpecPayload | null; loading: boolean } {
   const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId, ai), specFetcher, {
     revalidateOnFocus: false,
+    keepPreviousData: true,
   });
   return { spec: data?.ok ? data : null, loading: isLoading };
 }

@@ -51,7 +51,7 @@ export function VillageMusic() {
   const [playing, setPlaying] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCache = useRef(new Map<string, HTMLAudioElement>());
   const indoors = Boolean(focusId);
 
   useEffect(() => {
@@ -60,8 +60,8 @@ export function VillageMusic() {
     let cleanupSynth: (() => void) | null = null;
     const melody = indoors ? INSIDE : OUTSIDE;
 
-    // "Stage 1" from Chiptune Adventures by Juhani Junkala (CC0) ships as ogg;
-    // a music.mp3 you drop in yourself wins if present.
+    // Two CC0 tracks by RandomMind: "The Bard's Tale" in the village and
+    // "The Old Tower Inn" once you step through a door.
     const startSynth = () => {
       // No real track available: fall back to the generated melody.
       if (cancelled) return;
@@ -92,26 +92,25 @@ export function VillageMusic() {
       };
     };
 
-    const tryPlay = (src: string) => {
-      const audio = new Audio(src);
-      audio.loop = true;
-      audio.volume = indoors ? 0.2 : 0.35;
-      return audio.play().then(() => {
-        if (cancelled) audio.pause();
-        else audioRef.current = audio;
-      });
-    };
+    const src = indoors ? '/music-inside.mp3' : '/music.mp3';
+    const audio = audioCache.current.get(src) ?? new Audio(src);
+    audioCache.current.set(src, audio);
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.play().catch(startSynth);
 
-    if (audioRef.current) {
-      audioRef.current.volume = indoors ? 0.2 : 0.35;
-      void audioRef.current.play().catch(startSynth);
-    } else {
-      tryPlay('/music.mp3').catch(() => tryPlay('/music.ogg').catch(startSynth));
+    // Warm the other track so stepping through a door switches instantly.
+    const other = indoors ? '/music.mp3' : '/music-inside.mp3';
+    if (!audioCache.current.has(other)) {
+      const preloaded = new Audio(other);
+      preloaded.preload = 'auto';
+      preloaded.loop = true;
+      audioCache.current.set(other, preloaded);
     }
 
     return () => {
       cancelled = true;
-      audioRef.current?.pause();
+      audio.pause();
       cleanupSynth?.();
     };
   }, [playing, indoors]);

@@ -91,12 +91,12 @@ export function HouseInterior() {
   if (!cell) return null;
 
   const [w, h] = roomDims(cell);
-  // The sign gets its own column, so the room can never end up underneath it.
-  const fit = Math.min(1, (viewport.w - 400) / w, (viewport.h - 48) / h);
+  // The sign and the AI panel get their own columns, so the room never sits under either.
+  const fit = Math.min(1, (viewport.w - 620) / w, (viewport.h - 48) / h);
 
   return (
     <div className="scene-in absolute inset-0 z-40 flex items-start gap-4 bg-[#0c0a08] p-4">
-      <HouseSign cell={cell} ai={ai} onToggle={on => setAiFor(on ? cell.id : null)} />
+      <HouseSign cell={cell} />
       <div className="flex h-full min-w-0 flex-1 items-center justify-center">
         <div
           key={cell.id}
@@ -115,7 +115,42 @@ export function HouseInterior() {
           <InteriorPlayer width={w} height={h} walkTarget={walkTarget} onExit={() => setFocusId(null)} />
         </div>
       </div>
+      <AiPanel cell={cell} ai={ai} onToggle={on => setAiFor(on ? cell.id : null)} />
     </div>
+  );
+}
+
+// The carpenter's corner: hiring the AI is its own thing, floating to the
+// right of the room, clearly apart from the PR facts on the left.
+function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
+  const { slug } = useVillageUi();
+  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
+  const working = ai && loading;
+  if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
+
+  return (
+    <aside className="panel z-50 w-52 shrink-0 rounded-sm p-3">
+      <p className="font-pixel text-[13px] font-bold">the carpenter</p>
+      <p className="mt-1 text-[11px] leading-snug text-[#6b5b43]">
+        an AI can rebuild the furniture here from the real commits, one invention per piece of work
+      </p>
+      <button
+        onClick={() => onToggle(!ai)}
+        disabled={working}
+        className="font-pixel mt-2 w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
+      >
+        {working ? 'at work…' : ai && spec?.ai ? 'show the plain room' : 'draw with AI'}
+      </button>
+      {working ? (
+        <p className="font-pixel mt-2 text-[11px] leading-snug text-[#8a6d2a]">
+          the carpenter is at work. wander around and come back in a moment
+        </p>
+      ) : null}
+      {!working && spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">theme: {spec.theme}</p> : null}
+      {!working && ai && spec && !spec.ai ? (
+        <p className="font-pixel mt-2 text-[11px] text-[#8a4a2b]">the carpenter couldn’t draw this one</p>
+      ) : null}
+    </aside>
   );
 }
 
@@ -274,7 +309,7 @@ function Campsite({ width, height }: { width: number; height: number }) {
   );
 }
 
-type Build = { commits: BranchCommit[]; name?: string; kind?: string; art?: string[] };
+type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][] };
 
 // Related commits become one build; anything the spec didn't cover still shows
 // up as its own piece.
@@ -285,7 +320,7 @@ function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): B
   for (const item of items) {
     const own = item.commits.filter(i => i >= 0 && i < commits.length && !covered.has(i)).map(i => commits[i]);
     item.commits.forEach(i => covered.add(i));
-    if (own.length > 0) builds.push({ commits: own, name: item.name, kind: item.kind, art: item.art });
+    if (own.length > 0) builds.push({ commits: own, name: item.name, kind: item.kind, pieces: item.pieces });
   }
   commits.forEach((c, i) => {
     if (!covered.has(i)) builds.push({ commits: [c] });
@@ -293,56 +328,39 @@ function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): B
   return builds;
 }
 
-// AI-drawn work is one piece that grows with the commits behind it. Catalog
-// fallbacks render one clickable piece per commit, standing together as a set.
+// One clickable segment per commit. AI-drawn segments join flush into one
+// invented machine; catalog fallbacks stand together as a matching set.
 function Furniture({ build, x, y }: { build: Build; x: number; y: number }) {
   const { setTip } = useVillageUi();
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const n = build.commits.length;
-  const drawn = Boolean(build.art?.length);
+  const drawn = Boolean(build.pieces?.length);
 
   return (
     <div className="absolute flex flex-col items-center" style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}>
-      {drawn ? (
-        <a
-          href={build.commits[0].url}
-          target="_blank"
-          rel="noreferrer"
-          className="transition-transform hover:-translate-y-1"
-          onMouseMove={e =>
-            setTip({
-              x: e.clientX,
-              y: e.clientY,
-              title: `${name} by ${build.commits[0].author}`,
-              body: build.commits.map(c => c.message).join('\n'),
-              when: build.commits[0].at || null,
-            })
-          }
-          onMouseLeave={() => setTip(null)}
-        >
-          <PixelSprite art={build.art!} palette={AI_ART_PALETTE} scale={n >= 5 ? 8 : n >= 3 ? 7 : n >= 2 ? 6 : 5} />
-        </a>
-      ) : (
-        <div className="flex items-end">
-          {build.commits.map((commit, i) => (
+      <div className="flex items-end">
+        {build.commits.map((commit, i) => {
+          const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
+          const palette = drawn ? AI_ART_PALETTE : fallback.palette;
+          return (
             <a
               key={commit.sha}
               href={commit.url}
               target="_blank"
               rel="noreferrer"
               className="transition-transform hover:-translate-y-1"
-              style={{ marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
+              style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
               onMouseMove={e =>
                 setTip({ x: e.clientX, y: e.clientY, title: `${name} by ${commit.author}`, body: commit.message, when: commit.at || null })
               }
               onMouseLeave={() => setTip(null)}
             >
-              <PixelSprite art={fallback.art} palette={fallback.palette} scale={n > 2 ? 4 : 5} />
+              <PixelSprite art={piece} palette={palette} scale={drawn ? 6 : n > 2 ? 4 : 5} />
             </a>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
       <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
       <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
         {name}
@@ -517,10 +535,9 @@ function InteriorPlayer({
   );
 }
 
-function HouseSign({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
+function HouseSign({ cell }: { cell: Cell }) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
 
   const prs = payload.prs;
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
@@ -612,22 +629,6 @@ function HouseSign({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: 
           </ul>
         </div>
       ) : null}
-      {/* AI never runs on its own: the carpenter only works when hired, and
-          you can always switch back to the plain room. */}
-      {(ai && loading) || (spec?.aiAvailable && spec.commits.length > 0) ? (
-        <button
-          onClick={() => onToggle(!ai)}
-          disabled={ai && loading}
-          className="font-pixel mt-2 w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
-        >
-          {ai && loading ? 'the carpenter is at work…' : ai ? 'show the plain room' : 'draw this room with AI'}
-        </button>
-      ) : null}
-      {spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">furniture built by AI, theme: {spec.theme}</p> : null}
-      {ai && !loading && spec && !spec.ai ? (
-        <p className="font-pixel mt-1 text-[11px] text-[#8a4a2b]">the carpenter couldn’t draw this one, showing the standard room</p>
-      ) : null}
-
       <div className="mt-2 flex items-center justify-between border-t-2 border-[#4a3826]/40 pt-2">
         <a href={cell.url} target="_blank" rel="noreferrer" className="font-pixel flex items-center gap-1 text-[12px] font-bold text-[#8a4a2b] hover:underline">
           open on github <ArrowUpRight size={11} strokeWidth={3} />

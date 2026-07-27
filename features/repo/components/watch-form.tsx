@@ -27,7 +27,7 @@ export function WatchForm() {
       <input
         value={value}
         onChange={e => setValue(e.target.value)}
-        placeholder="owner/repo"
+        placeholder="paste a github url or owner/repo"
         disabled={pending}
         className="min-w-0 flex-1 bg-transparent px-3 py-2 font-mono text-sm text-[#3a2f22] placeholder:text-[#a08c66] focus:outline-none"
       />

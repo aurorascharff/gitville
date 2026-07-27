@@ -13,7 +13,8 @@ export const ART_LETTERS = 'OWwmsbrygpc';
 export type RoomItem = {
   name: string;
   kind?: (typeof ITEM_KINDS)[number];
-  art?: string[];
+  // One drawn piece per commit in the group; side by side they form the machine.
+  pieces?: string[][];
   commits: number[]; // indexes into the room's commit list — grouped work becomes one build
 };
 
@@ -32,7 +33,7 @@ const specSchema = z.object({
     z.object({
       name: z.string(),
       kind: z.enum(ITEM_KINDS).nullable(),
-      art: z.array(z.string()).nullable(),
+      pieces: z.array(z.array(z.string())).nullable(),
       commits: z.array(z.number()),
     }),
   ),
@@ -42,11 +43,14 @@ const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
   const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
-    const art = (item.art ?? []).filter(row => artRow.test(row)).slice(0, 12);
+    const pieces = (item.pieces ?? [])
+      .map(piece => piece.filter(row => artRow.test(row)).slice(0, 12))
+      .filter(piece => piece.length >= 3)
+      .slice(0, 14);
     return {
       name: item.name.slice(0, 30),
       kind: item.kind ?? undefined,
-      art: art.length >= 3 ? art : undefined,
+      pieces: pieces.length > 0 ? pieces : undefined,
       commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
     };
   });
@@ -104,7 +108,7 @@ async function generateRoomSpecCached(
       model: gateway('openai/gpt-5-nano'),
       schema: specSchema,
       prompt: [
-        'You furnish one room in a pixel-art village where GitHub work is life. The furniture must physically represent the feature being built.',
+        'You are a mad inventor furnishing one room in a pixel-art village where GitHub work is life. You build original contraptions that physically embody the feature being built. Think workshop machines, a time machine, a loom, a printing press, a telescope. Never settle for a plain crate or bookshelf when the work deserves an invention.',
         `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
         state ? `The house is ${state}.` : '',
         'Commits in this room, in order (0-indexed):',
@@ -114,10 +118,11 @@ async function generateRoomSpecCached(
         '',
         'Rules:',
         '- Group commits that belong to the same piece of work into ONE item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item.',
-        '- More/bigger commits in a group → that item should be drawn bigger. Small fix → small object.',
-        '- Prefer drawing original pixel '.concat('`art`: 3-12 rows, 2-16 chars each, letters from the legend, "." = transparent. Make it look like what the work IS (a cache → an icebox, a parser → a loom, docs → a lectern).'),
+        '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group, designed to connect side by side (left end, middle segments, right end) into one machine. One commit means one self-contained piece.',
+        '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights so they join cleanly.',
+        '- Build BIG. Pieces should be 10-16 wide and 8-12 rows so the finished machine furnishes the room. No trinkets.',
         '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream.',
-        `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when nothing better fits. Set \`kind\` and \`art\` to null when unused.`,
+        `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent anything. Set \`kind\` and \`pieces\` to null when unused.`,
         '- Theme name max 3 words. No emoji.',
       ]
         .filter(Boolean)
