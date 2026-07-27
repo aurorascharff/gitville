@@ -450,6 +450,57 @@ export const FIREPLACE = {
   ],
 };
 
+// One centerpiece per room type — the anchor nobody walks on.
+export const WORKBENCH = {
+  palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', m: '#9aa0a8', y: '#e4c05a' },
+  art: [
+    '.m..........y.',
+    'OWWWWWWWWWWWWO',
+    'OWwWWwwwWWwWWO',
+    'OWWWWWWWWWWWWO',
+    '.OW.........WO',
+    '.OW.........WO',
+  ],
+};
+
+export const BARREL = {
+  palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', m: '#7b8188', b: '#4a76a8' },
+  art: [
+    '.OOOOOO.',
+    'OWbbbbWO',
+    'OmmmmmmO',
+    'OWwWWwWO',
+    'OWWwwWWO',
+    'OmmmmmmO',
+    '.OWWWWO.',
+    '..OOOO..',
+  ],
+};
+
+export const CHEST = {
+  palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', y: '#e4c05a' },
+  art: [
+    '.OOOOOOOO.',
+    'OWWWWWWWWO',
+    'OWwwwwwwWO',
+    'OOOOyyOOOO',
+    'OWWWyyWWWO',
+    'OWwwwwwwWO',
+    'OOOOOOOOOO',
+  ],
+};
+
+export const TABLE_LONG = {
+  palette: { O: '#2e2418', W: '#8a5a33', w: '#6b4223', c: '#f0ead8', y: '#e4c05a' },
+  art: [
+    '.cc..yy..cc..yy..cc.',
+    'OWWWWWWWWWWWWWWWWWWO',
+    'OwwwwwwwwwwwwwwwwwwO',
+    '.OW..............WO.',
+    '.OW..............WO.',
+  ],
+};
+
 export const WINDOW = {
   palette: { O: '#5a4632', b: '#bfe0f5', n: '#1a2c55' },
   art: ['OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO', 'ObbbObbO', 'ObbbObbO', 'OOOOOOOO'],

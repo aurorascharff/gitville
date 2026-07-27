@@ -17,10 +17,10 @@ export type RoomItem = {
   commits: number[]; // indexes into the room's commit list — grouped work becomes one build
 };
 
+// The AI is the carpenter, not the decorator: it builds furniture from the
+// commits. The room's own walls and floors stay deterministic.
 export type RoomSpec = {
   theme: string;
-  wall: (typeof WALLS)[number];
-  floor: (typeof FLOORS)[number];
   items: RoomItem[];
 };
 
@@ -28,8 +28,6 @@ export type RoomSpec = {
 // (every property must be required — use null instead). Sanitized below.
 const specSchema = z.object({
   theme: z.string(),
-  wall: z.enum(WALLS),
-  floor: z.enum(FLOORS),
   items: z.array(
     z.object({
       name: z.string(),
@@ -52,7 +50,7 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
       commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
     };
   });
-  return { theme: raw.theme.slice(0, 28), wall: raw.wall, floor: raw.floor, items: items.filter(i => i.commits.length > 0) };
+  return { theme: raw.theme.slice(0, 28), items: items.filter(i => i.commits.length > 0) };
 }
 
 function gatewayKey(): string | undefined {
@@ -120,7 +118,7 @@ async function generateRoomSpecCached(
         '- Prefer drawing original pixel '.concat('`art`: 3-12 rows, 2-16 chars each, letters from the legend, "." = transparent. Make it look like what the work IS (a cache → an icebox, a parser → a loom, docs → a lectern).'),
         '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream.',
         `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when nothing better fits. Set \`kind\` and \`art\` to null when unused.`,
-        `- Pick a wall from [${WALLS.join(', ')}] and floor from [${FLOORS.join(', ')}] that fit the work. Theme name max 3 words. No emoji.`,
+        '- Theme name max 3 words. No emoji.',
       ]
         .filter(Boolean)
         .join('\n'),
@@ -141,8 +139,6 @@ export function fallbackSpec(theme: string, commits: { id: string; actor?: strin
     }
     return h >>> 0;
   };
-  const seed = hash(theme);
-
   const groups: number[][] = [];
   commits.slice(0, 14).forEach((c, i) => {
     const prev = groups[groups.length - 1];
@@ -153,8 +149,6 @@ export function fallbackSpec(theme: string, commits: { id: string; actor?: strin
 
   return {
     theme,
-    wall: WALLS[seed % WALLS.length],
-    floor: FLOORS[seed % FLOORS.length],
     items: groups.map(idx => {
       const kind = ITEM_KINDS[hash(commits[idx[0]].id) % ITEM_KINDS.length];
       return { name: kind, kind, commits: idx };

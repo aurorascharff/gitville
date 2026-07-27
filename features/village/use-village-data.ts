@@ -39,8 +39,6 @@ export type RoomSpecItem = {
 export type RoomSpecPayload = {
   ok: boolean;
   theme: string;
-  wall: 'cream' | 'sage' | 'sky' | 'stone';
-  floor: 'wood' | 'stone' | 'carpet';
   items: RoomSpecItem[];
   commits: BranchCommit[];
   ai: boolean;
@@ -51,16 +49,7 @@ export type RoomSpecPayload = {
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
-    .catch(() => ({
-      ok: false,
-      theme: '',
-      wall: 'cream' as const,
-      floor: 'wood' as const,
-      items: [],
-      commits: [],
-      ai: false,
-      aiAvailable: false,
-    }));
+    .catch(() => ({ ok: false, theme: '', items: [], commits: [], ai: false, aiAvailable: false }));
 
 const roomKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;

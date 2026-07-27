@@ -5,15 +5,19 @@ import { useEffect, useRef, useState } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
   AI_ART_PALETTE,
+  BARREL,
   CAMPFIRE,
+  CHEST,
   FIREPLACE,
   furnitureByName,
   furnitureFor,
   KindBadge,
   LOG_SEAT,
   PixelSprite,
+  TABLE_LONG,
   WELL,
   WINDOW,
+  WORKBENCH,
 } from '@/features/village/components/pixel-sprite';
 import { PlayerSprite } from '@/features/village/components/player';
 import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel, type RoomSpecItem } from '@/features/village/use-village-data';
@@ -92,7 +96,7 @@ export function HouseInterior() {
 
   return (
     <div className="scene-in absolute inset-0 z-40 flex items-start gap-4 bg-[#0c0a08] p-4">
-      <HouseSign cell={cell} ai={ai} onAi={() => setAiFor(cell.id)} />
+      <HouseSign cell={cell} ai={ai} onToggle={on => setAiFor(on ? cell.id : null)} />
       <div className="flex h-full min-w-0 flex-1 items-center justify-center">
         <div
           key={cell.id}
@@ -115,7 +119,17 @@ export function HouseInterior() {
   );
 }
 
-function wallClass(cell: Cell, spec: { wall: string } | null): string {
+// Surfaces are the room's own, never the AI's: deterministic per house.
+function cellHash(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function wallClass(cell: Cell): string {
   if (cell.kind === 'issue') return 'room-wall-tent';
   if (cell.kind === 'branch') return 'room-wall-log';
   if (cell.kind === 'main') return 'room-wall-hall';
@@ -123,17 +137,30 @@ function wallClass(cell: Cell, spec: { wall: string } | null): string {
   const role = roomRole(cell);
   if (role === 'attic') return 'room-wall-log';
   if (role === 'ground') return 'room-wall-stone';
-  return `room-wall-${spec?.wall ?? 'cream'}`;
+  return `room-wall-${['cream', 'sage', 'sky'][cellHash(cell.id) % 3]}`;
 }
 
-function floorClass(cell: Cell, spec: { floor: string } | null): string {
+function floorClass(cell: Cell): string {
   if (cell.kind === 'issue' || cell.kind === 'inbox') return 'room-floor-ground';
   if (cell.kind === 'branch') return 'room-floor-wood';
   if (cell.kind === 'main') return 'room-floor-stone';
   const role = roomRole(cell);
   if (role === 'attic') return 'room-floor-wood';
   if (role === 'ground') return 'room-floor-carpet';
-  return `room-floor-${spec?.floor ?? 'wood'}`;
+  return `room-floor-${['wood', 'carpet'][cellHash(cell.id) % 2]}`;
+}
+
+// One anchor per room, sized for the middle of the floor. Not a fireplace
+// everywhere: the hall feasts, the cabin stores, the attic keeps a chest,
+// only the living room at the bottom of a stack gets the hearth.
+function centerpiece(cell: Cell): { art: string[]; palette: Record<string, string>; scale: number } | null {
+  if (cell.kind === 'inbox') return { ...WELL, scale: 6 };
+  if (cell.kind === 'main') return { ...TABLE_LONG, scale: 7 };
+  if (cell.kind === 'branch') return { ...BARREL, scale: 7 };
+  const role = roomRole(cell);
+  if (role === 'attic') return { ...CHEST, scale: 7 };
+  if (role === 'ground') return { ...FIREPLACE, scale: 7 };
+  return { ...WORKBENCH, scale: 6 };
 }
 
 function WallNotes({ cell, width, ai }: { cell: Cell; width: number; ai: boolean }) {
@@ -148,7 +175,7 @@ function WallNotes({ cell, width, ai }: { cell: Cell; width: number; ai: boolean
   if (loading) return <WallSkeleton />;
 
   return (
-    <div className={cn('absolute inset-x-0 top-0', wallClass(cell, spec))} style={{ height: WALL_H }}>
+    <div className={cn('absolute inset-x-0 top-0', wallClass(cell))} style={{ height: WALL_H }}>
       {!outdoors ? (
         <>
           <span className="pixel absolute top-6 left-8">
@@ -187,43 +214,45 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
 
   if (loading) return <FloorSkeleton />;
 
+  const anchor = campsite ? null : centerpiece(cell);
+  const floorH = height - WALL_H;
+  const builds = toBuilds(commits, spec?.items);
+  const slots = furnitureSlots(builds.length, width, floorH);
+
   return (
-    <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell, spec))} style={{ top: WALL_H }}>
-      {campsite ? (
-        <Campsite width={width} height={height - WALL_H} />
-      ) : (
-        <>
-          {/* Every home has a hearth; the square keeps its well under the open sky. */}
-          {plaza ? (
-            <span
-              aria-hidden
-              className="pixel pointer-events-none absolute"
-              style={{ left: width / 2, top: (height - WALL_H) / 2 - 30, transform: 'translate(-50%, -50%)', zIndex: 1 }}
-            >
-              <PixelSprite art={WELL.art} palette={WELL.palette} scale={6} />
-            </span>
-          ) : (
-            <span aria-hidden className="pixel pointer-events-none absolute" style={{ left: width / 2, top: 40, transform: 'translate(-50%, -50%)', zIndex: 1 }}>
-              <PixelSprite art={FIREPLACE.art} palette={FIREPLACE.palette} scale={6} />
-            </span>
-          )}
-          {toBuilds(commits, spec?.items).map((build, i) => {
-            const slot = tileSlot(i, width);
-            return <Furniture key={build.commits[0].sha} build={build} x={slot.x} y={slot.y} />;
-          })}
-        </>
-      )}
+    <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell))} style={{ top: WALL_H }}>
+      {campsite ? <Campsite width={width} height={floorH} /> : null}
+      {anchor ? (
+        <span
+          aria-hidden
+          className="pixel pointer-events-none absolute"
+          style={{ left: width / 2, top: floorH / 2 - 20, transform: 'translate(-50%, -50%)', zIndex: 1 }}
+        >
+          <PixelSprite art={anchor.art} palette={anchor.palette} scale={anchor.scale} />
+        </span>
+      ) : null}
+      {builds.map((build, i) => (
+        <Furniture key={build.commits[0].sha} build={build} x={slots[i].x} y={slots[i].y} />
+      ))}
     </div>
   );
 }
 
-// Furniture fills the room tile by tile from the back-left corner.
-function tileSlot(i: number, w: number): { x: number; y: number } {
+// Furniture fills the room tile by tile from the back-left corner, always
+// leaving the middle of the floor to the centerpiece.
+function furnitureSlots(count: number, w: number, floorH: number): { x: number; y: number }[] {
   const step = TILE * 2.5;
   const cols = Math.max(1, Math.floor((w - TILE * 2) / step));
-  const row = Math.floor(i / cols);
-  const col = i % cols;
-  return { x: TILE + col * step + step / 2, y: TILE * 0.6 + row * TILE * 1.9 + TILE / 2 };
+  const slots: { x: number; y: number }[] = [];
+  for (let i = 0; slots.length < count && i < 60; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const x = TILE + col * step + step / 2;
+    const y = TILE * 0.6 + row * TILE * 1.9 + TILE / 2;
+    if (Math.abs(x - w / 2) < 170 && Math.abs(y - (floorH / 2 - 20)) < 120) continue;
+    slots.push({ x, y });
+  }
+  return slots;
 }
 
 function Campsite({ width, height }: { width: number; height: number }) {
@@ -328,28 +357,17 @@ function Occupants({ cell, width, height }: { cell: Cell; width: number; height:
   const { asOf } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
   const here = actors.filter(a => a.cellId === cell.id);
-  const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
   if (here.length === 0) return null;
 
   return (
     <>
       {here.map((a, i) => {
-        // Outdoors people gather in a ring around the well or fire, never on it.
-        let x: number;
-        let y: number;
-        if (outdoors) {
-          const ring = Math.floor(i / 10);
-          const inRing = Math.min(10, here.length - ring * 10);
-          const angle = ((i % 10) / inRing) * Math.PI * 2 - Math.PI / 2;
-          x = width / 2 + Math.cos(angle) * (185 + ring * 55);
-          y = WALL_H + (height - WALL_H) / 2 - 30 + Math.sin(angle) * (105 + ring * 30);
-        } else {
-          const row = Math.floor(i / 8);
-          const col = i % 8;
-          const inRow = Math.min(8, here.length - row * 8);
-          x = width / 2 + (col - (inRow - 1) / 2) * 78;
-          y = height - 170 - row * 68;
-        }
+        // People gather in a ring around the room's centerpiece, never on it.
+        const ring = Math.floor(i / 10);
+        const inRing = Math.min(10, here.length - ring * 10);
+        const angle = ((i % 10) / inRing) * Math.PI * 2 - Math.PI / 2;
+        const x = width / 2 + Math.cos(angle) * (Math.min(200, width / 2 - 90) + ring * 55);
+        const y = WALL_H + (height - WALL_H) / 2 - 20 + Math.sin(angle) * (Math.min(120, (height - WALL_H) / 2 - 70) + ring * 26);
         return (
           <a
             key={a.login}
@@ -499,7 +517,7 @@ function InteriorPlayer({
   );
 }
 
-function HouseSign({ cell, ai, onAi }: { cell: Cell; ai: boolean; onAi: () => void }) {
+function HouseSign({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
@@ -594,17 +612,18 @@ function HouseSign({ cell, ai, onAi }: { cell: Cell; ai: boolean; onAi: () => vo
           </ul>
         </div>
       ) : null}
-      {/* AI never runs on its own: the carpenter only works when hired. */}
-      {(ai && loading) || (spec?.aiAvailable && spec.commits.length > 0 && !spec.ai) ? (
+      {/* AI never runs on its own: the carpenter only works when hired, and
+          you can always switch back to the plain room. */}
+      {(ai && loading) || (spec?.aiAvailable && spec.commits.length > 0) ? (
         <button
-          onClick={onAi}
+          onClick={() => onToggle(!ai)}
           disabled={ai && loading}
           className="font-pixel mt-2 w-full cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] px-2 py-1 text-[12px] font-bold text-[#3a2f22] transition-colors hover:bg-[#d4c3a3] disabled:cursor-default disabled:opacity-60"
         >
-          {ai && loading ? 'the carpenter is at work…' : 'draw this room with AI'}
+          {ai && loading ? 'the carpenter is at work…' : ai ? 'show the plain room' : 'draw this room with AI'}
         </button>
       ) : null}
-      {spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">room designed by AI, theme: {spec.theme}</p> : null}
+      {spec?.ai ? <p className="font-pixel mt-2 text-[11px] text-[#8a6d2a]">furniture built by AI, theme: {spec.theme}</p> : null}
       {ai && !loading && spec && !spec.ai ? (
         <p className="font-pixel mt-1 text-[11px] text-[#8a4a2b]">the carpenter couldn’t draw this one, showing the standard room</p>
       ) : null}
@@ -637,7 +656,9 @@ function StickyNote({ note, tilt }: { note: WireEvent; tilt: number }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={`${note.avatar}?size=32`} alt="" width={15} height={15} className="absolute top-1.5 right-1.5 rounded-full border border-black/30" />
       ) : null}
-      <span className="line-clamp-5 block font-mono text-[10px] leading-[1.4] wrap-break-word text-[#5a4a1e]">{note.body}</span>
+      {/* No `block` next to line-clamp: they both set display and block wins,
+          which is exactly how text used to spill off the note. */}
+      <span className="line-clamp-4 font-mono text-[10px] leading-[1.4] wrap-break-word text-[#5a4a1e]">{note.body}</span>
       <span className="absolute bottom-1 left-2 font-mono text-[8px] font-bold text-[#8a6d2a]">
         <RelativeTime date={note.at} />
       </span>
