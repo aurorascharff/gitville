@@ -85,7 +85,7 @@ export function VillageTooltip() {
   if (!tip) return null;
   return (
     <div
-      className="panel pointer-events-none fixed z-50 max-w-96 rounded-sm px-3 py-2"
+      className="panel pointer-events-none fixed z-50 max-w-96 rounded-sm px-3 py-2 [@media(hover:none)]:hidden"
       style={{
         left: Math.min(tip.x + 16, typeof window !== 'undefined' ? window.innerWidth - 300 : tip.x),
         top: tip.y + 16,
