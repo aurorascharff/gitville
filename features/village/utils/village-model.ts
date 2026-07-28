@@ -175,12 +175,21 @@ function mainBranchScale(payload: VillagePayload, repo?: RepoSignal): number {
   return 5;
 }
 
+function openPullRequestSummary(payload: VillagePayload): string | null {
+  if (payload.prs.length === 0 && !payload.prTotal) return null;
+  if (payload.prTotal != null && payload.prTotal > payload.prs.length) {
+    return `${payload.prs.length} of ${payload.prTotal} open PRs shown`;
+  }
+  if (payload.prTotal != null) return `${payload.prTotal} open PRs`;
+  return payload.prs.length >= 64 ? `${payload.prs.length} open PRs shown` : `${payload.prs.length} open PRs`;
+}
+
 function mainBranchSub(payload: VillagePayload, repo?: RepoSignal): string {
   const contributors = projectContributors(payload);
   const parts = [
     repo && repo.stars > 0 ? `${repo.stars.toLocaleString()} stars` : null,
     contributors > 0 ? `${contributors} contributors` : null,
-    payload.prs.length > 0 ? `${payload.prs.length} open PRs` : null,
+    openPullRequestSummary(payload),
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : 'default branch';
 }

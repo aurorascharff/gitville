@@ -436,6 +436,11 @@ type GqlPull = {
   author: { login: string; avatarUrl: string } | null;
 };
 
+type PullsResult = {
+  prs: VillagePR[];
+  total: number | null;
+};
+
 type ReleaseResponse = {
   tag_name: string;
   name?: string | null;
@@ -505,13 +510,14 @@ async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
   );
 }
 
-async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
+async function getOpenPulls(slug: string): Promise<PullsResult | null> {
   const [owner, repo] = splitSlug(slug);
   const data = await ghGraphQL<{
-    repository: { pullRequests: { nodes: (GqlPull | null)[] | null } | null } | null;
+    repository: { pullRequests: { totalCount: number; nodes: (GqlPull | null)[] | null } | null } | null;
   }>(
     `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
       pullRequests(first:64,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
+        totalCount
         nodes{
           number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus reviewDecision
           assignees(first:3){ nodes{ login avatarUrl } }
@@ -522,9 +528,10 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
       } } }`,
     { owner, repo },
   );
-  const nodes = data?.repository?.pullRequests?.nodes;
+  const pullRequests = data?.repository?.pullRequests;
+  const nodes = pullRequests?.nodes;
   if (nodes) {
-    return nodes
+    const prs = nodes
       .filter((pr): pr is GqlPull => pr !== null)
       .map(pr => ({
         number: pr.number,
@@ -545,6 +552,7 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
           .map(person => ({ login: person.login, avatar: person.avatarUrl })),
         updatedAt: pr.updatedAt,
       }));
+    return { prs, total: pullRequests?.totalCount ?? prs.length };
   }
 
   const pulls = await gh<PullResponse[]>(
@@ -552,26 +560,32 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
   );
   if (!Array.isArray(pulls)) return null;
 
-  return pulls.map(pr => ({
-    number: pr.number,
-    title: pr.title,
-    url: pr.html_url,
-    author: pr.user?.login ?? UNKNOWN_ACTOR,
-    authorAvatar: pr.user?.avatar_url ?? null,
-    branch: pr.head?.ref ?? '',
-    baseRef: pr.base?.ref ?? '',
-    draft: Boolean(pr.draft),
-    mergeable: pr.mergeable === true ? 'MERGEABLE' : pr.mergeable === false ? 'CONFLICTING' : 'UNKNOWN',
-    mergeStateStatus: pr.mergeable_state ?? null,
-    checkState: null,
-    reviewDecision: null,
-    reviewers: (pr.requested_reviewers ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
-    assignees: (pr.assignees ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
-    updatedAt: pr.updated_at,
-  }));
+  return {
+    prs: pulls.map(pr => ({
+      number: pr.number,
+      title: pr.title,
+      url: pr.html_url,
+      author: pr.user?.login ?? UNKNOWN_ACTOR,
+      authorAvatar: pr.user?.avatar_url ?? null,
+      branch: pr.head?.ref ?? '',
+      baseRef: pr.base?.ref ?? '',
+      draft: Boolean(pr.draft),
+      mergeable: pr.mergeable === true ? 'MERGEABLE' : pr.mergeable === false ? 'CONFLICTING' : 'UNKNOWN',
+      mergeStateStatus: pr.mergeable_state ?? null,
+      checkState: null,
+      reviewDecision: null,
+      reviewers: (pr.requested_reviewers ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
+      assignees: (pr.assignees ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
+      updatedAt: pr.updated_at,
+    })),
+    total: null,
+  };
 }
 
-function unavailableVillagePayload(defaultBranch: string, warnings: string[] = ['GitHub is rate limiting this village.']) {
+function unavailableVillagePayload(
+  defaultBranch: string,
+  warnings: string[] = ['GitHub is rate limiting this village.'],
+) {
   return {
     ok: false,
     partial: true,
@@ -587,7 +601,7 @@ function unavailableVillagePayload(defaultBranch: string, warnings: string[] = [
 
 async function readVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   const [owner, repo] = splitSlug(slug);
-  const [prs, versions, ...eventPages] = await Promise.all([
+  const [pulls, versions, ...eventPages] = await Promise.all([
     getOpenPulls(slug),
     getVersionChannels(slug),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
@@ -595,13 +609,13 @@ async function readVillagePayload(slug: string, defaultBranch: string): Promise<
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
   ]);
   const warnings: string[] = [];
-  if (!Array.isArray(prs)) warnings.push('pull requests are still loading');
+  if (!pulls) warnings.push('pull requests are still loading');
   const failedEventPages = eventPages.filter(page => !Array.isArray(page)).length;
   if (failedEventPages > 0) warnings.push('recent activity is still loading');
   const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
   const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
-  if (!Array.isArray(prs) && events.length === 0) {
+  if (!pulls && events.length === 0) {
     return unavailableVillagePayload(defaultBranch);
   }
 
@@ -617,7 +631,8 @@ async function readVillagePayload(slug: string, defaultBranch: string): Promise<
     warnings: warnings.length > 0 ? warnings : undefined,
     fetchedAt: new Date().toISOString(),
     defaultBranch,
-    prs: prs ?? [],
+    prs: pulls?.prs ?? [],
+    prTotal: pulls?.total ?? undefined,
     branches: deriveBranches(events ?? [], defaultBranch),
     events: wire,
     versions,

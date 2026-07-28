@@ -91,6 +91,7 @@ export type VillagePayload = {
   fetchedAt: string;
   defaultBranch: string;
   prs: VillagePR[];
+  prTotal?: number;
   branches: ActiveBranch[];
   events: WireEvent[];
   versions: VersionChannel[];

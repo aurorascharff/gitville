@@ -14,14 +14,14 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   const generated = Boolean(ai && spec?.ai);
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const status = working
-    ? 'The carpenter is fixing the furniture.'
-    : generated
-      ? 'The furniture is ready.'
+  const status = working ? 'Come back later.' : generated ? 'Ready.' : ai ? 'Plans started.' : 'Use real commits.';
+  const title = generated
+    ? 'Furniture fixed'
+    : working
+      ? 'Carpenter at work'
       : ai
-        ? 'The carpenter has the furniture plans.'
-        : 'Ask the carpenter to fix the furniture.';
-  const title = generated ? 'Furniture fixed' : ai ? 'Fixing furniture' : 'Fix furniture';
+        ? 'Carpenter queued'
+        : 'Fix furniture';
 
   return (
     <aside className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 md:top-8 md:right-4 md:w-72">
@@ -36,12 +36,12 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         aria-keyshortcuts="G"
         aria-label="Ask the carpenter to fix the furniture"
         className={cn(
-          'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-20 md:w-full md:items-start md:justify-start md:p-3',
+          'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-16 md:w-full md:justify-start md:p-2.5',
           ai && 'ring-2 ring-[#e4c05a]',
           ai && 'cursor-default hover:translate-y-0',
         )}
       >
-        <span className="pixel relative flex h-6 w-6 shrink-0 items-center justify-center md:h-8 md:w-8">
+        <span className="pixel relative flex h-6 w-6 shrink-0 items-center justify-center md:h-10 md:w-10">
           {working ? (
             <span aria-hidden className="absolute -top-1 -right-2">
               {[0, 1].map(i => (
@@ -57,14 +57,14 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
             <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.3} />
           </span>
         </span>
-        <span className="hidden min-w-0 flex-1 items-start gap-1.5 md:flex">
-          <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-[16px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
+        <span className="hidden min-w-0 flex-1 items-center gap-1.5 md:flex">
+          <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+            <span className="flex min-w-0 items-center gap-1.5 text-[15px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
               <WandSparkles size={14} strokeWidth={3} />
-              {title}
+              <span className="truncate">{title}</span>
               <KeyHint>G</KeyHint>
             </span>
-            <span className="block max-w-72 text-[14px] leading-snug text-[#6b5b43]">{status}</span>
+            <span className="block truncate text-[13px] leading-4 text-[#6b5b43]">{status}</span>
           </span>
         </span>
       </button>
