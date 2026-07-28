@@ -43,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${GeistSans.variable} ${GeistMono.variable} ${pixel.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen text-sm antialiased">
+      <body className="h-[100dvh] overflow-hidden overscroll-none bg-[#24462c] text-sm antialiased dark:bg-[#0e1f14]">
         <ThemeProvider>
           {children}
           <Toaster />
