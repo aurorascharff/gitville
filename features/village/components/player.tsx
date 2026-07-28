@@ -11,8 +11,20 @@ export function travelTo(detail: TravelDetail) {
 }
 
 const SPEED = 4.4;
-const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1.3;
+
+// The floor is dynamic: the smallest zoom that still covers the viewport. Below it
+// the world would pull away from the screen edges and show bare background, so we
+// clamp there instead of letting the visitor zoom out past the map.
+function coverZoom(): number {
+  if (typeof window === 'undefined') return 1;
+  return Math.max(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
+}
+
+export function clampZoom(z: number): number {
+  const lo = coverZoom();
+  return Math.min(Math.max(ZOOM_MAX, lo), Math.max(lo, z));
+}
 
 // Don't walk the villager while the visitor is typing into a field (repo search, etc).
 function isTyping(target: EventTarget | null): boolean {
@@ -27,6 +39,15 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+
+  // Keep the zoom inside the cover floor on mount and whenever the window resizes,
+  // so a larger viewport can never reveal background past the map edges.
+  useEffect(() => {
+    const reclamp = () => setZoom(z => clampZoom(z));
+    reclamp();
+    window.addEventListener('resize', reclamp);
+    return () => window.removeEventListener('resize', reclamp);
+  }, [setZoom]);
   const ref = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const st = useRef({
@@ -97,7 +118,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
       if (e.ctrlKey) {
-        const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomRef.current * Math.exp(-e.deltaY * 0.01)));
+        const next = clampZoom(zoomRef.current * Math.exp(-e.deltaY * 0.01));
         s.anchor = { sx, sy };
         zoomRef.current = next;
         setZoom(() => next);

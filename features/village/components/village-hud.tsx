@@ -4,6 +4,7 @@ import { Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
+import { clampZoom } from '@/features/village/components/player';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn, formatStars } from '@/lib/utils';
@@ -53,14 +54,14 @@ export function VillageControls() {
       {!focusId ? (
         <>
           <button
-            onClick={() => setZoom(z => Math.max(0.55, Math.round((z - 0.15) * 100) / 100))}
+            onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
             className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
           >
             −
           </button>
           <button
-            onClick={() => setZoom(z => Math.min(1.3, Math.round((z + 0.15) * 100) / 100))}
+            onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
             className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
           >
