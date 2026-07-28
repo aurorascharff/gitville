@@ -98,6 +98,8 @@ type PullResponse = {
   user: { login: string; avatar_url: string } | null;
   head: { ref: string };
   base: { ref: string };
+  mergeable?: boolean | null;
+  mergeable_state?: string | null;
 };
 
 type EventResponse = {
@@ -394,26 +396,53 @@ function deriveBranches(events: EventResponse[], defaultBranch: string): ActiveB
   return [...seen.values()].slice(0, 8);
 }
 
-export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
-  'use cache: remote';
-  cacheLife({ stale: 45, revalidate: 45, expire: 600 });
-  cacheTag(`gv-live-${slug}`);
+type GqlPull = {
+  number: number;
+  title: string;
+  url: string;
+  isDraft: boolean;
+  updatedAt: string;
+  headRefName: string;
+  baseRefName: string;
+  mergeable: VillagePR['mergeable'];
+  mergeStateStatus: string | null;
+  author: { login: string; avatarUrl: string } | null;
+};
 
+async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
   const [owner, repo] = splitSlug(slug);
-  const [pulls, ...eventPages] = await Promise.all([
-    gh<PullResponse[]>(`/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=12`),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
-  ]);
-  const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
-  const events = [...new Map(merged.map(e => [e.id, e])).values()];
-
-  if (!Array.isArray(pulls) && events.length === 0) {
-    return { ok: false, fetchedAt: new Date().toISOString(), defaultBranch, prs: [], branches: [], events: [] };
+  const data = await ghGraphQL<{
+    repository: { pullRequests: { nodes: GqlPull[] } } | null;
+  }>(
+    `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
+      pullRequests(first:12,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
+        nodes{ number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus author{ login avatarUrl } }
+      } } }`,
+    { owner, repo },
+  );
+  const nodes = data?.repository?.pullRequests.nodes;
+  if (nodes) {
+    return nodes.map(pr => ({
+      number: pr.number,
+      title: pr.title,
+      url: pr.url,
+      author: pr.author?.login ?? UNKNOWN_ACTOR,
+      authorAvatar: pr.author?.avatarUrl ?? null,
+      branch: pr.headRefName,
+      baseRef: pr.baseRefName,
+      draft: pr.isDraft,
+      mergeable: pr.mergeable,
+      mergeStateStatus: pr.mergeStateStatus,
+      updatedAt: pr.updatedAt,
+    }));
   }
 
-  const prs: VillagePR[] = (pulls ?? []).map(pr => ({
+  const pulls = await gh<PullResponse[]>(
+    `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=12`,
+  );
+  if (!Array.isArray(pulls)) return null;
+
+  return pulls.map(pr => ({
     number: pr.number,
     title: pr.title,
     url: pr.html_url,
@@ -422,8 +451,30 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     branch: pr.head?.ref ?? '',
     baseRef: pr.base?.ref ?? '',
     draft: Boolean(pr.draft),
+    mergeable: pr.mergeable === true ? 'MERGEABLE' : pr.mergeable === false ? 'CONFLICTING' : 'UNKNOWN',
+    mergeStateStatus: pr.mergeable_state ?? null,
     updatedAt: pr.updated_at,
   }));
+}
+
+export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
+  'use cache: remote';
+  cacheLife({ stale: 45, revalidate: 45, expire: 600 });
+  cacheTag(`gv-live-${slug}`);
+
+  const [owner, repo] = splitSlug(slug);
+  const [prs, ...eventPages] = await Promise.all([
+    getOpenPulls(slug),
+    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
+    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
+    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
+  ]);
+  const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
+  const events = [...new Map(merged.map(e => [e.id, e])).values()];
+
+  if (!Array.isArray(prs) && events.length === 0) {
+    return { ok: false, fetchedAt: new Date().toISOString(), defaultBranch, prs: [], branches: [], events: [] };
+  }
 
   const wire = (events ?? [])
     .map(e => mapEvent(e, slug))
@@ -435,7 +486,7 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     ok: true,
     fetchedAt: new Date().toISOString(),
     defaultBranch,
-    prs,
+    prs: prs ?? [],
     branches: deriveBranches(events ?? [], defaultBranch),
     events: wire,
   };

@@ -22,6 +22,8 @@ export type VillagePR = {
   branch: string;
   baseRef: string;
   draft: boolean;
+  mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN' | null;
+  mergeStateStatus: string | null;
   updatedAt: string;
 };
 

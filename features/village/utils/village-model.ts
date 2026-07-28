@@ -52,6 +52,7 @@ export type Cell = {
   sub: string | null;
   url: string;
   draft?: boolean;
+  conflict?: boolean;
   prState?: PrState;
   floors?: number;
   stackedOn?: number;
@@ -169,6 +170,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       sub: pr.title,
       url: pr.url,
       draft: pr.draft,
+      conflict: pr.mergeable === 'CONFLICTING' || pr.mergeStateStatus === 'DIRTY',
       prState: floors > 1 ? 'stacked' : pr.draft ? 'draft' : 'ready',
       floors,
       stackedOn: under?.number,
@@ -189,6 +191,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
         sub: parent.title,
         url: parent.url,
         draft: parent.draft,
+        conflict: parent.mergeable === 'CONFLICTING' || parent.mergeStateStatus === 'DIRTY',
         prState: 'stacked',
         floors: stackDepth(parent, byHead),
         stackedOn: byHead.get(parent.baseRef)?.number,

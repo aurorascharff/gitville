@@ -83,6 +83,19 @@ async function Village({ slug }: { slug: string }) {
   );
 }
 
+function VillageRepoLink({ repo }: { repo: RepoData }) {
+  return (
+    <a
+      href={`https://github.com/${repo.slug}`}
+      target="_blank"
+      rel="noreferrer"
+      className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+    >
+      <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
+    </a>
+  );
+}
+
 function VillageSkeleton() {
   return (
     <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
@@ -102,18 +115,5 @@ function VillageSkeleton() {
         <p className="font-pixel rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">raising the village…</p>
       </div>
     </div>
-  );
-}
-
-function VillageRepoLink({ repo }: { repo: RepoData }) {
-  return (
-    <a
-      href={`https://github.com/${repo.slug}`}
-      target="_blank"
-      rel="noreferrer"
-      className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
-    >
-      <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
-    </a>
   );
 }

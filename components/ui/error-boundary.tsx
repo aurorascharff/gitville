@@ -12,7 +12,10 @@ type ErrorBoundaryProps = {
   title?: string;
 };
 
-function ErrorFallback({ fallbackComponent: Fallback = DefaultErrorFallback, title }: ErrorBoundaryProps, errorInfo: ErrorInfo) {
+function ErrorFallback(
+  { fallbackComponent: Fallback = DefaultErrorFallback, title }: ErrorBoundaryProps,
+  errorInfo: ErrorInfo,
+) {
   return <Fallback {...errorInfo} title={title} />;
 }
 
