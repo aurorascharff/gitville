@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { forgetAiRoom, hasAiRoom, rememberAiRoom } from '@/features/village/ai-rooms';
 import { HouseSign } from '@/features/village/components/house-sign';
 import { InteriorPlayer } from '@/features/village/components/interior-player';
 import {
@@ -41,6 +42,7 @@ export function HouseInterior() {
   const { cells } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const enteredRef = useRef<string | null>(null);
   const [viewport, setViewport] = useState({ w: 1400, h: 900 });
 
   useEffect(() => {
@@ -62,6 +64,18 @@ export function HouseInterior() {
   useEffect(() => {
     walkTargetRef.current = null;
   }, [focusId]);
+
+  // On first entry to a house we've generated before, default AI back on so the
+  // cached spec loads (a free re-fetch); fire once per entry, not on every render.
+  useEffect(() => {
+    if (!focusId) {
+      enteredRef.current = null;
+      return;
+    }
+    if (enteredRef.current === focusId) return;
+    enteredRef.current = focusId;
+    if (hasAiRoom(slug, focusId)) setAiOn(true);
+  }, [focusId, slug, setAiOn]);
 
   if (!cell) return null;
 
@@ -96,6 +110,17 @@ function InteriorScene({
   const { slug } = useVillageUi();
   const { spec } = useRoomSpec(slug, cell.id, ai);
   const roomRef = useRef<HTMLDivElement>(null);
+
+  // Remember a house only after a generation lands, so auto-enable re-fetches the cache.
+  useEffect(() => {
+    if (spec?.ai) rememberAiRoom(slug, cell.id);
+  }, [spec?.ai, slug, cell.id]);
+
+  // Turning AI off is an explicit opt-out: forget it so re-entry stays plain.
+  const handleToggle = (on: boolean) => {
+    if (!on) forgetAiRoom(slug, cell.id);
+    setAiOn(on);
+  };
   const [w, h] = roomDims(cell);
   const camX = w <= viewport.w ? (viewport.w - w) / 2 : Math.min(0, Math.max(viewport.w - w, viewport.w / 2 - w / 2));
   const camY =
@@ -137,8 +162,8 @@ function InteriorScene({
           </span>
         ) : null}
       </div>
-      <HouseSign cell={cell} />
-      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
+      <HouseSign cell={cell} ai={ai} />
+      <AiPanel cell={cell} ai={ai} onToggle={handleToggle} />
     </div>
   );
 }
@@ -272,11 +297,12 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
 
   if (loading && !spec) return <FloorSkeleton />;
-  const redecorating = loading && Boolean(spec) && (spec?.ai ?? false) !== ai;
 
   const anchor = campsite ? null : centerpiece(cell);
   const floorH = height - WALL_H;
-  const builds = redecorating ? [] : toBuilds(commits, spec?.items);
+  // keepPreviousData holds the prior furniture on screen while a regen loads, so
+  // the room never blanks; the "AI at work…" badge signals the swap in progress.
+  const builds = toBuilds(commits, spec?.items);
   const slots = layoutBuilds(builds, width, floorH);
 
   return (

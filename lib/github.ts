@@ -376,6 +376,17 @@ export async function getThreadNotes(slug: string, number: number, isPr: boolean
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
+// The events feed omits pull_request.title, so a PR house seen only through
+// reviews carries no subtitle. Fetch it directly; /issues/{n} covers PRs too.
+export async function getIssueTitle(slug: string, number: number): Promise<string | null> {
+  'use cache: remote';
+  cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
+  cacheTag(`gh-title-${slug}`);
+  const [owner, repo] = splitSlug(slug);
+  const data = await gh<{ title: string | null }>(`/repos/${owner}/${repo}/issues/${number}`);
+  return data?.title ?? null;
+}
+
 function deriveBranches(events: EventResponse[], defaultBranch: string): ActiveBranch[] {
   const seen = new Map<string, ActiveBranch>();
   for (const e of events) {

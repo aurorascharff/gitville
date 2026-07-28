@@ -152,10 +152,12 @@ function BorderForest() {
   );
 }
 
+const DETAIL = Math.round((WORLD_W * WORLD_H) / 20000);
+
 function GrassDetail() {
   return (
     <>
-      {Array.from({ length: 170 }).map((_, i) => {
+      {Array.from({ length: DETAIL }).map((_, i) => {
         const x = ((i * 397 + 131) % (WORLD_W - 60)) + 30;
         const y = ((i * 683 + 71) % (WORLD_H - 60)) + 30;
         const sprite = i % 9 === 0 ? FLOWER : i % 9 === 4 ? FLOWER_BLUE : i % 9 === 7 ? PEBBLES : TUFT;

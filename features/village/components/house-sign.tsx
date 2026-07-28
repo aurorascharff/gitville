@@ -2,14 +2,15 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { BARRIER, PixelSprite } from '@/features/village/components/pixel-sprite';
-import { useVillageData } from '@/features/village/use-village-data';
+import { useRoomSpec, useVillageData } from '@/features/village/use-village-data';
 import { pickedPrs, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-export function HouseSign({ cell }: { cell: Cell }) {
+export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
+  const { spec } = useRoomSpec(slug, cell.id, ai);
 
   const prs = payload.prs;
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
@@ -49,7 +50,7 @@ export function HouseSign({ cell }: { cell: Cell }) {
   return (
     <aside className="panel absolute top-4 left-4 z-50 max-h-[60dvh] w-80 max-w-[calc(100vw-8.5rem)] overflow-y-auto rounded-sm p-3">
       <p className="font-pixel text-[17px] leading-5 font-bold">{cell.label}</p>
-      <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub}</p>
+      <p className="mt-1 line-clamp-2 min-h-9 text-[13px] leading-4.5 text-[#5a4a32]">{cell.sub || spec?.title}</p>
       <span className="mt-2 flex items-center gap-1.5">
         {chip ? (
           <span

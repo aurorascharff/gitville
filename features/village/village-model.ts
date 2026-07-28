@@ -1,34 +1,39 @@
 import { hashString } from '@/lib/utils';
 import type { VillagePayload, WireEvent } from '@/types/github';
 
-export const WORLD_W = 2200;
-export const WORLD_H = 1560;
+export const WORLD_W = 3500;
+export const WORLD_H = 3000;
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
 const DX = 350;
 const DY = 295;
 
-const AXIAL: [number, number][] = [
-  [0, 0],
-  [1, 0],
-  [0, 1],
+const RING_DIRS: [number, number][] = [
   [-1, 1],
   [-1, 0],
   [0, -1],
   [1, -1],
-  [2, 0],
-  [1, 1],
-  [0, 2],
-  [-1, 2],
-  [-2, 2],
-  [-2, 1],
-  [-2, 0],
-  [-1, -1],
-  [0, -2],
-  [1, -2],
-  [2, -2],
-  [2, -1],
+  [1, 0],
+  [0, 1],
 ];
+
+function hexSpiral(rings: number): [number, number][] {
+  const out: [number, number][] = [[0, 0]];
+  for (let r = 1; r <= rings; r++) {
+    let q = r;
+    let s = 0;
+    for (const [dq, ds] of RING_DIRS) {
+      for (let k = 0; k < r; k++) {
+        out.push([q, s]);
+        q += dq;
+        s += ds;
+      }
+    }
+  }
+  return out;
+}
+
+const AXIAL = hexSpiral(4);
 
 function slotPos(i: number): { x: number; y: number } {
   const [q, r] = AXIAL[i % AXIAL.length];
@@ -151,7 +156,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       if (!past.has(e.number)) past.set(e.number, e);
     }
     for (const [number, e] of [...past].sort((a, b) => a[0] - b[0])) {
-      if (slot >= 17) break;
+      if (slot >= AXIAL.length - 2) break;
       cells.push({
         id: `pr:${number}`,
         kind: 'pr',
@@ -170,7 +175,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   // Select the most recent branches, but seat them by name so the set stays put.
   const branches = payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5);
   for (const b of branches.sort((x, y) => x.ref.localeCompare(y.ref))) {
-    if (slot >= 18) break;
+    if (slot >= AXIAL.length - 1) break;
     cells.push({
       id: `branch:${b.ref}`,
       kind: 'branch',
@@ -198,7 +203,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   const shown = [...activity.entries()]
     .filter(([number]) => !cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`))
     .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, Math.max(0, 18 - slot))
+    .slice(0, Math.max(0, AXIAL.length - 1 - slot))
     .sort((a, b) => a[0] - b[0]);
   for (const [number, info] of shown) {
     cells.push(

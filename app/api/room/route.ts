@@ -1,6 +1,13 @@
 import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
 import { buildCells, roomFor } from '@/features/village/village-model';
-import { getBranchCommits, getPrCommits, getRepoData, getThreadNotes, getVillagePayload } from '@/lib/github';
+import {
+  getBranchCommits,
+  getIssueTitle,
+  getPrCommits,
+  getRepoData,
+  getThreadNotes,
+  getVillagePayload,
+} from '@/lib/github';
 import type { BranchCommit, RoomNote } from '@/types/github';
 
 export async function GET(request: Request): Promise<Response> {
@@ -20,10 +27,15 @@ export async function GET(request: Request): Promise<Response> {
   const number = cell.kind === 'pr' || cell.kind === 'issue' ? Number(cell.id.split(':')[1]) : null;
   let commits: BranchCommit[] = [];
   let notes: RoomNote[] = [];
+  let title: string | null = null;
   if (cell.kind === 'pr' && number != null) {
-    [commits, notes] = await Promise.all([getPrCommits(repo.slug, number), getThreadNotes(repo.slug, number, true)]);
+    [commits, notes, title] = await Promise.all([
+      getPrCommits(repo.slug, number),
+      getThreadNotes(repo.slug, number, true),
+      getIssueTitle(repo.slug, number),
+    ]);
   } else if (cell.kind === 'issue' && number != null) {
-    notes = await getThreadNotes(repo.slug, number, false);
+    [notes, title] = await Promise.all([getThreadNotes(repo.slug, number, false), getIssueTitle(repo.slug, number)]);
   } else if (cell.kind === 'branch' && cell.ref) {
     commits = await getBranchCommits(repo.slug, cell.ref);
   } else if (cell.kind === 'main') {
@@ -62,5 +74,5 @@ export async function GET(request: Request): Promise<Response> {
       commits.map(c => ({ id: c.sha, actor: c.author })),
     );
 
-  return Response.json({ ok: true, ...spec, commits, notes, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
+  return Response.json({ ok: true, ...spec, title, commits, notes, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
 }

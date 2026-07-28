@@ -30,6 +30,7 @@ export type RoomSpecItem = {
 export type RoomSpecPayload = {
   ok: boolean;
   theme: string;
+  title: string | null;
   items: RoomSpecItem[];
   commits: BranchCommit[];
   notes: RoomNote[];
@@ -40,7 +41,16 @@ export type RoomSpecPayload = {
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
     .then(r => r.json() as Promise<RoomSpecPayload>)
-    .catch(() => ({ ok: false, theme: '', items: [], commits: [], notes: [], ai: false, aiAvailable: false }));
+    .catch(() => ({
+      ok: false,
+      theme: '',
+      title: null,
+      items: [],
+      commits: [],
+      notes: [],
+      ai: false,
+      aiAvailable: false,
+    }));
 
 const roomKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
@@ -67,9 +77,15 @@ export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boole
 
 export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindow {
   if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
-  const times = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
+  const all = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
+  const maxT = Math.max(new Date(payload.fetchedAt).getTime(), all[all.length - 1]);
+  // GitHub occasionally leaves a lone stale action in the recent feed (a PR from
+  // months back), which would stretch the slider across that whole gap while the
+  // real activity sits in the last few hours. Floor the window at the 5th
+  // percentile so a few stragglers can't distort the range.
+  const floor = all[Math.floor(all.length * 0.05)];
+  const times = all.filter(t => t >= floor);
   const minT = times[0];
-  const maxT = Math.max(new Date(payload.fetchedAt).getTime(), times[times.length - 1]);
   const live = scrub === SCRUB_MAX;
   const idx = Math.min(times.length - 1, Math.floor((scrub / SCRUB_MAX) * (times.length - 1)));
   return { minT, maxT, live, asOf: live ? maxT : times[idx] };

@@ -145,7 +145,7 @@ export function VillageMusic() {
     const chain = chainRef.current;
     if (chain) {
       chain.filter.frequency.setTargetAtTime(indoors ? 700 : 20000, ctx.currentTime, 0.15);
-      chain.gain.gain.setTargetAtTime(volume * (indoors ? 0.7 : 1), ctx.currentTime, 0.15);
+      chain.gain.gain.setTargetAtTime(volume * (indoors ? 0.9 : 1), ctx.currentTime, 0.15);
     }
     synthOutRef.current?.gain.setTargetAtTime(volume * 1.3, ctx.currentTime, 0.15);
   }, [indoors, playing, volume]);
