@@ -24,7 +24,6 @@ import {
   heroIndex,
   layoutBuilds,
   pieceScale,
-  MAX_ZOOM,
   roomDims,
   SIDEBAR_W,
   sizeScale,
@@ -159,28 +158,30 @@ function InteriorScene({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  // Fit the room into the space right of the reserved info sidebar: scale it up
-  // on small screens so the interior fills the space (never a tiny box lost in
-  // the dark) and down when it would overflow, keeping a little breathing room
-  // around the edges. The camera centres the room in that remaining region.
-  const pad = 32;
+  // Rooms never zoom to fit: each renders at its true pixel footprint (scale 1)
+  // so the player is always the same size and a small room simply takes up less
+  // of the screen (dead space around it) instead of being blown up to fill it.
+  // The sidebar column is reserved on desktop; on mobile it's a hidden drawer so
+  // the room spans the full width. When a room is larger than the space,
+  // InteriorPlayer's follow-camera pans it — so this only sets the first paint,
+  // centring a room that fits and left/top-aligning one that overflows. Must
+  // match interior-player's calc so click → room-coords stays true.
   const mobile = viewport.w < 640;
-  // Mobile: the sidebar is a hidden drawer, so the room fills the whole screen
-  // (cover) and you walk around it — InteriorPlayer's follow-camera pans the
-  // overflow. Desktop: fit the entire room into the space beside the sidebar
-  // (contain). Must match interior-player's calc so click → room-coords stays true.
   const sidebar = mobile ? 0 : Math.min(SIDEBAR_W, viewport.w * 0.4);
   const availW = viewport.w - sidebar;
-  const scale = mobile
-    ? Math.min(2, Math.max(availW / w, viewport.h / h))
-    : Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, MAX_ZOOM));
-  const camX = sidebar + (availW - w * scale) / 2;
-  const camY = (viewport.h - h * scale) / 2;
+  const scale = 1;
+  const sw = w * scale;
+  const sh = h * scale;
+  const camX = sw <= availW ? sidebar + (availW - sw) / 2 : sidebar;
+  const camY = sh <= viewport.h ? (viewport.h - sh) / 2 : 0;
 
   return (
     <div
       ref={sceneRef}
-      className="scene-in absolute inset-0 z-40 overflow-hidden"
+      // touch-none: swipes inside a room stay taps (tap-to-walk); the browser
+      // can't scroll/overscroll the view into the black letterbox bands, which
+      // otherwise dragged the scene and made the character crawl.
+      className="scene-in absolute inset-0 z-40 touch-none overflow-hidden"
       style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
     >
       <div

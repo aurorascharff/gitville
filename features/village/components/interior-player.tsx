@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerSprite } from '@/features/village/components/player';
-import { MAX_ZOOM, SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
+import { SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
 
 export type NearItem = { x: number; y: number; index: number };
 
@@ -87,18 +87,15 @@ export function InteriorPlayer({
         // Fit the room into the space right of the reserved info sidebar (must
         // match InteriorScene so the click → room-coordinate mapping stays
         // calibrated), then follow the player within that region.
-        const pad = 32;
         const mobile = vw < 640;
-        // Mobile: the sidebar is a hidden drawer, so the room fills the whole
-        // screen (cover) and you walk around it — the camera below pans the
-        // overflow. Desktop: fit the entire room into the space beside the
-        // sidebar (contain). Both must agree so the click → room-coord mapping
-        // stays calibrated.
+        // Rooms never zoom (scale 1, true footprint) so the player is always the
+        // same size; this camera just pans to follow when the room is larger
+        // than the space. The sidebar is a hidden drawer on mobile (room spans
+        // full width) and a reserved column on desktop. Must match
+        // InteriorScene's calc so the click → room-coord mapping stays calibrated.
         const sidebar = mobile ? 0 : Math.min(SIDEBAR_W, vw * 0.4);
         const availW = vw - sidebar;
-        const scale = mobile
-          ? Math.min(2, Math.max(availW / width, vh / height))
-          : Math.max(0.6, Math.min((availW - pad * 2) / width, (vh - pad * 2) / height, MAX_ZOOM));
+        const scale = 1;
         const sw = width * scale;
         const sh = height * scale;
         const targetX =
