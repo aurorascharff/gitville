@@ -67,7 +67,7 @@ export function RoadScrollViewport({ children }: { children: ReactNode }) {
             scrollBy(1);
           }
         }}
-        className="w-full [scrollbar-width:none] overflow-x-auto px-2 py-4 focus-visible:ring-2 focus-visible:ring-[#e4c05a] focus-visible:outline-none [&::-webkit-scrollbar]:hidden"
+        className="w-full [scrollbar-width:none] overflow-x-auto px-2 pt-8 pb-4 focus-visible:ring-2 focus-visible:ring-[#e4c05a] focus-visible:outline-none [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </div>

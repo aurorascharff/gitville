@@ -226,5 +226,7 @@ function SkeletonStop({ index }: { index: number }) {
 }
 
 function stopLaneClass(top: boolean) {
-  return top ? 'self-start -translate-y-3' : 'self-end -translate-y-6';
+  return top
+    ? 'relative z-10 self-start -translate-y-3 hover:z-30 focus-within:z-30'
+    : 'relative z-10 self-end -translate-y-6 hover:z-30 focus-within:z-30';
 }
