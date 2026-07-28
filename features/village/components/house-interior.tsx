@@ -114,6 +114,19 @@ function InteriorScene({
   const { slug } = useVillageUi();
   const { spec } = useRoomSpec(slug, cell.id, ai);
   const roomRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  // The room auto-fits; there is no room zoom. Swallow the trackpad pinch
+  // (ctrl+wheel) so it can't fall through to the browser and zoom the whole app.
+  useEffect(() => {
+    const el = sceneRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   // Remember a house only after a generation lands, so auto-enable re-fetches the cache.
   useEffect(() => {
@@ -139,6 +152,7 @@ function InteriorScene({
 
   return (
     <div
+      ref={sceneRef}
       className="scene-in absolute inset-0 z-40 overflow-hidden"
       style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
     >
