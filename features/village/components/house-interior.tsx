@@ -164,11 +164,16 @@ function InteriorScene({
   // the dark) and down when it would overflow, keeping a little breathing room
   // around the edges. The camera centres the room in that remaining region.
   const pad = 32;
-  // Below the mobile breakpoint the sidebar is a hidden slide-in drawer, so the
-  // room reclaims the full width (must match interior-player's follow-camera).
-  const sidebar = viewport.w < 640 ? 0 : Math.min(SIDEBAR_W, viewport.w * 0.4);
+  const mobile = viewport.w < 640;
+  // Mobile: the sidebar is a hidden drawer, so the room fills the whole screen
+  // (cover) and you walk around it — InteriorPlayer's follow-camera pans the
+  // overflow. Desktop: fit the entire room into the space beside the sidebar
+  // (contain). Must match interior-player's calc so click → room-coords stays true.
+  const sidebar = mobile ? 0 : Math.min(SIDEBAR_W, viewport.w * 0.4);
   const availW = viewport.w - sidebar;
-  const scale = Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, MAX_ZOOM));
+  const scale = mobile
+    ? Math.min(2, Math.max(availW / w, viewport.h / h))
+    : Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, MAX_ZOOM));
   const camX = sidebar + (availW - w * scale) / 2;
   const camY = (viewport.h - h * scale) / 2;
 
