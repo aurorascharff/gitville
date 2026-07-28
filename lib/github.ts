@@ -17,6 +17,12 @@ const API = 'https://api.github.com';
 
 const UNKNOWN_ACTOR = 'someone';
 
+class VillagePayloadMiss extends Error {
+  constructor(readonly payload: VillagePayload) {
+    super('Village payload incomplete');
+  }
+}
+
 function splitSlug(slug: string): [owner: string, repo: string] {
   const [owner, repo] = slug.split('/');
   return [owner, repo];
@@ -565,11 +571,21 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
   }));
 }
 
-export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
-  'use cache: remote';
-  cacheLife({ stale: 45, revalidate: 45, expire: 600 });
-  cacheTag(`gv-live-${slug}`);
+function unavailableVillagePayload(defaultBranch: string, warnings: string[] = ['GitHub is rate limiting this village.']) {
+  return {
+    ok: false,
+    partial: true,
+    warnings,
+    fetchedAt: new Date().toISOString(),
+    defaultBranch,
+    prs: [],
+    branches: [],
+    events: [],
+    versions: [],
+  } satisfies VillagePayload;
+}
 
+async function readVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   const [owner, repo] = splitSlug(slug);
   const [prs, versions, ...eventPages] = await Promise.all([
     getOpenPulls(slug),
@@ -578,19 +594,15 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
   ]);
+  const warnings: string[] = [];
+  if (!Array.isArray(prs)) warnings.push('pull requests are still loading');
+  const failedEventPages = eventPages.filter(page => !Array.isArray(page)).length;
+  if (failedEventPages > 0) warnings.push('recent activity is still loading');
   const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
   const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
   if (!Array.isArray(prs) && events.length === 0) {
-    return {
-      ok: false,
-      fetchedAt: new Date().toISOString(),
-      defaultBranch,
-      prs: [],
-      branches: [],
-      events: [],
-      versions: [],
-    };
+    return unavailableVillagePayload(defaultBranch);
   }
 
   const wire = (events ?? [])
@@ -601,6 +613,8 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
 
   return {
     ok: true,
+    partial: warnings.length > 0 || undefined,
+    warnings: warnings.length > 0 ? warnings : undefined,
     fetchedAt: new Date().toISOString(),
     defaultBranch,
     prs: prs ?? [],
@@ -608,4 +622,23 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     events: wire,
     versions,
   };
+}
+
+async function getCachedVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
+  'use cache: remote';
+  cacheLife({ stale: 45, revalidate: 45, expire: 600 });
+  cacheTag(`gv-live-${slug}`);
+
+  const payload = await readVillagePayload(slug, defaultBranch);
+  if (!payload.ok || payload.partial) throw new VillagePayloadMiss(payload);
+  return payload;
+}
+
+export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
+  try {
+    return await getCachedVillagePayload(slug, defaultBranch);
+  } catch (error) {
+    if (error instanceof VillagePayloadMiss) return error.payload;
+    return unavailableVillagePayload(defaultBranch);
+  }
 }

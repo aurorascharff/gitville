@@ -86,6 +86,8 @@ export type RoomNote = {
 
 export type VillagePayload = {
   ok: boolean;
+  partial?: boolean;
+  warnings?: string[];
   fetchedAt: string;
   defaultBranch: string;
   prs: VillagePR[];
@@ -95,3 +97,4 @@ export type VillagePayload = {
 };
 
 export const villageKey = (slug: string) => `/api/village/${slug}`;
+export const villageRefreshKey = (slug: string) => `${villageKey(slug)}?refresh=1`;

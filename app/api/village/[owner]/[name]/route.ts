@@ -1,7 +1,8 @@
+import { revalidateTag } from 'next/cache';
 import { getRepoData } from '@/features/repo/repo-queries';
 import { getVillagePayload } from '@/features/village/village-queries';
 
-export async function GET(_request: Request, { params }: RouteContext<'/api/village/[owner]/[name]'>) {
+export async function GET(request: Request, { params }: RouteContext<'/api/village/[owner]/[name]'>) {
   const { owner, name } = await params;
   const slug = `${owner}/${name}`;
   const repo = await getRepoData(slug);
@@ -16,5 +17,6 @@ export async function GET(_request: Request, { params }: RouteContext<'/api/vill
       versions: [],
     });
   }
+  if (new URL(request.url).searchParams.get('refresh') === '1') revalidateTag(`gv-live-${repo.slug}`, 'max');
   return Response.json(await getVillagePayload(repo.slug, repo.defaultBranch));
 }

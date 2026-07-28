@@ -14,15 +14,12 @@ import {
   ROOF,
   tentArt,
 } from '@/features/village/components/shared/pixel-sprite';
-import { getVillagePayload } from '@/features/village/village-queries';
 import { formatStars } from '@/lib/utils';
-import type { RepoData, VillagePayload } from '@/types/github';
+import type { RepoData } from '@/types/github';
 import type { Route } from 'next';
 
 type VillageStopData = {
   repo: RepoData;
-  payload: VillagePayload | null;
-  limited: boolean;
 };
 
 type VillageStopLoad =
@@ -78,17 +75,13 @@ async function loadVillageStop(slug: string, index: number): Promise<VillageStop
   const repo = await getRepoData(slug);
   if (!repo) return { kind: 'plot', slug, index };
 
-  const payload = await getVillagePayload(repo.slug, repo.defaultBranch).catch(() => null);
-  const livePayload = payload?.ok ? payload : null;
-  return { kind: 'ready', slug, index, stop: { repo, payload: livePayload, limited: !livePayload } };
+  return { kind: 'ready', slug, index, stop: { repo } };
 }
 
 function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) {
-  const { repo, payload, limited } = stop;
+  const { repo } = stop;
   const top = index % 2 === 0;
-  const prCount = payload?.prs.length ?? 0;
-  const issueCount = Math.max(0, repo.openIssues - prCount);
-  const [art, palette, scale] = villageSprite(repo, payload);
+  const [art, palette, scale] = villageSprite(repo);
 
   return (
     <li className={stopLaneClass(top)}>
@@ -104,7 +97,6 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
             className="absolute -top-3 -left-3 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] shadow-[2px_2px_0_rgb(0_0_0/0.25)]"
           />
           <PixelSprite art={art} palette={palette} scale={scale} />
-          {limited ? <SyncRestingMarker /> : null}
         </span>
         <span className="mt-1.5 max-w-44 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] px-2 py-1 shadow-[2px_2px_0_rgb(0_0_0/0.3)]">
           <span className="block truncate text-[14px] leading-5 font-bold text-[#3a2f22]">{repo.name}</span>
@@ -113,13 +105,7 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
               <Star size={11} className="fill-[#c9a227] text-[#8a6d2a]" />
               {formatStars(repo.stars)}
             </span>
-            {limited ? (
-              <span>sync resting</span>
-            ) : prCount > 0 ? (
-              <span>{prCount} PRs</span>
-            ) : issueCount > 0 ? (
-              <span>{issueCount} issues</span>
-            ) : null}
+            <span>{repo.openIssues > 0 ? `${repo.openIssues} open` : repo.defaultBranch}</span>
           </span>
         </span>
       </Link>
@@ -127,7 +113,7 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
   );
 }
 
-function SyncRestingMarker() {
+function PlotMarker() {
   return (
     <span
       aria-hidden
@@ -138,13 +124,10 @@ function SyncRestingMarker() {
   );
 }
 
-function villageSprite(repo: RepoData, payload: VillagePayload | null): [string[], Record<string, string>, number] {
-  const people = new Set(payload?.events.filter(e => !e.actor.endsWith('[bot]')).map(e => e.actor) ?? []);
-  const prCount = payload?.prs.length ?? 0;
-  if (repo.stars > 1000 || people.size > 12) return [hallArt(), housePalette(...ROOF.main, true), 3.7];
-  if (prCount > 4) return [cottageArt(Math.min(4, Math.max(2, prCount)), false), housePalette(...ROOF.pr, true), 3.4];
-  if (repo.openIssues > prCount + 6) return [tentArt(), housePalette(...ROOF.issue, false), 3.6];
-  if ((payload?.branches.length ?? 0) > 2) return [cabinArt(), housePalette(...ROOF.branch, false), 4.1];
+function villageSprite(repo: RepoData): [string[], Record<string, string>, number] {
+  if (repo.stars > 1000) return [hallArt(), housePalette(...ROOF.main, true), 3.7];
+  if (repo.openIssues > 40) return [tentArt(), housePalette(...ROOF.issue, false), 3.6];
+  if (repo.languages.length > 3) return [cabinArt(), housePalette(...ROOF.branch, false), 4.1];
   return [cottageArt(1, false), housePalette(...ROOF.pr, true), 3.7];
 }
 
@@ -155,7 +138,7 @@ function Unavailable({ slug, index }: { slug: string; index: number }) {
       <div className="flex h-36 flex-col items-center justify-end text-center">
         <span className="pixel relative flex min-h-20 items-end justify-center">
           <span className="h-14 w-24 rounded-sm border-2 border-dashed border-[#f0e6d2]/60 bg-black/25" />
-          <SyncRestingMarker />
+          <PlotMarker />
         </span>
         <span className="mt-1.5 max-w-44 rounded-sm border-2 border-dashed border-[#4a3826]/60 bg-[#f0e6d2]/75 px-2 py-1 text-[12px] font-semibold text-[#6b5b43] shadow-[2px_2px_0_rgb(0_0_0/0.18)]">
           <span className="block truncate font-bold text-[#3a2f22]">{slug}</span>

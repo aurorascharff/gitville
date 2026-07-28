@@ -6,11 +6,11 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import { clampZoom } from '@/features/village/components/stage/player';
-import { useVillageData } from '@/features/village/hooks/use-village-data';
+import { fetchVillagePayload, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
-import { villageKey } from '@/types/github';
+import { villageKey, villageRefreshKey } from '@/types/github';
 import type { ReactNode } from 'react';
 
 export function VillageBusy() {
@@ -31,7 +31,7 @@ export function VillageBusy() {
         </p>
         <button
           type="button"
-          onClick={() => mutate(villageKey(slug))}
+          onClick={() => mutate(villageKey(slug), fetchVillagePayload(villageRefreshKey(slug)), { revalidate: false })}
           className="panel-wood mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[14px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
         >
           try again
@@ -86,7 +86,7 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
       {repoLink}
       <button
         type="button"
-        onClick={() => mutate(villageKey(slug))}
+        onClick={() => mutate(villageKey(slug), fetchVillagePayload(villageRefreshKey(slug)), { revalidate: false })}
         disabled={validating}
         aria-label={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
         title={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
