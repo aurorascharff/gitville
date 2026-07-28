@@ -270,20 +270,6 @@
   box-shadow: 0 3px 6px rgb(0 0 0 / 0.35);
 }
 
-.scene-in {
-  animation: scene-in 280ms ease-out;
-}
-@keyframes scene-in {
-  from {
-    opacity: 0;
-    transform: scale(1.04);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 .smoke-puff {
   opacity: 0;
   animation: smoke 3.3s ease-out infinite;
@@ -414,7 +400,6 @@
 @media (prefers-reduced-motion: reduce) {
   .sprite-bob,
   .pop-in,
-  .scene-in,
   .smoke-puff,
   .stars,
   .zzz span,
@@ -426,11 +411,5 @@
 @media (prefers-reduced-motion: reduce) {
   .shimmer {
     animation: none;
-  }
-  ::view-transition-old(*),
-  ::view-transition-new(*),
-  ::view-transition-group(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
   }
 }

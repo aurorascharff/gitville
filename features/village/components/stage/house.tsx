@@ -35,11 +35,13 @@ function stateLine(cell: Cell): string | null {
 }
 
 export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
-  const { slug, focusId, setFocusId, setTip } = useVillageUi();
+  const { slug, focusId, nearCellId, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
+  const near = nearCellId === cell.id;
+  const awake = lit || near;
   const main = cell.kind === 'main';
   const [roof, roofShade] = ROOF[cell.kind];
-  const palette = housePalette(roof, roofShade, lit);
+  const palette = housePalette(roof, roofShade, awake);
   const state = stateLine(cell);
   const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
   const { data: aiSpec } = useSWR<RoomSpecPayload>(cell.kind === 'pr' ? roomSpecKey(slug, cell.id, true) : null, null, {
@@ -71,17 +73,18 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
       }
       onMouseLeave={() => setTip(null)}
       aria-label={`Enter ${cell.label}`}
-      className="group absolute block cursor-pointer transition-transform duration-300 hover:-translate-y-1"
+      className="group absolute block cursor-pointer transition-transform duration-300"
       style={{
         left: cell.x,
         top: cell.y,
-        transform: 'translate(-50%, -62%)',
-        filter: lit
-          ? 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25)) drop-shadow(0 0 18px rgb(255 214 106 / 0.35))'
+        transform: `translate(-50%, ${near ? '-66%' : '-62%'})`,
+        filter: awake
+          ? `drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25)) drop-shadow(0 0 ${near ? 26 : 18}px rgb(255 214 106 / ${near ? 0.55 : 0.35}))`
           : 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25))',
       }}
     >
       <div className="pixel relative flex flex-col items-center">
+        {near ? <EnterHint /> : null}
         {main ? (
           <span aria-hidden className="absolute -top-7 left-1/2 flex -translate-x-1/2 flex-col items-center">
             <span
@@ -99,19 +102,19 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         {cell.kind === 'pr' && cell.prState === 'ready' && (cell.floors ?? 1) === 1 && lit ? <ChimneySmoke /> : null}
 
         {cell.kind === 'inbox' ? (
-          <DayNightSprite art={WELL.art} palette={WELL.palette} scale={5} lit={lit} />
+          <DayNightSprite art={WELL.art} palette={WELL.palette} scale={5} lit={awake} />
         ) : main ? (
-          <DayNightSprite art={hallArt()} palette={palette} scale={cell.scale ?? 5} lit={lit} />
+          <DayNightSprite art={hallArt()} palette={palette} scale={cell.scale ?? 5} lit={awake} />
         ) : cell.kind === 'branch' ? (
-          <DayNightSprite art={cabinArt()} palette={palette} scale={5} lit={lit} />
+          <DayNightSprite art={cabinArt()} palette={palette} scale={5} lit={awake} />
         ) : cell.kind === 'issue' ? (
-          <DayNightSprite art={tentArt()} palette={palette} scale={5} lit={lit} />
+          <DayNightSprite art={tentArt()} palette={palette} scale={5} lit={awake} />
         ) : (
           <DayNightSprite
             art={cottageArt(cell.floors ?? 1, Boolean(cell.draft))}
             palette={palette}
             scale={5}
-            lit={lit}
+            lit={awake}
           />
         )}
 
@@ -144,6 +147,14 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         ) : null}
       </div>
     </button>
+  );
+}
+
+function EnterHint() {
+  return (
+    <span className="absolute -top-11 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-2 py-1 text-[14px] leading-3 font-bold whitespace-nowrap text-[#3a2f22] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+      ⏎
+    </span>
   );
 }
 

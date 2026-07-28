@@ -7,10 +7,10 @@ import {
   AI_ART_PALETTE,
   furnitureByName,
   furnitureFor,
-  PixelSprite,
+  type Palette,
 } from '@/features/village/components/shared/pixel-sprite';
 import type { RoomSpecPayload } from '@/features/village/hooks/use-village-data';
-import { backdropFor, pieceScale, sizeScale, type Build } from '@/features/village/utils/room-geometry';
+import { backdropFor, type Build } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
 
 export function FurnitureCloseup({
@@ -27,7 +27,6 @@ export function FurnitureCloseup({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
-  const MAG = 2.4;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -59,14 +58,13 @@ export function FurnitureCloseup({
           className="flex shrink-0 flex-col items-center gap-3 px-6 pt-10 pb-5"
           style={{ background: `radial-gradient(ellipse 75% 80% at 50% 45%, ${backdropFor(cell)}, transparent 75%)` }}
         >
-          <div className="flex items-end">
+          <div className="flex min-h-44 items-end justify-center">
             {build.commits.map((commit, i) => {
               const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
               const palette = drawn ? AI_ART_PALETTE : fallback.palette;
-              const scale = (drawn ? pieceScale(build) : sizeScale(commit)) * MAG;
               return (
-                <span key={commit.sha} style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -10 }}>
-                  <PixelSprite art={piece} palette={palette} scale={scale} />
+                <span key={commit.sha} style={{ marginLeft: i === 0 ? 0 : drawn ? 12 : -18 }}>
+                  <VoxelSprite art={piece} palette={palette} block={drawn ? 13 : 15} />
                 </span>
               );
             })}
@@ -114,4 +112,92 @@ export function FurnitureCloseup({
       </aside>
     </div>
   );
+}
+
+function VoxelSprite({ art, palette, block }: { art: string[]; palette: Palette; block: number }) {
+  const width = Math.max(...art.map(row => row.length));
+  const depth = Math.max(4, Math.round(block * 0.34));
+  const yStep = Math.round(block * 0.72);
+  const pixels = art.flatMap((row, y) =>
+    [...row].map((ch, x) => {
+      const color = palette[ch];
+      if (!color) return null;
+      return { x, y, color };
+    }),
+  );
+
+  return (
+    <span
+      aria-hidden
+      className="relative block"
+      style={{
+        width: width * block + art.length * 2 + depth,
+        height: art.length * yStep + block + depth,
+      }}
+    >
+      {pixels.map(pixel => {
+        if (!pixel) return null;
+        const left = pixel.x * block + pixel.y * 2;
+        const top = pixel.y * yStep;
+        return (
+          <span
+            key={`${pixel.x}-${pixel.y}`}
+            className="absolute"
+            style={{ left, top, width: block + depth, height: block + depth }}
+          >
+            <span
+              className="absolute"
+              style={{
+                left: 0,
+                top: depth,
+                width: block,
+                height: block,
+                backgroundColor: pixel.color,
+                boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 0.16)',
+              }}
+            />
+            <span
+              className="absolute"
+              style={{
+                left: depth,
+                top: 0,
+                width: block,
+                height: depth,
+                backgroundColor: shade(pixel.color, 24),
+                transform: 'skewX(-45deg)',
+                transformOrigin: 'bottom left',
+                boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / 0.08)',
+              }}
+            />
+            <span
+              className="absolute"
+              style={{
+                left: block,
+                top: depth,
+                width: depth,
+                height: block,
+                backgroundColor: shade(pixel.color, -28),
+                transform: 'skewY(-45deg)',
+                transformOrigin: 'top left',
+                boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 0.18)',
+              }}
+            />
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function shade(hex: string, amount: number): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+  const n = Number.parseInt(hex.slice(1), 16);
+  const r = clampColor((n >> 16) + amount);
+  const g = clampColor(((n >> 8) & 255) + amount);
+  const b = clampColor((n & 255) + amount);
+  return `rgb(${r} ${g} ${b})`;
+}
+
+function clampColor(value: number): number {
+  return Math.max(0, Math.min(255, value));
 }

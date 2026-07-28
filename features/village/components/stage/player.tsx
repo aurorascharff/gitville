@@ -30,7 +30,7 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
-  const { focusId, setFocusId, zoom, setZoom } = useVillageUi();
+  const { focusId, setFocusId, setNearCellId, zoom, setZoom } = useVillageUi();
   const router = useRouter();
   const zoomRef = useRef(zoom);
 
@@ -60,13 +60,18 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     follow: true,
     anchor: null as { sx: number; sy: number } | null,
     leavingTown: false,
+    nearId: null as string | null,
   });
   const paused = useRef(false);
   const cellsRef = useRef(cells);
 
   useEffect(() => {
     paused.current = Boolean(focusId);
-  }, [focusId]);
+    if (focusId) {
+      st.current.nearId = null;
+      setNearCellId(null);
+    }
+  }, [focusId, setNearCellId]);
 
   useEffect(() => {
     cellsRef.current = cells;
@@ -208,6 +213,13 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       }
       if (ref.current) ref.current.style.transform = `translate(${s.x - 16}px, ${s.y - 34}px)`;
       if (inner.current) inner.current.style.transform = `scaleX(${s.dir})`;
+
+      const near = cellsRef.current.map(c => ({ c, d: Math.hypot(c.x - s.x, c.y - s.y) })).sort((a, b) => a.d - b.d)[0];
+      const nearId = near && near.d < 150 ? near.c.id : null;
+      if (nearId !== s.nearId) {
+        s.nearId = nearId;
+        setNearCellId(nearId);
+      }
     };
     raf = requestAnimationFrame(tick);
 
@@ -218,7 +230,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       window.removeEventListener('keyup', onKeyUp);
       stage?.removeEventListener('wheel', onWheel);
     };
-  }, [router, setFocusId, setZoom, worldRef]);
+  }, [router, setFocusId, setNearCellId, setZoom, worldRef]);
 
   return (
     <div

@@ -162,7 +162,7 @@ function InteriorScene({
   return (
     <div
       ref={sceneRef}
-      className="scene-in absolute inset-0 z-40 touch-none overflow-hidden"
+      className="absolute inset-0 z-40 touch-none overflow-hidden"
       style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
     >
       <div
@@ -264,7 +264,7 @@ function WallNotes({ cell, ai }: { cell: Cell; ai: boolean }) {
         url: e.url,
       }));
 
-  if (loading && !spec) return <WallSkeleton />;
+  if (loading && !spec) return <WallSkeleton cell={cell} />;
 
   return (
     <div className={cn('absolute inset-x-0 top-0', wallClass(cell))} style={{ height: WALL_H }}>
@@ -349,7 +349,7 @@ function Floor({
   onInspect: (index: number) => void;
 }) {
   const { spec, loading, campsite, builds, slots, anchor } = scene;
-  if (loading && !spec) return <FloorSkeleton />;
+  if (loading && !spec) return <FloorSkeleton cell={cell} />;
 
   const floorH = height - WALL_H;
 
@@ -495,8 +495,8 @@ function DoorMat({ width, height }: { width: number; height: number }) {
       style={{ left: width / 2, top: height - 4, transform: 'translate(-50%, -100%)', zIndex: 5 }}
     >
       <span className="h-14 w-40 rounded-t-md border-4 border-b-0 border-[#4a3826] bg-[#8a5a33] shadow-[inset_0_4px_0_rgb(255_255_255/0.18)]" />
-      <span className="font-pixel -mt-11 mb-2 flex items-center gap-1 text-base font-bold text-[#f0e6d2] drop-shadow-[0_1px_0_rgb(0_0_0/0.5)]">
-        walk out ↓
+      <span className="font-pixel -mt-11 mb-2 text-[22px] leading-none font-bold text-[#f0e6d2] drop-shadow-[0_1px_0_rgb(0_0_0/0.5)]">
+        ↓
       </span>
     </div>
   );
@@ -536,13 +536,13 @@ function StickyNote({ note, tilt }: { note: RoomNote; tilt: number }) {
   );
 }
 
-function WallSkeleton() {
-  return <div aria-hidden className="room-dim absolute inset-x-0 top-0" style={{ height: WALL_H }} />;
+function WallSkeleton({ cell }: { cell: Cell }) {
+  return <div aria-hidden className={cn('absolute inset-x-0 top-0', wallClass(cell))} style={{ height: WALL_H }} />;
 }
 
-function FloorSkeleton() {
+function FloorSkeleton({ cell }: { cell: Cell }) {
   return (
-    <div className="room-dim absolute inset-x-0 bottom-0" style={{ top: WALL_H }}>
+    <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell))} style={{ top: WALL_H }}>
       <p className="font-pixel absolute top-1/2 left-1/2 -translate-1/2 text-[13px] text-[#f0e6d2]/50">
         stepping inside…
       </p>

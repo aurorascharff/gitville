@@ -17,6 +17,8 @@ type VillageUi = {
   setPeopleOpen: (fn: (o: boolean) => boolean) => void;
   focusId: string | null;
   setFocusId: (id: string | null) => void;
+  nearCellId: string | null;
+  setNearCellId: (id: string | null) => void;
   aiOn: boolean;
   setAiOn: (on: boolean) => void;
   tip: Tooltip | null;
@@ -37,6 +39,7 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
   const [buzzOpen, setBuzzOpenState] = useState(false);
   const [peopleOpen, setPeopleOpenState] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
+  const [nearCellId, setNearCellId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [focusId, setFocusIdState] = useState(() => searchParams.get('house'));
   const [aiCellId, setAiCellId] = useState<string | null>(() =>
@@ -90,6 +93,8 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
         setPeopleOpen: fn => setPeopleOpenState(o => fn(o)),
         focusId,
         setFocusId,
+        nearCellId,
+        setNearCellId,
         aiOn,
         setAiOn,
         tip,

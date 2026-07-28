@@ -1,6 +1,5 @@
 'use client';
 
-import { Crossfade } from '@/components/ui/crossfade';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import type { ErrorInfo } from 'next/error';
@@ -8,7 +7,7 @@ import type { ErrorInfo } from 'next/error';
 export default function RepoVillageLayout({ children }: LayoutProps<'/[owner]/[name]'>) {
   return (
     <ErrorBoundary fallbackComponent={VillageErrorFallback} title="This village couldn’t load">
-      <Crossfade>{children}</Crossfade>
+      {children}
     </ErrorBoundary>
   );
 }
