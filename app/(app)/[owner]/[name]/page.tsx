@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { preload, SWRConfig } from 'swr';
 import { Crossfade } from '@/components/ui/crossfade';
-import ErrorBoundary from '@/components/ui/error-boundary';
+import { VillageErrorSplash } from '@/components/ui/error-boundary';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
 import { VillageWorld, VillageWorldSkeleton } from '@/features/village/components/village-world';
 import { getVillagePayload, getRepoData } from '@/lib/github';
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps<'/[owner]/[name]'>)
 
 export default function RepoVillagePage({ params }: PageProps<'/[owner]/[name]'>) {
   return (
-    <ErrorBoundary title="This village couldn’t load">
+    <VillageErrorSplash title="This village couldn’t load">
       <Suspense fallback={<VillageWorldSkeleton />}>
         <Crossfade>
           {params.then(({ owner, name }) => (
@@ -25,7 +25,7 @@ export default function RepoVillagePage({ params }: PageProps<'/[owner]/[name]'>
           ))}
         </Crossfade>
       </Suspense>
-    </ErrorBoundary>
+    </VillageErrorSplash>
   );
 }
 

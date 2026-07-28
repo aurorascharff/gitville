@@ -104,8 +104,9 @@ function InteriorScene({
   const scene = useRoomScene(cell, ai, w, h);
   const { spec } = scene;
 
-  // Walking up to a piece (proximity, tracked in the player loop) highlights it;
-  // Enter — or a click — opens the close-up. inspectIndex indexes scene.builds.
+  // Walking up to a piece (proximity, tracked in the player loop) highlights it and
+  // reveals a "look" badge; pressing Enter or clicking that badge opens the close-up.
+  // inspectIndex indexes scene.builds.
   const [nearIndex, setNearIndex] = useState<number | null>(null);
   const [inspectIndex, setInspectIndex] = useState<number | null>(null);
   const playerPosRef = useRef({ x: w / 2, y: h - 78 });
@@ -370,11 +371,13 @@ function useRoomScene(cell: Cell, ai: boolean, width: number, height: number): S
   // keepPreviousData holds the prior furniture on screen while a regen loads, so
   // the room never blanks; the "AI at work…" badge signals the swap in progress.
   const builds = toBuilds(commits, spec?.items);
-  // An AI scene draws its own hero contraption as the centrepiece, composed as a
-  // diorama; plain rooms keep the generic anchor + scattered furniture.
+  // An AI scene draws its own hero contraption, composed as a diorama; plain rooms
+  // scatter furniture around the anchor. Either way the room keeps its generic
+  // centrepiece artwork (well/table/…) — in AI rooms it sits behind the diorama
+  // (zIndex 1) as the room's own backdrop rather than being replaced by it.
   const aiScene = builds.some(b => Boolean(b.pieces?.length));
   const hero = aiScene ? heroIndex(builds) : -1;
-  const anchor = campsite || aiScene ? null : centerpiece(cell);
+  const anchor = campsite ? null : centerpiece(cell);
   const slots = aiScene ? composeScene(builds, width, floorH, hero) : layoutBuilds(builds, width, floorH);
 
   return { spec, loading, campsite, builds, slots, hero, anchor };
@@ -472,48 +475,60 @@ function Furniture({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
-  // The whole piece speaks for its commit(s); the tip nudges you to look closer
-  // rather than dumping the message here (the close-up shows it in full).
-  const tipBody = build.commits.length === 1 ? build.commits[0].message : `${build.commits.length} commits`;
+  // Hovering surfaces the real commit info without opening the close-up: a single
+  // commit's full message, or each commit's summary line for a grouped piece.
+  const tipBody =
+    build.commits.length === 1
+      ? build.commits[0].message
+      : build.commits.map(c => `• ${c.message.split('\n')[0]}`).join('\n');
 
   return (
     <div
       className="absolute flex flex-col items-center transition-[translate] duration-150 will-change-transform hover:-translate-y-1.5"
       style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}
     >
-      {/* One button for the whole object: walking near (Enter) or clicking opens
-          the close-up where the commit link lives — it never navigates itself. */}
-      <button
-        type="button"
+      {/* Clicking a sprite jumps straight to its commit on GitHub; the "look" badge
+          (or Enter, when you're standing next to it) opens the close-up — clickable
+          too, so it works without a keyboard. data-stop-walk keeps the room's
+          click-to-walk from firing under any of it. */}
+      <div
         data-stop-walk
-        onClick={onInspect}
         onMouseMove={e =>
           setTip({ x: e.clientX, y: e.clientY, title: name, body: tipBody, when: build.commits[0].at || null })
         }
         onMouseLeave={() => setTip(null)}
-        aria-label={`Look closer at ${name}`}
-        className="pop-in flex cursor-pointer flex-col items-center"
+        className="pop-in flex flex-col items-center"
         style={{ animationDelay: `${delay}ms` }}
       >
-        <span
+        <button
+          type="button"
+          data-stop-walk
+          onClick={onInspect}
+          aria-label={`Look closer at ${name}`}
           className={cn(
-            'font-pixel mb-1 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-1.5 py-0.5 text-[10px] font-bold text-[#3a2f22] shadow transition-opacity',
+            'font-pixel mb-1 cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-1.5 py-0.5 text-[10px] font-bold text-[#3a2f22] shadow transition-opacity',
             near ? 'animate-bounce opacity-100' : 'pointer-events-none opacity-0',
           )}
         >
           ⏎ look
-        </span>
+        </button>
         <span className={cn('flex items-end rounded-sm', near && 'ring-2 ring-[#e4c05a]')}>
           {build.commits.map((commit, i) => {
             const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
             const palette = drawn ? AI_ART_PALETTE : fallback.palette;
             return (
-              <span
+              <a
                 key={commit.sha}
+                href={commit.url}
+                target="_blank"
+                rel="noreferrer"
+                data-stop-walk
+                aria-label={`View commit: ${commit.message.split('\n')[0]}`}
+                className="cursor-pointer"
                 style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
               >
                 <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
-              </span>
+              </a>
             );
           })}
         </span>
@@ -521,14 +536,15 @@ function Furniture({
         <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
           {name}
         </span>
-      </button>
+      </div>
     </div>
   );
 }
 
-// The first-person close-up: the object enlarged on a soft vignette of the room's
-// own colour, with the commit(s) it stands for — the only place a piece links to
-// GitHub. Esc (captured, so it beats the room-exit Esc) or the backdrop closes it.
+// The first-person close-up (opened by walking up and pressing Enter): the object
+// enlarged on a soft vignette of the room's own colour, with the commit(s) it stands
+// for and links to each. Esc (captured, so it beats the room-exit Esc) or the
+// backdrop closes it.
 function FurnitureCloseup({
   build,
   spec,

@@ -12,6 +12,15 @@ Gitville turns any GitHub repo into a small pixel village you can walk around in
 
 ---
 
+## Built with
+
+- **[Next.js 16](https://nextjs.org/)** (App Router) with **[React 19](https://react.dev/)** and the **[React Compiler](https://react.dev/learn/react-compiler)** — no manual memoization.
+- **[TypeScript](https://www.typescriptlang.org/)** throughout.
+- **[SWR](https://swr.vercel.app)** for data: the first village payload is fetched on the server and handed down through `SWRConfig`, then SWR keeps it live on the client (15s polling, revalidate-on-focus, time-scrub).
+- **[AI SDK](https://ai-sdk.dev)** + **[Vercel AI Gateway](https://vercel.com/docs/ai-gateway)** — a Claude model is the interior designer that redraws a room from its real commits.
+- **[Tailwind CSS v4](https://tailwindcss.com/)** for styling, the **[Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)** for the muffled-indoors score.
+- Every sprite is hand-drawn **SVG** pixel art — no image assets.
+
 ## How the village works
 
 - The **town hall** is the default branch, where releases and merges land.
@@ -35,10 +44,6 @@ Two optional keys in `.env.local`:
 
 - `GITHUB_TOKEN` raises the GitHub API limit from 60 to 5000 requests/hour (strongly recommended).
 - `VERCEL_AI_GATEWAY_KEY` turns on the AI interior designer. Without it, a deterministic designer furnishes rooms instead.
-
-## Built with
-
-[Next.js 16](https://nextjs.org/), [React 19](https://react.dev/), the [SWR](https://swr.vercel.app) server layer, the [AI SDK](https://ai-sdk.dev) with Vercel AI Gateway, and [Tailwind CSS v4](https://tailwindcss.com/). All pixel art is hand-drawn SVG.
 
 ## Credits
 
