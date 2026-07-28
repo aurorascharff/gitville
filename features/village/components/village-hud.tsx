@@ -15,8 +15,6 @@ export function VillageStatus() {
   const { asOf, live } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
 
-  // Inside a house the PR sidebar owns the top-left; hide the map HUD so the
-  // repo switcher badge doesn't collide with the sidebar title.
   if (focusId) return null;
 
   return (
@@ -92,9 +90,6 @@ export function VillageControls() {
 export function VillageTooltip() {
   const { tip } = useVillageUi();
   if (!tip) return null;
-  // Anchor to whichever corner of the cursor keeps the card on-screen: flip to
-  // the left when near the right edge, and above when near the bottom, so it's
-  // never clipped by the viewport regardless of how big the card grows.
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
   const flipX = tip.x > vw * 0.62;

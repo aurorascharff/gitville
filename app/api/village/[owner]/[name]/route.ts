@@ -1,4 +1,5 @@
-import { getVillagePayload, getRepoData } from '@/lib/github';
+import { getRepoData } from '@/features/repo/repo-queries';
+import { getVillagePayload } from '@/features/village/village-queries';
 
 export async function GET(_request: Request, { params }: RouteContext<'/api/village/[owner]/[name]'>) {
   const { owner, name } = await params;

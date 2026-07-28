@@ -1,12 +1,10 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { preload, SWRConfig } from 'swr';
 import { Crossfade } from '@/components/ui/crossfade';
 import { VillageErrorSplash } from '@/components/ui/error-boundary';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
+import { getRepoData } from '@/features/repo/repo-queries';
 import { VillageWorld, VillageWorldSkeleton } from '@/features/village/components/village-world';
-import { getVillagePayload, getRepoData } from '@/lib/github';
-import { villageKey } from '@/types/github';
 
 export const prefetch = 'allow-runtime';
 
@@ -30,14 +28,12 @@ export default function RepoVillagePage({ params }: PageProps<'/[owner]/[name]'>
 }
 
 async function Village({ slug }: { slug: string }) {
-  const [repo, pinned] = await Promise.all([getRepoData(slug), getPinnedRepos()]);
+  const repoPromise = getRepoData(slug);
+  const pinnedPromise = getPinnedRepos();
+  const repo = await repoPromise;
   if (!repo) notFound();
 
-  const cacheData = preload(villageKey(repo.slug), () => getVillagePayload(repo.slug, repo.defaultBranch));
+  const pinned = await pinnedPromise;
 
-  return (
-    <SWRConfig value={{ cacheData }}>
-      <VillageWorld repo={repo} pinned={pinned} />
-    </SWRConfig>
-  );
+  return <VillageWorld repo={repo} pinned={pinned} />;
 }

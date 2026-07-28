@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export const REPOS_COOKIE = 'gitville-repos';
 
-export const DEFAULT_REPOS = ['vercel/next.js', 'facebook/react', 'vercel/swr', 'vitejs/vite'];
+const DEFAULT_REPOS = ['vercel/next.js', 'facebook/react', 'vercel/swr', 'vitejs/vite'];
 
 export async function getPinnedRepos(): Promise<string[]> {
   const store = await cookies();

@@ -117,12 +117,11 @@ export function furnitureByName(name: string): (typeof FURNITURE)[number] | null
   return FURNITURE.find(f => f.name === name) ?? null;
 }
 
-// Palette letters must match ART_LETTERS / AI_ART_PALETTE in room-ai.ts.
 export const AI_ART_PALETTE: Palette = {
   O: '#2e2418',
   W: WOOD,
   w: WOOD_D,
-  m: '#8b95a3', // steel — was near-black (#22262e), which made metal machines read as black blocks
+  m: '#8b95a3',
   s: '#6ee7a0',
   b: '#5b8bff',
   r: '#c85b5b',

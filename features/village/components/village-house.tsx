@@ -146,7 +146,6 @@ function DayNightSprite({
   );
 }
 
-// Chimney sits ~21% from the sprite's right edge so the smoke puffs line up.
 function ChimneySmoke() {
   return (
     <span aria-hidden className="pointer-events-none absolute -top-1 right-[21%] z-10">

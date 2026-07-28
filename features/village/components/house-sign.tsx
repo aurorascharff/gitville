@@ -17,8 +17,6 @@ export function HouseSign({
 }: {
   cell: Cell;
   ai: boolean;
-  // On mobile the sign is a slide-in drawer toggled by these; on `sm:` and up it
-  // is pinned open as the static left column and these have no visible effect.
   open: boolean;
   onClose: () => void;
 }) {
@@ -30,9 +28,6 @@ export function HouseSign({
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
   let stack: typeof prs = [];
   if (me) {
-    // The stack is the whole connected component (every floor sees the same
-    // set), linked by base==head branch but never through the default branch,
-    // which would otherwise hub every PR based on it into one giant stack.
     const trunk = payload.defaultBranch;
     const linked = (p: (typeof prs)[number]) =>
       prs.filter(
@@ -50,7 +45,6 @@ export function HouseSign({
         }
       }
     }
-    // Depth = members below this one; sorted top-floor-first for the display.
     const depth = (p: (typeof prs)[number]) => {
       let d = 0;
       let cur = p;
@@ -69,8 +63,6 @@ export function HouseSign({
 
   const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
   const floorNo = idx >= 0 ? stack.length - idx : 1;
-  // PRs lead with their title (the number is a small eyebrow); places like the
-  // square or the hall lead with their name, since that is the headline there.
   const isPr = cell.kind === 'pr';
   const desc = cell.sub || spec?.title;
   const chip =
@@ -90,13 +82,7 @@ export function HouseSign({
         open ? 'translate-x-0' : '-translate-x-full',
       )}
     >
-      {/* A dark scrim over the room's own wall texture: the panel reads as part
-          of the scene (green hedge, wood, stone …) while light text stays legible
-          on any wall colour. Fixed regions: the identity/title/meta header and
-          the stack navigator + GitHub link stay pinned; only the commit list
-          between them scrolls, so switching floors never shifts the frame. */}
       <div className="flex h-full flex-col bg-[#221a12]/80 text-[#f0e6d2]">
-        {/* Mobile-only dismiss: on desktop the sign is always-open, so hide it. */}
         <button
           type="button"
           onClick={onClose}
@@ -106,7 +92,6 @@ export function HouseSign({
           <X size={16} strokeWidth={3} />
         </button>
         <div className="shrink-0 px-6 pt-7 pb-4">
-          {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -133,7 +118,6 @@ export function HouseSign({
             ) : null}
           </div>
 
-          {/* The headline you actually read: the PR/issue title, or the place name. */}
           {desc ? (
             <p
               className={cn(
@@ -145,7 +129,6 @@ export function HouseSign({
             </p>
           ) : null}
 
-          {/* Meta, each with a tiny label so it is obvious what you are looking at. */}
           {cell.author || cell.ref ? (
             <dl className="mt-4 flex flex-col gap-2.5">
               {cell.author ? (
@@ -193,12 +176,6 @@ export function HouseSign({
           ) : null}
         </div>
 
-        {/* The real commits that build this room, newest first — the same list
-            the noticeboard shows outside, so a place with no PR meta (the hall,
-            a bare branch) still has something to read, and a PR shows exactly
-            what shipped in it. This is the only scrolling region: it soaks up
-            the free space below the fixed header while the stack list and
-            GitHub link below stay pinned. */}
         {spec?.commits?.length ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
             <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">Recent commits</p>
@@ -251,8 +228,6 @@ export function HouseSign({
                     ) : null}
                   </>
                 );
-                // Current floor is a marker; others walk to their house, or open
-                // the PR on GitHub when it has no house, so no row is a dead end.
                 const link = cn(base, 'cursor-pointer border-transparent text-[#e4d7ba] hover:border-[#f0e6d2]/40');
                 return (
                   <li key={pr.number}>
@@ -262,8 +237,6 @@ export function HouseSign({
                       <button
                         type="button"
                         onClick={() => {
-                          // Also dismiss the mobile drawer so the new floor's room
-                          // is visible (no-op on desktop, where it stays pinned).
                           setFocusId(`pr:${pr.number}`);
                           onClose();
                         }}

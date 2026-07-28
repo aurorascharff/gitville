@@ -6,15 +6,9 @@ export const WORLD_H = 3000;
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
 
-// Houses spread over a hex grid so the town fans out in every direction rather
-// than lining one road. Slots fill from the centre outward (a spiral over the
-// rings), so a small repo stays compact near the plaza and a busy one grows a
-// dense neighbourhood. Positions are fully deterministic (order = fill priority,
-// geometry = the ring) so houses never teleport when the feed reshuffles.
-const DX = 350; // horizontal spacing between hex columns
-const DY = 295; // vertical spacing between hex rows
+const DX = 350;
+const DY = 295;
 
-// Walk each ring of the hex spiral: start at a corner and follow the six edges.
 const RING_DIRS: [number, number][] = [
   [-1, 1],
   [-1, 0],
@@ -40,8 +34,6 @@ function hexSpiral(rings: number): [number, number][] {
   return out;
 }
 
-// Rings 0-4 → 61 plots; center-out fill keeps the occupied set contiguous so the
-// neighbour-road network is always connected (no orphan houses).
 const AXIAL = hexSpiral(4);
 
 function slotPos(i: number): { x: number; y: number } {
@@ -49,9 +41,9 @@ function slotPos(i: number): { x: number; y: number } {
   return { x: CX + (q + r / 2) * DX, y: CY + r * DY };
 }
 
-export type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
+type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
 
-export type PrState = 'draft' | 'ready' | 'stacked';
+type PrState = 'draft' | 'ready' | 'stacked';
 
 export type Cell = {
   id: string;
@@ -66,7 +58,6 @@ export type Cell = {
   author?: string;
   ref?: string;
   baseRef?: string;
-  // A stack is one building: only the top PR renders; members keep invisible cells at the same spot.
   hidden?: boolean;
   x: number;
   y: number;
@@ -101,17 +92,12 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     ...slotPos(slot++),
   });
 
-  // Reserve the first ring slot right beside canary for the town square, so the
-  // plaza (canary + square) sits together at the heart of the town. Houses fill
-  // the rest of the rings outward from slot 2.
   const squarePos = slotPos(slot++);
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
   const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
   const picked = pickedPrs(payload);
-  // Place by PR number, not GitHub's updated-desc order, so a PR bubbling to the
-  // top of the list on refresh doesn't teleport every house to a new slot.
   const tops = picked.filter(pr => !baseRefs.has(pr.branch)).sort((a, b) => a.number - b.number);
   const placed = new Set<number>();
 
@@ -160,7 +146,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     }
   }
 
-  // Scrubbing back reopens houses closed after the viewed moment.
   if (Number.isFinite(asOf)) {
     const past = new Map<number, WireEvent>();
     for (const e of payload.events) {
@@ -186,7 +171,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   }
 
   const prRefs = new Set(payload.prs.map(pr => pr.branch));
-  // Select the most recent branches, but seat them by name so the set stays put.
   const branches = payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5);
   for (const b of branches.sort((x, y) => x.ref.localeCompare(y.ref))) {
     if (slot >= AXIAL.length) break;
@@ -200,9 +184,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     });
   }
 
-  // Numbered activity for items outside the open-PR window. A number is a PR if
-  // any of its events say so (a PR comment arrives as an IssueCommentEvent, so
-  // trust e.isPr over the kind); otherwise it's a real issue.
   const activity = new Map<number, { count: number; title: string | null; isPr: boolean }>();
   for (const e of payload.events) {
     if (e.number == null || prNumbers.has(e.number)) continue;
@@ -212,8 +193,6 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     if (e.isPr) cur.isPr = true;
     activity.set(e.number, cur);
   }
-  // Pick the busiest numbers (skipping any already housed by the scrub-reopen
-  // pass), then seat them by number so a shifting hit count can't reshuffle them.
   const shown = [...activity.entries()]
     .filter(([number]) => !cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`))
     .sort((a, b) => b[1].count - a[1].count)
@@ -321,7 +300,7 @@ export function hashDelay(login: string): number {
   return hashString(login) % 2000;
 }
 
-export type Room = {
+type Room = {
   commits: WireEvent[];
   notes: WireEvent[];
   size: 'S' | 'M' | 'L';

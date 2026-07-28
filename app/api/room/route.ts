@@ -1,12 +1,12 @@
+import { getRepoData } from '@/features/repo/repo-queries';
 import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
 import { buildCells, roomFor } from '@/features/village/village-model';
+import { getVillagePayload } from '@/features/village/village-queries';
 import {
   getBranchCommits,
   getIssueTitle,
   getPrCommits,
-  getRepoData,
   getThreadNotes,
-  getVillagePayload,
 } from '@/lib/github';
 import type { BranchCommit, RoomNote } from '@/types/github';
 

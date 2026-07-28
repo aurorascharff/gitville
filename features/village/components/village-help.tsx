@@ -41,8 +41,6 @@ export function VillageHelp() {
         aria-label="What does everything mean?"
         className={cn(
           'panel font-pixel absolute bottom-5 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5',
-          // Clear the PR sidebar that owns the left column indoors — but only on
-          // desktop; on mobile the sidebar is a hidden drawer, so sit at the edge.
           focusId ? 'left-4 sm:left-[calc(min(360px,40vw)+1rem)]' : 'left-4',
         )}
       >
@@ -200,7 +198,6 @@ export function VillageHelp() {
   );
 }
 
-// A little pixel keycap with a raised 3D edge, matching the wooden UI.
 function Key({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <kbd
@@ -214,7 +211,6 @@ function Key({ children, wide }: { children: React.ReactNode; wide?: boolean }) 
   );
 }
 
-// A tiny pixel mouse; the little bar hints at the left button you click.
 function MouseKey() {
   return (
     <span

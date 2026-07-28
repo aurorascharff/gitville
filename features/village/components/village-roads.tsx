@@ -1,13 +1,7 @@
-'use client';
-
 import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 
-// Streets connect each house to its immediate neighbours (one hex step away),
-// forming a lane network you can actually navigate — no spokes radiating from
-// the centre, no single dominant road, just short local streets between
-// adjacent houses that read like a real town grown block by block.
-const STEP = 380; // a hex step is ~350; anything under this is an immediate neighbour
-const FOOT = 46; // roads meet houses at their foot, so buildings sit just above the lane
+const STEP = 380;
+const FOOT = 46;
 
 export function VillageRoads({ cells }: { cells: Cell[] }) {
   const nodes = cells.filter(c => !c.hidden).map(c => ({ x: c.x, y: c.y + FOOT }));

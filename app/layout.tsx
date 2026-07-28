@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import { Pixelify_Sans } from 'next/font/google';
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           {children}
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

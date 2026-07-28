@@ -6,7 +6,6 @@ import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } fro
 
 const fetcher = async (url: string): Promise<VillagePayload> => {
   const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
-  // Throw on rate-limit so SWR keeps the last good snapshot on screen.
   if (!payload.ok) throw new Error('github-unavailable');
   return payload;
 };
@@ -16,6 +15,7 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
     suspense: true,
     refreshInterval: 15_000,
     revalidateOnFocus: true,
+    revalidateOnMount: false,
   });
   return { payload: data!, stale: Boolean(error) };
 }
@@ -73,16 +73,12 @@ export function useRoomSpec(
 
 export const SCRUB_MAX = 1000;
 
-export type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };
+type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };
 
 export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindow {
   if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
   const all = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
   const maxT = Math.max(new Date(payload.fetchedAt).getTime(), all[all.length - 1]);
-  // GitHub occasionally leaves a lone stale action in the recent feed (a PR from
-  // months back), which would stretch the slider across that whole gap while the
-  // real activity sits in the last few hours. Floor the window at the 5th
-  // percentile so a few stragglers can't distort the range.
   const floor = all[Math.floor(all.length * 0.05)];
   const times = all.filter(t => t >= floor);
   const minT = times[0];
@@ -91,9 +87,9 @@ export function useTimeWindow(payload: VillagePayload, scrub: number): TimeWindo
   return { minT, maxT, live, asOf: live ? maxT : times[idx] };
 }
 
-export type PlacedActor = { actor: Actor; x: number; y: number };
+type PlacedActor = { actor: Actor; x: number; y: number };
 
-export type WorldModel = {
+type WorldModel = {
   cells: Cell[];
   actors: Actor[];
   placed: PlacedActor[];

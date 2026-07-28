@@ -4,7 +4,7 @@ import { cacheLife, cacheTag } from 'next/cache';
 import { z } from 'zod';
 import { hashString } from '@/lib/utils';
 
-export const ITEM_KINDS = [
+const ITEM_KINDS = [
   'plant',
   'desk',
   'bookshelf',
@@ -15,21 +15,20 @@ export const ITEM_KINDS = [
   'monitor rig',
 ] as const;
 
-export const ART_LETTERS = 'OWwmsbrygpcot';
+const ART_LETTERS = 'OWwmsbrygpcot';
 
-export type RoomItem = {
+type RoomItem = {
   name: string;
   kind?: (typeof ITEM_KINDS)[number];
   pieces?: string[][];
   commits: number[];
 };
 
-export type RoomSpec = {
+type RoomSpec = {
   theme: string;
   items: RoomItem[];
 };
 
-// Structured-output providers reject regex, min/max, and optional fields: all required, use null.
 const specSchema = z.object({
   theme: z.string(),
   items: z.array(
@@ -79,9 +78,7 @@ export async function generateRoomSpec(
   if (!aiRoomsEnabled()) return null;
   try {
     return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.warn('[room-ai] generation failed:', error instanceof Error ? error.message : error);
+  } catch {
     return null;
   }
 }

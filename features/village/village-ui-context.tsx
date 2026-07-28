@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { createContext, useContext, useState } from 'react';
 import type { RepoData } from '@/types/github';
 
-export type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
+type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
 
 type VillageUi = {
   slug: string;

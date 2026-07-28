@@ -3,7 +3,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getPinnedRepos, REPOS_COOKIE } from '@/features/repo/repo-cookie';
-import { getRepoData, parseRepoSlug } from '@/lib/github';
+import { getRepoData } from '@/features/repo/repo-queries';
+import { parseRepoSlug } from '@/lib/github';
 import type { Route } from 'next';
 
 const COOKIE_OPTS = { maxAge: 60 * 60 * 24 * 365, path: '/', sameSite: 'lax' as const };

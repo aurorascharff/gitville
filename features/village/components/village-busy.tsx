@@ -6,8 +6,6 @@ import { useVillageData } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { villageKey } from '@/types/github';
 
-// Covers the stage when there's no usable data (GitHub busy / rate limited),
-// sitting below the HUD so the repo picker and controls stay reachable.
 export function VillageBusy() {
   const { slug } = useVillageUi();
   const { payload } = useVillageData(slug);

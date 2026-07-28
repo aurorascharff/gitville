@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
+import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { KindBadge } from '@/features/village/components/pixel-sprite';
 import { travelTo } from '@/features/village/components/player';
@@ -47,12 +48,15 @@ function BuzzRow({ event, cell, dimmed }: { event: WireEvent; cell: Cell | null;
           className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 text-left disabled:cursor-default"
           aria-label={cell ? `Walk to ${cell.label}` : undefined}
         >
-          {event.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={`${event.avatar}?size=64`} alt="" width={18} height={18} className="mt-0.5 rounded-full" />
-          ) : (
-            <span className="bg-secondary mt-0.5 h-4.5 w-4.5 rounded-full" />
-          )}
+          <AvatarImage
+            src={event.avatar ? `${event.avatar}?size=64` : null}
+            name={event.actor}
+            alt=""
+            size={18}
+            className="mt-0.5 rounded-full"
+          >
+            {null}
+          </AvatarImage>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px]">
               <span className="font-bold text-[#3a2f22]">{event.actor}</span>{' '}

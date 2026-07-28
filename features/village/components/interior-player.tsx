@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerSprite } from '@/features/village/components/player';
-import { SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
+import { followRoomFrame, WALL_H } from '@/features/village/room-geometry';
 
-export type NearItem = { x: number; y: number; index: number };
+type NearItem = { x: number; y: number; index: number };
 
 export function InteriorPlayer({
   width,
@@ -22,15 +22,9 @@ export function InteriorPlayer({
   walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
   roomRef: React.RefObject<HTMLDivElement | null>;
   onExit: () => void;
-  // Live player position (room coords), shared so the scene can react to it.
   playerPosRef: React.RefObject<{ x: number; y: number }>;
-  // Furniture positions (room coords) to detect standing next to; read live so a
-  // regen/AI toggle that reshuffles the room takes effect without remounting.
   itemsRef: React.RefObject<NearItem[]>;
-  // Fires (only on change) with the index of the nearest item in range, or null.
   onNear: (index: number | null) => void;
-  // While true (a close-up is open) the player can't move, so it can't wander
-  // onto the mat and leave the room from behind the overlay.
   frozenRef: React.RefObject<boolean>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -84,25 +78,9 @@ export function InteriorPlayer({
       if (roomRef.current) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        // Fit the room into the space right of the reserved info sidebar (must
-        // match InteriorScene so the click → room-coordinate mapping stays
-        // calibrated), then follow the player within that region.
-        const mobile = vw < 640;
-        // Rooms never zoom (scale 1, true footprint) so the player is always the
-        // same size; this camera just pans to follow when the room is larger
-        // than the space. The sidebar is a hidden drawer on mobile (room spans
-        // full width) and a reserved column on desktop. Must match
-        // InteriorScene's calc so the click → room-coord mapping stays calibrated.
-        const sidebar = mobile ? 0 : Math.min(SIDEBAR_W, vw * 0.4);
-        const availW = vw - sidebar;
-        const scale = 1;
-        const sw = width * scale;
-        const sh = height * scale;
-        const targetX =
-          sw <= availW
-            ? sidebar + (availW - sw) / 2
-            : Math.min(sidebar, Math.max(sidebar + availW - sw, sidebar + availW / 2 - s.x * scale));
-        const targetY = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, vh / 2 - s.y * scale));
+        const frame = followRoomFrame(vw, vh, width, height, s.x, s.y);
+        const targetX = frame.x;
+        const targetY = frame.y;
         if (Number.isNaN(s.camX)) {
           s.camX = targetX;
           s.camY = targetY;
@@ -110,11 +88,9 @@ export function InteriorPlayer({
           s.camX += (targetX - s.camX) * 0.12;
           s.camY += (targetY - s.camY) * 0.12;
         }
-        roomRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${scale})`;
+        roomRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${frame.scale})`;
       }
 
-      // Frozen (a close-up is open): drop any held keys / walk target so the
-      // player stands still behind the overlay and can't drift onto the mat.
       if (frozenRef.current) {
         s.keys.clear();
         walkTargetRef.current = null;
@@ -157,9 +133,6 @@ export function InteriorPlayer({
       }
       if (inner.current) inner.current.style.transform = `scaleX(${s.dir})`;
 
-      // Publish the live position and the nearest in-range furniture (report only
-      // on change, so the scene re-renders when you step up to / away from a piece
-      // rather than every frame).
       playerPosRef.current.x = s.x;
       playerPosRef.current.y = s.y;
       let best = -1;

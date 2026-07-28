@@ -4,7 +4,7 @@ import { plaqueClass } from '@/components/ui/plaque';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPinnedRepos } from '@/features/repo/repo-cookie';
-import { getRepoData } from '@/lib/github';
+import { getRepoData } from '@/features/repo/repo-queries';
 import { cn, formatStars } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
 import type { Route } from 'next';

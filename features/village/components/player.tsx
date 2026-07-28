@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 
-export type TravelDetail = { x: number; y: number; cellId?: string };
+type TravelDetail = { x: number; y: number; cellId?: string };
 
 export function travelTo(detail: TravelDetail) {
   window.dispatchEvent(new CustomEvent<TravelDetail>('gv:travel', { detail }));
@@ -13,9 +13,6 @@ export function travelTo(detail: TravelDetail) {
 const SPEED = 4.4;
 const ZOOM_MAX = 1.3;
 
-// The floor is dynamic: the smallest zoom that still covers the viewport. Below it
-// the world would pull away from the screen edges and show bare background, so we
-// clamp there instead of letting the visitor zoom out past the map.
 function coverZoom(): number {
   if (typeof window === 'undefined') return 1;
   return Math.max(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
@@ -26,7 +23,6 @@ export function clampZoom(z: number): number {
   return Math.min(Math.max(ZOOM_MAX, lo), Math.max(lo, z));
 }
 
-// Don't walk the villager while the visitor is typing into a field (repo search, etc).
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
@@ -40,8 +36,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     zoomRef.current = zoom;
   }, [zoom]);
 
-  // Keep the zoom inside the cover floor on mount and whenever the window resizes,
-  // so a larger viewport can never reveal background past the map edges.
   useEffect(() => {
     const reclamp = () => setZoom(z => clampZoom(z));
     reclamp();
@@ -61,9 +55,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     pending: null as string | null,
     keys: new Set<string>(),
     dir: 1,
-    // follow=false is free-look: the camera holds where the user panned/zoomed until they move again.
     follow: true,
-    // Screen point to keep fixed while zoom lerps (cursor for pinch, viewport center for the HUD buttons).
     anchor: null as { sx: number; sy: number } | null,
   });
   const paused = useRef(false);
@@ -109,7 +101,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     function onKeyUp(e: KeyboardEvent) {
       s.keys.delete(e.key.toLowerCase());
     }
-    // Google-Maps trackpad: pinch (ctrl+wheel) zooms toward the cursor, two-finger scroll pans.
     function onWheel(e: WheelEvent) {
       if (paused.current || Number.isNaN(s.camX)) return;
       e.preventDefault();
@@ -160,7 +151,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
             s.camY += (targetY - s.camY) * 0.12;
           }
         } else {
-          // Keep the anchor point (cursor, or viewport center) fixed as the zoom eases toward its target.
           const ax = s.anchor?.sx ?? vw / 2;
           const ay = s.anchor?.sy ?? vh / 2;
           s.camX = clampX(ax - ((ax - s.camX) / prevZ) * s.camZ);
@@ -195,7 +185,6 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         const len = Math.hypot(dx, dy) || 1;
         s.x = Math.max(24, Math.min(WORLD_W - 24, s.x + (dx / len) * SPEED));
         s.y = Math.max(24, Math.min(WORLD_H - 24, s.y + (dy / len) * SPEED));
-        // Keep the goal under the player while keyboard-walking, or releasing a key snaps them back.
         if (s.keys.size > 0) {
           s.tx = s.x;
           s.ty = s.y;

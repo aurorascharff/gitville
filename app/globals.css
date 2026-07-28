@@ -36,7 +36,6 @@
   --tracking-tight: -0.014em;
 }
 
-/* Palette matched to the Drop / next16-social-media design system. */
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -63,7 +62,6 @@
   --radius: 0.75rem;
 }
 
-/* Pure black, #0f0f0f cards, #262626 hairlines: the dark theme. */
 .dark {
   --background: #000000;
   --foreground: #f5f5f5;
@@ -110,7 +108,6 @@
   }
 }
 
-/* Thin, unobtrusive scrollbars, part of the dense, calm feel. */
 @layer base {
   * {
     scrollbar-width: thin;
@@ -126,7 +123,6 @@
   }
 }
 
-/* Shimmer skeletons: nicer than a flat pulse. */
 .shimmer {
   background: color-mix(in oklch, var(--foreground) 8%, transparent);
   background-image: linear-gradient(
@@ -147,12 +143,10 @@
   }
 }
 
-/* ── The village (pixel-game layer) ─────────────────────────────────────────── */
 .pixel {
   image-rendering: pixelated;
 }
-/* Layered grass, all square pixels: checker base + two offset square-speckle
-   passes (conic quadrants, never round dots) so it reads hand-tiled. */
+
 .grass-field {
   background-color: #4d9153;
   background-image:
@@ -188,12 +182,11 @@
 .dark .village-vignette {
   background: radial-gradient(ellipse 95% 85% at 50% 50%, transparent 45%, rgb(4 10 6 / 0.78));
 }
-/* Lights-off room while the interior spec loads, fades into the real surfaces. */
+
 .room-dim {
   background-color: #2b241c;
 }
 
-/* Interior surfaces share the same chunky pixel unit as the sprites (~6px). */
 .room-wall-cream {
   background-color: #c3ab84;
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 6px, transparent 6px 42px);
@@ -210,7 +203,7 @@
   background-color: #9aa0a8;
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 6px, transparent 6px 36px);
 }
-/* Per-building interiors: tent canvas, cabin logs, the hall's bannered stone. */
+
 .room-wall-tent {
   background-color: #8a6a9d;
   background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.14) 0 24px, transparent 24px 48px);
@@ -225,7 +218,7 @@
     repeating-linear-gradient(90deg, rgb(59 107 255 / 0.35) 0 30px, transparent 30px 120px),
     repeating-linear-gradient(90deg, rgb(0 0 0 / 0.11) 0 6px, transparent 6px 36px);
 }
-/* The square's backdrop is a hedge, not wallpaper: it is outdoors. */
+
 .room-wall-hedge {
   background-color: #4e8a4f;
   background-image:
@@ -276,7 +269,7 @@
   clip-path: polygon(0 0, 100% 0, 100% 76%, 76% 100%, 0 100%);
   box-shadow: 0 3px 6px rgb(0 0 0 / 0.35);
 }
-/* Entering/leaving a house: a quick Stardew screen cut. */
+
 .scene-in {
   animation: scene-in 280ms ease-out;
 }
@@ -291,7 +284,6 @@
   }
 }
 
-/* Chimney smoke on occupied cottages. */
 .smoke-puff {
   opacity: 0;
   animation: smoke 3.3s ease-out infinite;
@@ -310,7 +302,6 @@
   }
 }
 
-/* Pixel-game panels: parchment and wood, hard shadows, no glass. */
 .panel {
   background: #f0e6d2;
   border: 3px solid #4a3826;
@@ -327,7 +318,6 @@
   color: #f0e6d2;
 }
 
-/* Night sky (dark mode): three star layers, gently twinkling. */
 .stars {
   background-image:
     radial-gradient(#ffffff 1px, transparent 1.4px), radial-gradient(#ffffffb0 1px, transparent 1.2px),
@@ -371,7 +361,6 @@
   }
 }
 
-/* Fireflies: ambient drifting lights. */
 .firefly {
   animation-name: drift;
   animation-timing-function: ease-in-out;
@@ -396,7 +385,6 @@
   }
 }
 
-/* Villagers: idle bob + landing pop. */
 .sprite-bob {
   animation: bob 2.6s ease-in-out infinite;
 }

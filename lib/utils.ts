@@ -21,7 +21,6 @@ export function formatStars(n: number): string {
   return n >= 1000 ? `${Math.round(n / 100) / 10}k` : `${n}`;
 }
 
-// FNV-1a; callers take their own modulo.
 export function hashString(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {

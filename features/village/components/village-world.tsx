@@ -1,5 +1,4 @@
-'use client';
-
+import { preload, SWRConfig } from 'swr';
 import { BuzzPanel } from '@/features/village/components/buzz-panel';
 import { HouseInterior } from '@/features/village/components/house-interior';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
@@ -9,28 +8,31 @@ import { VillageHelp } from '@/features/village/components/village-help';
 import { VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/village-hud';
 import { VillageMusic } from '@/features/village/components/village-music';
 import { VillageStage } from '@/features/village/components/village-stage';
+import { getVillagePayload } from '@/features/village/village-queries';
 import { VillageUiProvider } from '@/features/village/village-ui-context';
-import type { RepoData } from '@/types/github';
+import { villageKey, type RepoData } from '@/types/github';
 
 export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
+  const cacheData = preload(villageKey(repo.slug), () => getVillagePayload(repo.slug, repo.defaultBranch));
+
   return (
-    <VillageUiProvider repo={repo} pinned={pinned}>
-      <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
-        <div aria-hidden className="village-vignette absolute inset-0" />
-        {/* No per-section boundaries: any failure bubbles to the themed splash
-            (VillageErrorSplash) at the page level instead of a small toast. */}
-        <VillageStage />
-        <VillageBusy />
-        <VillageStatus />
-        <VillageControls />
-        <BuzzPanel />
-        <HouseInterior />
-        <TimeMachine />
-        <VillageHelp />
-        <VillageMusic />
-        <VillageTooltip />
-      </div>
-    </VillageUiProvider>
+    <SWRConfig value={{ cacheData }}>
+      <VillageUiProvider repo={repo} pinned={pinned}>
+        <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
+          <div aria-hidden className="village-vignette absolute inset-0" />
+          <VillageStage />
+          <VillageBusy />
+          <VillageStatus />
+          <VillageControls />
+          <BuzzPanel />
+          <HouseInterior />
+          <TimeMachine />
+          <VillageHelp />
+          <VillageMusic />
+          <VillageTooltip />
+        </div>
+      </VillageUiProvider>
+    </SWRConfig>
   );
 }
 

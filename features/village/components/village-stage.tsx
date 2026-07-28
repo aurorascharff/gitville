@@ -45,7 +45,6 @@ export function VillageStage() {
           width: WORLD_W,
           height: WORLD_H,
           transformOrigin: '0 0',
-          // First paint centers on the player so the camera doesn't jump in.
           transform: `translate(calc(50vw - ${WORLD_W / 2}px), calc(50dvh - ${WORLD_H / 2 + 170}px))`,
           boxShadow: 'inset 0 0 140px 80px rgb(14 30 18 / 0.6)',
         }}

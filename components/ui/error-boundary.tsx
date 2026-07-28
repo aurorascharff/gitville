@@ -3,10 +3,6 @@
 import { catchError, type ErrorInfo } from 'next/error';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
 
-// A full-screen fallback for a whole-page failure: mirrors the loading splash
-// (VillageWorldSkeleton) so a failed village reads as part of the world — but the
-// cottage is under construction (the same draft look used for draft PRs) to signal
-// something is broken, with retry / go-back controls.
 function SplashFallback(props: { title?: string }, { retry }: ErrorInfo) {
   return (
     <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
@@ -36,6 +32,4 @@ function SplashFallback(props: { title?: string }, { retry }: ErrorInfo) {
   );
 }
 
-// Full-screen themed splash for the top-level page boundary; also handles
-// notFound()/redirect() throws and re-fetches on retry.
 export const VillageErrorSplash = catchError(SplashFallback);

@@ -27,7 +27,6 @@ function ghHeaders(): Record<string, string> {
     'User-Agent': 'gitville',
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  // 5000 req/hr with a token vs 60 without.
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   return headers;
 }
@@ -338,7 +337,6 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
     data?.repository?.ref?.target && 'history' in data.repository.ref.target
       ? data.repository.ref.target.history.nodes
       : null;
-  // Newest first from the API; reversed so the oldest reads as construction order.
   if (nodes) return nodes.map(mapGqlCommit).reverse();
 
   const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
@@ -376,8 +374,6 @@ export async function getThreadNotes(slug: string, number: number, isPr: boolean
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
-// The events feed omits pull_request.title, so a PR house seen only through
-// reviews carries no subtitle. Fetch it directly; /issues/{n} covers PRs too.
 export async function getIssueTitle(slug: string, number: number): Promise<string | null> {
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
@@ -411,7 +407,6 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
   ]);
   const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
-  // Event pages overlap while paginating; dedupe by id.
   const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
   if (!Array.isArray(pulls) && events.length === 0) {

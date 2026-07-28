@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { timeAgo } from '@/lib/utils';
 
-// Client-only: Date.now can't run during prerender. Refreshes every 30s.
 export function RelativeTime({ date }: { date: Date | string }) {
   const [text, setText] = useState('');
 

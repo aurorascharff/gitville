@@ -43,8 +43,6 @@ export type WireEvent = {
   actor: string;
   avatar: string | null;
   line: string;
-  // GitHub's event stream conflates issues and PRs (a PR comment arrives as an
-  // IssueCommentEvent), so numbered events carry whether they're about a PR.
   isPr: boolean;
   detail: string | null;
   body: string | null;

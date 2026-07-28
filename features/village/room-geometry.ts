@@ -6,15 +6,13 @@ import type { BranchCommit } from '@/types/github';
 
 export const WALL_H = 150;
 
-// The interior reserves a fixed left column for the PR info panel; the room fits
-// into the space that remains (shared by the scene layout and the camera so the
-// click → room-coordinate mapping stays calibrated).
 export const SIDEBAR_W = 360;
 
-export type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
+type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
 export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][] };
+export type RoomFrame = { x: number; y: number; scale: number };
 
-export function roomRole(cell: Cell): RoomRole {
+function roomRole(cell: Cell): RoomRole {
   if (cell.kind !== 'pr') return 'single';
   if (!cell.hidden && (cell.floors ?? 1) > 1) return 'attic';
   if (cell.hidden) return cell.stackedOn ? 'middle' : 'ground';
@@ -30,6 +28,42 @@ export function roomDims(cell: Cell): [number, number] {
   if (role === 'attic') return [860, 560];
   if (role === 'ground') return [1000, 660];
   return [1000, 620];
+}
+
+export function roomFrame(viewportW: number, viewportH: number, roomW: number, roomH: number): RoomFrame {
+  const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
+  const availW = viewportW - sidebar;
+  const scale = 1;
+  const sw = roomW * scale;
+  const sh = roomH * scale;
+  return {
+    x: sw <= availW ? sidebar + (availW - sw) / 2 : sidebar,
+    y: sh <= viewportH ? (viewportH - sh) / 2 : 0,
+    scale,
+  };
+}
+
+export function followRoomFrame(
+  viewportW: number,
+  viewportH: number,
+  roomW: number,
+  roomH: number,
+  focusX: number,
+  focusY: number,
+): RoomFrame {
+  const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
+  const availW = viewportW - sidebar;
+  const scale = 1;
+  const sw = roomW * scale;
+  const sh = roomH * scale;
+  return {
+    x:
+      sw <= availW
+        ? sidebar + (availW - sw) / 2
+        : Math.min(sidebar, Math.max(sidebar + availW - sw, sidebar + availW / 2 - focusX * scale)),
+    y: sh <= viewportH ? (viewportH - sh) / 2 : Math.min(0, Math.max(viewportH - sh, viewportH / 2 - focusY * scale)),
+    scale,
+  };
 }
 
 export function wallClass(cell: Cell): string {
@@ -84,7 +118,7 @@ export function sizeScale(commit: BranchCommit): number {
   return 5;
 }
 
-export function buildWidth(build: Build): number {
+function buildWidth(build: Build): number {
   if (build.pieces?.length) {
     const scale = pieceScale(build);
     return build.pieces.reduce((sum, piece) => sum + Math.max(...piece.map(r => r.length)) * scale, 0);
@@ -92,10 +126,6 @@ export function buildWidth(build: Build): number {
   return build.commits.reduce((sum, c) => sum + 8 * sizeScale(c), 0);
 }
 
-// AI rooms compose a staged diorama: the hero contraption sits front-centre,
-// supporting machines fan out on shelves behind and beside it so the floor
-// reads as one scene with depth (zIndex keys off y, so front overlaps back)
-// instead of props floating in a row.
 export function heroIndex(builds: Build[]): number {
   let best = 0;
   let bestW = -1;
@@ -117,8 +147,6 @@ export function composeScene(builds: Build[], w: number, floorH: number, hero: n
   pos[hero] = { x: w / 2, y: floorH * 0.6 };
   const half = heroW / 2 + 70;
 
-  // Shelves filled in order: back row spans full width (behind the hero), then
-  // the front flanks, then the mid flanks. y = depth, higher = nearer.
   const shelves = [
     { y: floorH * 0.3, x: pad, xMax: w - pad },
     { y: floorH * 0.77, x: pad, xMax: w / 2 - half },
@@ -136,7 +164,6 @@ export function composeScene(builds: Build[], w: number, floorH: number, hero: n
       cx = shelves[si]?.x ?? pad;
     }
     if (si >= shelves.length) {
-      // More items than shelves: wrap back onto the rear row, nudged down.
       si = 0;
       cx = shelves[0].x;
       shelves[0].y = Math.min(floorH - 90, shelves[0].y + 120);
