@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowUpRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { HouseSign } from '@/features/village/components/house-sign';
@@ -97,10 +98,48 @@ function InteriorScene({
   viewport: { w: number; h: number };
   walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
 }) {
-  const { slug } = useVillageUi();
-  const { spec } = useRoomSpec(slug, cell.id, ai);
   const roomRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
+  const [w, h] = roomDims(cell);
+  const scene = useRoomScene(cell, ai, w, h);
+  const { spec } = scene;
+
+  // Walking up to a piece (proximity, tracked in the player loop) highlights it;
+  // Enter — or a click — opens the close-up. inspectIndex indexes scene.builds.
+  const [nearIndex, setNearIndex] = useState<number | null>(null);
+  const [inspectIndex, setInspectIndex] = useState<number | null>(null);
+  const playerPosRef = useRef({ x: w / 2, y: h - 78 });
+  const itemsRef = useRef<{ x: number; y: number; index: number }[]>([]);
+  const frozenRef = useRef(false);
+  const nearRef = useRef<number | null>(null);
+
+  // Furniture positions in room coords (slots are floor-local, offset by WALL_H)
+  // for the player's proximity check; refresh whenever the scene reshuffles. The
+  // player loop recomputes the nearest index from this list every frame, so a
+  // regen that drops a piece self-corrects nearIndex to a valid value or null.
+  useEffect(() => {
+    itemsRef.current = scene.slots.map((s, i) => ({ x: s.x, y: s.y + WALL_H, index: i }));
+  }, [scene.slots]);
+
+  useEffect(() => {
+    nearRef.current = nearIndex;
+  }, [nearIndex]);
+
+  useEffect(() => {
+    frozenRef.current = inspectIndex !== null;
+  }, [inspectIndex]);
+
+  // Enter looks at the piece you're standing next to (never while one is open).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Enter' && inspectIndex === null && nearRef.current !== null) {
+        e.preventDefault();
+        setInspectIndex(nearRef.current);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [inspectIndex]);
 
   // The room auto-fits; there is no room zoom. Swallow the trackpad pinch
   // (ctrl+wheel) so it can't fall through to the browser and zoom the whole app.
@@ -114,7 +153,6 @@ function InteriorScene({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  const [w, h] = roomDims(cell);
   // Fit the room into the space right of the reserved info sidebar: scale it up
   // on small screens so the interior fills the space (never a tiny box lost in
   // the dark) and down when it would overflow, keeping a little breathing room
@@ -155,7 +193,7 @@ function InteriorScene({
         }}
       >
         <WallNotes cell={cell} ai={ai} />
-        <Floor cell={cell} width={w} height={h} ai={ai} />
+        <Floor cell={cell} width={w} height={h} scene={scene} nearIndex={nearIndex} onInspect={setInspectIndex} />
         <Occupants cell={cell} width={w} height={h} />
         <DoorMat width={w} height={h} />
         <InteriorPlayer
@@ -164,6 +202,10 @@ function InteriorScene({
           walkTargetRef={walkTargetRef}
           roomRef={roomRef}
           onExit={() => setFocusId(null)}
+          playerPosRef={playerPosRef}
+          itemsRef={itemsRef}
+          onNear={setNearIndex}
+          frozenRef={frozenRef}
         />
         {ai ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
@@ -173,6 +215,14 @@ function InteriorScene({
       </div>
       <HouseSign cell={cell} ai={ai} />
       <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
+      {inspectIndex !== null && scene.builds[inspectIndex] ? (
+        <FurnitureCloseup
+          build={scene.builds[inspectIndex]}
+          spec={spec}
+          cell={cell}
+          onClose={() => setInspectIndex(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -297,14 +347,24 @@ function WallNotes({ cell, ai }: { cell: Cell; ai: boolean }) {
   );
 }
 
-function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height: number; ai: boolean }) {
+// Everything needed to render (and reason about) the room's furniture, computed
+// once so the floor, the proximity check, and the close-up all agree on indices.
+type Scene = {
+  spec: ReturnType<typeof useRoomSpec>['spec'];
+  loading: boolean;
+  campsite: boolean;
+  builds: Build[];
+  slots: { x: number; y: number }[];
+  hero: number;
+  anchor: ReturnType<typeof centerpiece>;
+};
+
+function useRoomScene(cell: Cell, ai: boolean, width: number, height: number): Scene {
   const { slug } = useVillageUi();
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const campsite = cell.kind === 'issue';
   const plaza = cell.kind === 'inbox';
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
-
-  if (loading && !spec) return <FloorSkeleton />;
 
   const floorH = height - WALL_H;
   // keepPreviousData holds the prior furniture on screen while a regen loads, so
@@ -316,6 +376,29 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
   const hero = aiScene ? heroIndex(builds) : -1;
   const anchor = campsite || aiScene ? null : centerpiece(cell);
   const slots = aiScene ? composeScene(builds, width, floorH, hero) : layoutBuilds(builds, width, floorH);
+
+  return { spec, loading, campsite, builds, slots, hero, anchor };
+}
+
+function Floor({
+  cell,
+  width,
+  height,
+  scene,
+  nearIndex,
+  onInspect,
+}: {
+  cell: Cell;
+  width: number;
+  height: number;
+  scene: Scene;
+  nearIndex: number | null;
+  onInspect: (index: number) => void;
+}) {
+  const { spec, loading, campsite, builds, slots, anchor } = scene;
+  if (loading && !spec) return <FloorSkeleton />;
+
+  const floorH = height - WALL_H;
 
   return (
     <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell))} style={{ top: WALL_H }}>
@@ -330,7 +413,15 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
         </span>
       ) : null}
       {builds.map((build, i) => (
-        <Furniture key={build.commits[0].sha} build={build} x={slots[i].x} y={slots[i].y} delay={i * 90} />
+        <Furniture
+          key={build.commits[0].sha}
+          build={build}
+          x={slots[i].x}
+          y={slots[i].y}
+          delay={i * 90}
+          near={i === nearIndex}
+          onInspect={() => onInspect(i)}
+        />
       ))}
     </div>
   );
@@ -362,50 +453,179 @@ function Campsite({ width, height }: { width: number; height: number }) {
   );
 }
 
-function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: number; delay?: number }) {
+function Furniture({
+  build,
+  x,
+  y,
+  delay = 0,
+  near,
+  onInspect,
+}: {
+  build: Build;
+  x: number;
+  y: number;
+  delay?: number;
+  near: boolean;
+  onInspect: () => void;
+}) {
   const { setTip } = useVillageUi();
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
+  // The whole piece speaks for its commit(s); the tip nudges you to look closer
+  // rather than dumping the message here (the close-up shows it in full).
+  const tipBody = build.commits.length === 1 ? build.commits[0].message : `${build.commits.length} commits`;
 
   return (
     <div
       className="absolute flex flex-col items-center transition-[translate] duration-150 will-change-transform hover:-translate-y-1.5"
       style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}
     >
-      <div className="pop-in flex flex-col items-center" style={{ animationDelay: `${delay}ms` }}>
-        <div className="flex items-end">
+      {/* One button for the whole object: walking near (Enter) or clicking opens
+          the close-up where the commit link lives — it never navigates itself. */}
+      <button
+        type="button"
+        data-stop-walk
+        onClick={onInspect}
+        onMouseMove={e =>
+          setTip({ x: e.clientX, y: e.clientY, title: name, body: tipBody, when: build.commits[0].at || null })
+        }
+        onMouseLeave={() => setTip(null)}
+        aria-label={`Look closer at ${name}`}
+        className="pop-in flex cursor-pointer flex-col items-center"
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <span
+          className={cn(
+            'font-pixel mb-1 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-1.5 py-0.5 text-[10px] font-bold text-[#3a2f22] shadow transition-opacity',
+            near ? 'animate-bounce opacity-100' : 'pointer-events-none opacity-0',
+          )}
+        >
+          ⏎ look
+        </span>
+        <span className={cn('flex items-end rounded-sm', near && 'ring-2 ring-[#e4c05a]')}>
           {build.commits.map((commit, i) => {
             const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
             const palette = drawn ? AI_ART_PALETTE : fallback.palette;
             return (
-              <a
+              <span
                 key={commit.sha}
-                href={commit.url}
-                target="_blank"
-                rel="noreferrer"
                 style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
-                onMouseMove={e =>
-                  setTip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    title: `${name} by ${commit.author}`,
-                    body: commit.message,
-                    when: commit.at || null,
-                  })
-                }
-                onMouseLeave={() => setTip(null)}
               >
                 <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
-              </a>
+              </span>
             );
           })}
-        </div>
+        </span>
         <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
         <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
           {name}
         </span>
-      </div>
+      </button>
+    </div>
+  );
+}
+
+// The first-person close-up: the object enlarged on a soft vignette of the room's
+// own colour, with the commit(s) it stands for — the only place a piece links to
+// GitHub. Esc (captured, so it beats the room-exit Esc) or the backdrop closes it.
+function FurnitureCloseup({
+  build,
+  spec,
+  cell,
+  onClose,
+}: {
+  build: Build;
+  spec: Scene['spec'];
+  cell: Cell;
+  onClose: () => void;
+}) {
+  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
+  const name = build.name ?? fallback.name;
+  const drawn = Boolean(build.pieces?.length);
+  const MAG = 2.4;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    }
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+
+  return (
+    <div
+      className="absolute inset-0 z-60 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[3px]"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <aside className="pixel relative flex max-h-[88dvh] w-160 max-w-[92vw] flex-col overflow-hidden rounded-sm border-4 border-[#2e2418] bg-[#221a12]/95 text-[#f0e6d2] shadow-[8px_10px_0_rgb(0_0_0/0.5)]">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Back to the room (Esc)"
+          className="font-pixel absolute top-2 right-2 z-10 cursor-pointer text-[18px] font-bold text-[#e0d3b8] transition-colors hover:text-white"
+        >
+          ✕
+        </button>
+        <div
+          className="flex shrink-0 flex-col items-center gap-3 px-6 pt-10 pb-5"
+          style={{ background: `radial-gradient(ellipse 75% 80% at 50% 45%, ${backdropFor(cell)}, transparent 75%)` }}
+        >
+          <div className="flex items-end">
+            {build.commits.map((commit, i) => {
+              const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
+              const palette = drawn ? AI_ART_PALETTE : fallback.palette;
+              const scale = (drawn ? pieceScale(build) : sizeScale(commit)) * MAG;
+              return (
+                <span key={commit.sha} style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -10 }}>
+                  <PixelSprite art={piece} palette={palette} scale={scale} />
+                </span>
+              );
+            })}
+          </div>
+          <span aria-hidden className="block h-1.5 w-16 rounded-full bg-black/40 blur-[1px]" />
+          <div className="flex flex-col items-center gap-1.5">
+            <p className="font-pixel text-center text-[18px] font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]">{name}</p>
+            {spec?.ai ? (
+              <span className="font-pixel rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+                {spec.theme}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
+          <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">
+            {build.commits.length > 1 ? `Built from ${build.commits.length} commits` : 'From this commit'}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {build.commits.map(commit => (
+              <li key={commit.sha}>
+                <a
+                  href={commit.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex flex-col gap-1 rounded-xs border-2 border-[#f0e6d2]/15 bg-black/20 px-3 py-2.5 transition-colors hover:border-[#f0e6d2]/40"
+                >
+                  <span className="text-[14px] leading-snug wrap-anywhere whitespace-pre-wrap text-[#e4d7ba]">
+                    {commit.message}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] text-[#9a8c6d]">
+                    <span className="font-bold text-[#d8b24a]">{commit.author}</span>
+                    <RelativeTime date={commit.at} />
+                    <span className="font-pixel ml-auto flex items-center gap-1 text-[#f0b98a] opacity-0 transition-opacity group-hover:opacity-100">
+                      view commit <ArrowUpRight size={12} strokeWidth={3} />
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
     </div>
   );
 }
