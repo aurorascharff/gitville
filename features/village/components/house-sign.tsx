@@ -15,26 +15,41 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
 
   const prs = payload.prs;
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
-  const stack: typeof prs = [];
+  let stack: typeof prs = [];
   if (me) {
+    // Collect the whole connected stack (its parent/child component), not a
+    // single greedy path: a branch can have more than one PR based on it, and a
+    // one-link-at-a-time walk picks a different fork depending on which floor
+    // you start from — so clicking a member would grow or shrink the stack.
+    // The component is symmetric, so every floor sees the same set.
+    const linked = (p: (typeof prs)[number]) =>
+      prs.filter(q => q.number !== p.number && (q.branch === p.baseRef || q.baseRef === p.branch));
     const seen = new Set([me.number]);
-    let cur = me;
-    for (;;) {
-      const child = prs.find(p => p.baseRef === cur.branch && !seen.has(p.number));
-      if (!child) break;
-      stack.unshift(child);
-      seen.add(child.number);
-      cur = child;
+    const comp = [me];
+    for (let i = 0; i < comp.length; i++) {
+      for (const nb of linked(comp[i])) {
+        if (!seen.has(nb.number)) {
+          seen.add(nb.number);
+          comp.push(nb);
+        }
+      }
     }
-    stack.push(me);
-    cur = me;
-    for (;;) {
-      const parent = prs.find(p => p.branch === cur.baseRef && !seen.has(p.number));
-      if (!parent) break;
-      stack.push(parent);
-      seen.add(parent.number);
-      cur = parent;
-    }
+    // Depth = how many members sit below this one (climbing baseRef → branch).
+    // Order top floor first to match the display + floorNo maths below.
+    const depth = (p: (typeof prs)[number]) => {
+      let d = 0;
+      let cur = p;
+      const guard = new Set([p.number]);
+      for (;;) {
+        const parent = comp.find(q => q.branch === cur.baseRef);
+        if (!parent || guard.has(parent.number)) break;
+        guard.add(parent.number);
+        cur = parent;
+        d++;
+      }
+      return d;
+    };
+    stack = comp.slice().sort((a, b) => depth(b) - depth(a) || b.number - a.number);
   }
 
   const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
