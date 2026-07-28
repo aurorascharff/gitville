@@ -127,15 +127,42 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
             <dl className="mt-4 flex flex-col gap-2.5">
               {cell.author ? (
                 <div>
-                  <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Author</dt>
-                  <dd className="mt-0.5 text-[15px] text-[#e4d7ba]">{cell.author}</dd>
+                  <dt className="font-pixel text-[11px] tracking-wide text-[#d8b24a] uppercase">Author</dt>
+                  <dd className="mt-0.5 text-[15px]">
+                    <a
+                      href={`https://github.com/${cell.author}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#f0e6d2] underline decoration-[#f0b98a]/40 underline-offset-2 hover:decoration-[#f0b98a]"
+                    >
+                      {cell.author}
+                    </a>
+                  </dd>
                 </div>
               ) : null}
               {cell.ref ? (
                 <div>
-                  <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Branch</dt>
-                  <dd className="mt-0.5 truncate font-mono text-[13px] text-[#c9b892]">
-                    {cell.ref} → {cell.baseRef}
+                  <dt className="font-pixel text-[11px] tracking-wide text-[#d8b24a] uppercase">Branch</dt>
+                  <dd className="mt-0.5 font-mono text-[13px] wrap-anywhere text-[#d8c8a2]">
+                    <a
+                      href={`https://github.com/${slug}/tree/${encodeURIComponent(cell.ref)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#8fd0c0] hover:underline"
+                    >
+                      {cell.ref}
+                    </a>
+                    <span className="px-1 text-[#f0b98a]">→</span>
+                    {cell.baseRef ? (
+                      <a
+                        href={`https://github.com/${slug}/tree/${encodeURIComponent(cell.baseRef)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#e4c05a] hover:underline"
+                      >
+                        {cell.baseRef}
+                      </a>
+                    ) : null}
                   </dd>
                 </div>
               ) : null}

@@ -47,7 +47,7 @@ const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 // Bump when the prompt changes: 'use cache' keys on the arguments, not the
 // prompt text, so this version is threaded through as an argument to force a
 // cache miss (regenerate every room) whenever the design brief is revised.
-const PROMPT_VERSION = 'v3';
+const PROMPT_VERSION = 'v4';
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
   const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
@@ -112,7 +112,7 @@ async function generateRoomSpecCached(
     model: gateway('anthropic/claude-sonnet-5'),
     schema: specSchema,
     prompt: [
-      'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Furnish the room so it feels like a lived-in room full of FURNITURE and objects that belong INDOORS — but themed so each object playfully stands for a real commit. This is a room (a themed study, workshop, library, or workroom), NOT a factory floor: no free-floating machines, funnels, or chimneys drifting in space.',
+      'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Fill the room with a VARIED collection of objects you INVENT yourself — each one your own little pixel-art creation that playfully stands for a real commit and would believably sit in this room. Mix it up freely: furniture (desks, shelves, chests), props and curios, and gadgets or machines when the work calls for it. The one rule is variety and invention — never repeat the same kind of object, and never settle for a plain bookshelf-and-crate look.',
       `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
       state ? `It is ${state}.` : '',
       'Commits in this room, in order (0-indexed):',
@@ -121,21 +121,22 @@ async function generateRoomSpecCached(
       ...notes.slice(0, 6).map(n => `- ${n}`),
       '',
       'Decide the room:',
-      '- Read what this work actually does and give the room a character: what kind of workroom is this, what is made here, what is its mood? `theme` names it (max 3 words, no emoji).',
-      '- Furnish it only with things that would believably sit in such a room — desks, shelves, cabinets, workbenches, lamps, rugs, chests, a model or contraption resting ON a table. Every item must read as a piece of FURNITURE or a room object, never an abstract blob floating mid-air.',
+      '- Read what this work actually does and give the room a character: what is made here, what is its mood? `theme` names it (max 3 words, no emoji).',
+      '- Every object should feel at home in that room, but let each commit inspire a DIFFERENT invention — one a machine, one a piece of furniture, one an odd little prop — so the room is a cabinet of curiosities, not a matching set.',
       '',
-      'Map commits to furniture:',
-      '- Each item is ONE piece of furniture that stands for ONE piece of work; a viewer should look at it and loosely associate it with its commit. Name it so the tie to the commit is clear.',
-      '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained piece of furniture.',
-      '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group. When an item has several commits they combine into ONE bigger piece of furniture built from connected segments (sections of a long shelf, a desk plus the rig on it, stacked drawers), designed to join side by side (left end, middle, right end). Keep the segments individually legible — do NOT melt them into one shapeless mass.',
+      'Map commits to objects:',
+      '- ALWAYS draw the art yourself in `pieces`. The catalog is a last-ditch fallback for when you truly cannot draw something; reaching for `kind` means giving up, so avoid it.',
+      '- Each item is ONE invented object standing for ONE piece of work; name it so the tie to the commit is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
+      '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained object.',
+      '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group. When an item has several commits they combine into ONE bigger object built from connected segments, designed to join side by side (left end, middle, right end). Keep the segments individually legible — do NOT melt them into one shapeless mass.',
       '',
       'Make the room read well:',
-      '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller supporting furniture around it.',
-      '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (legs, drawers, shelves, screens, cushions, pots, lids). Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
-      '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied furniture together.',
+      '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller objects around it.',
+      '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (towers, legs, drawers, screens, funnels, arms, pots, lids) so the room is a collection of clearly-different things. Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
+      '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied objects together.',
       '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights within an item so segments join cleanly. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
-      `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent a fitting object. Set \`kind\` and \`pieces\` to null when unused.`,
+      `- The catalog kinds [${ITEM_KINDS.join(', ')}] exist only as a last resort; set \`kind\` and \`pieces\` to null when unused, and prefer drawing your own \`pieces\` every time.`,
     ]
       .filter(Boolean)
       .join('\n'),
