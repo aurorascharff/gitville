@@ -24,6 +24,7 @@ import {
   heroIndex,
   layoutBuilds,
   pieceScale,
+  MAX_ZOOM,
   roomDims,
   SIDEBAR_W,
   sizeScale,
@@ -132,7 +133,7 @@ function InteriorScene({
   const pad = 32;
   const sidebar = Math.min(SIDEBAR_W, viewport.w * 0.4);
   const availW = viewport.w - sidebar;
-  const scale = Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, 1.8));
+  const scale = Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, MAX_ZOOM));
   const camX = sidebar + (availW - w * scale) / 2;
   const camY = (viewport.h - h * scale) / 2;
 
@@ -203,7 +204,7 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
       : 'Redraw this room from its real commits as an invented scene.';
 
   return (
-    <aside className="absolute top-4 right-4 z-50 w-44">
+    <aside className="absolute right-4 bottom-4 z-50 w-44">
       <button
         onClick={() => onToggle(!ai)}
         role="switch"

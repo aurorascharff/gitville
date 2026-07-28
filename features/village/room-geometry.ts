@@ -11,6 +11,11 @@ export const WALL_H = 150;
 // click → room-coordinate mapping stays calibrated).
 export const SIDEBAR_W = 360;
 
+// Cap how far a room is scaled UP so its real footprint still reads: a small
+// attic stays visibly smaller than a ground room instead of filling the screen.
+// Big rooms still scale DOWN below this to fit.
+export const MAX_ZOOM = 1.2;
+
 export type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
 export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][] };
 

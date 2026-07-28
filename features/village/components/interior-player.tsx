@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerSprite } from '@/features/village/components/player';
-import { SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
+import { MAX_ZOOM, SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
 
 export function InteriorPlayer({
   width,
@@ -66,7 +66,7 @@ export function InteriorPlayer({
         const pad = 32;
         const sidebar = Math.min(SIDEBAR_W, vw * 0.4);
         const availW = vw - sidebar;
-        const scale = Math.max(0.6, Math.min((availW - pad * 2) / width, (vh - pad * 2) / height, 1.8));
+        const scale = Math.max(0.6, Math.min((availW - pad * 2) / width, (vh - pad * 2) / height, MAX_ZOOM));
         const sw = width * scale;
         const sh = height * scale;
         const targetX =

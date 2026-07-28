@@ -39,6 +39,10 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
 
   const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
   const floorNo = idx >= 0 ? stack.length - idx : 1;
+  // PRs lead with their title (the number is a small eyebrow); places like the
+  // square or the hall lead with their name, since that is the headline there.
+  const isPr = cell.kind === 'pr';
+  const desc = cell.sub || spec?.title;
   const chip =
     cell.kind !== 'pr'
       ? null
@@ -58,14 +62,21 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
       {/* A dark scrim over the room's own wall texture: the panel reads as part
           of the scene (green hedge, wood, stone …) while light text stays legible
           on any wall colour. */}
-      <div className="min-h-full bg-[#221a12]/78 px-6 py-7 text-[#f0e6d2]">
-        <p className="font-pixel text-[24px] leading-7 font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]">{cell.label}</p>
-        <p className="mt-2 line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]">{cell.sub || spec?.title}</p>
-        <span className="mt-3 flex items-center gap-2">
+      <div className="min-h-full bg-[#221a12]/80 px-6 py-7 text-[#f0e6d2]">
+        {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              'font-pixel font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
+              isPr ? 'text-[16px] text-[#e4c05a]' : 'text-[24px] leading-7',
+            )}
+          >
+            {cell.label}
+          </span>
           {chip ? (
             <span
               className={cn(
-                'font-pixel inline-block rounded-sm border-2 border-[#2e2418] px-2 py-1 text-[14px] font-bold',
+                'font-pixel inline-block rounded-sm border-2 border-[#2e2418] px-2 py-0.5 text-[13px] font-bold',
                 stack.length > 1 ? 'bg-[#a986bd] text-[#1c1424]' : 'bg-[#58a55c] text-[#0e2410]',
               )}
             >
@@ -74,19 +85,46 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
           ) : null}
           {cell.draft ? (
             <span className="pixel" title="draft, under construction">
-              <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={4} />
+              <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
             </span>
           ) : null}
-        </span>
-        {cell.ref ? (
-          <p className="mt-3 truncate font-mono text-[13px] text-[#c9b892]">
-            {cell.ref} → {cell.baseRef}
+        </div>
+
+        {/* The headline you actually read: the PR/issue title, or the place name. */}
+        {desc ? (
+          <p
+            className={cn(
+              'mt-2 font-bold',
+              isPr ? 'text-[20px] leading-6' : 'line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]',
+            )}
+          >
+            {desc}
           </p>
         ) : null}
-        {cell.author ? <p className="mt-1.5 text-[15px] text-[#c9b892]">by {cell.author}</p> : null}
+
+        {/* Meta, each with a tiny label so it is obvious what you are looking at. */}
+        {cell.author || cell.ref ? (
+          <dl className="mt-4 flex flex-col gap-2.5">
+            {cell.author ? (
+              <div>
+                <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Author</dt>
+                <dd className="mt-0.5 text-[15px] text-[#e4d7ba]">{cell.author}</dd>
+              </div>
+            ) : null}
+            {cell.ref ? (
+              <div>
+                <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Branch</dt>
+                <dd className="mt-0.5 truncate font-mono text-[13px] text-[#c9b892]">
+                  {cell.ref} → {cell.baseRef}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
 
         {stack.length > 1 ? (
-          <div className="mt-4 border-t-2 border-[#f0e6d2]/20 pt-3">
+          <div className="mt-5 border-t-2 border-[#f0e6d2]/15 pt-4">
+            <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">In this stack</p>
             <ul className="flex flex-col gap-1">
               {stack.map(pr => {
                 const here = `pr:${pr.number}` === cell.id;
@@ -119,7 +157,7 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
             </ul>
           </div>
         ) : null}
-        <div className="mt-4 border-t-2 border-[#f0e6d2]/20 pt-3">
+        <div className="mt-5 border-t-2 border-[#f0e6d2]/15 pt-4">
           <a
             href={cell.url}
             target="_blank"
