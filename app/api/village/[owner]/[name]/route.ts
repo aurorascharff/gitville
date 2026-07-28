@@ -17,6 +17,6 @@ export async function GET(request: Request, { params }: RouteContext<'/api/villa
       versions: [],
     });
   }
-  if (new URL(request.url).searchParams.get('refresh') === '1') revalidateTag(`gv-live-${repo.slug}`, 'max');
+  if (new URL(request.url).searchParams.get('refresh') === '1') revalidateTag(`gv-live-${repo.slug}`, { expire: 0 });
   return Response.json(await getVillagePayload(repo.slug, repo.defaultBranch));
 }
