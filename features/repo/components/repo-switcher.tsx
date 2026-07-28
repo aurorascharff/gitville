@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { GitvilleMark } from '@/components/gitville-mark';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
-import { RepoSwitcherShell, UnpinRepoButton } from '@/features/repo/components/repo-switcher-shell';
+import { RepoSwitcherShell } from '@/features/repo/components/repo-switcher-shell';
+import { UnpinRepoButton } from '@/features/repo/components/unpin-repo-button';
 import { getPinnedRepos } from '@/features/repo/utils/repo-cookie';
 import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
@@ -26,7 +27,12 @@ export async function RepoSwitcher({ repo }: { repo: RepoData }) {
                   active ? 'bg-black/10 font-bold' : 'hover:bg-black/5',
                 )}
               >
-                <RepoAvatar src={`https://github.com/${owner}.png?size=64`} name={owner} size={18} className="rounded-full" />
+                <RepoAvatar
+                  src={`https://github.com/${owner}.png?size=64`}
+                  name={owner}
+                  size={18}
+                  className="rounded-full"
+                />
                 <span className="truncate">{name}</span>
               </Link>
               <UnpinRepoButton slug={slug} />

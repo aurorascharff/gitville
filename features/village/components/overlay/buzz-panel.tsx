@@ -5,17 +5,17 @@ import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
 import { travelTo } from '@/features/village/components/stage/player';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import { cellForEvent, type Cell } from '@/features/village/utils/village-model';
+import { cellForEvent, timeWindowFor, worldModelFor, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
 export function BuzzPanel() {
   const { slug, scrub, buzzOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { cells } = useWorldModel(payload, slug, asOf);
+  const { asOf } = timeWindowFor(payload, scrub);
+  const { cells } = worldModelFor(payload, slug, asOf);
   if (!buzzOpen || focusId || !payload.ok) return null;
 
   return (

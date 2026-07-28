@@ -79,6 +79,62 @@ export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
   return payload.prs.slice(0, 14);
 }
 
+export const SCRUB_MAX = 1000;
+
+type TimeWindow = { minT: number; maxT: number; asOf: number; live: boolean };
+
+export function timeWindowFor(payload: VillagePayload, scrub: number): TimeWindow {
+  if (payload.events.length === 0) return { minT: 0, maxT: 0, asOf: 0, live: true };
+  const all = payload.events.map(e => new Date(e.at).getTime()).sort((a, b) => a - b);
+  const maxT = Math.max(new Date(payload.fetchedAt).getTime(), all[all.length - 1]);
+  const floor = all[Math.floor(all.length * 0.05)];
+  const times = all.filter(t => t >= floor);
+  const minT = times[0];
+  const live = scrub === SCRUB_MAX;
+  const idx = Math.min(times.length - 1, Math.floor((scrub / SCRUB_MAX) * (times.length - 1)));
+  return { minT, maxT, live, asOf: live ? maxT : times[idx] };
+}
+
+export function prStackForCell(payload: VillagePayload, cell: Cell): { stack: VillagePayload['prs']; floorNo: number } {
+  const me = cell.kind === 'pr' ? payload.prs.find(p => `pr:${p.number}` === cell.id) : undefined;
+  if (!me) return { stack: [], floorNo: 1 };
+
+  const linked = (pr: VillagePayload['prs'][number]) =>
+    payload.prs.filter(
+      other =>
+        other.number !== pr.number &&
+        ((pr.baseRef !== payload.defaultBranch && other.branch === pr.baseRef) ||
+          (other.baseRef !== payload.defaultBranch && other.baseRef === pr.branch)),
+    );
+  const seen = new Set([me.number]);
+  const component = [me];
+  for (let i = 0; i < component.length; i++) {
+    for (const next of linked(component[i])) {
+      if (!seen.has(next.number)) {
+        seen.add(next.number);
+        component.push(next);
+      }
+    }
+  }
+
+  const depth = (pr: VillagePayload['prs'][number]) => {
+    let value = 0;
+    let current = pr;
+    const guard = new Set([pr.number]);
+    for (;;) {
+      const parent = component.find(other => other.branch === current.baseRef);
+      if (!parent || guard.has(parent.number)) break;
+      guard.add(parent.number);
+      current = parent;
+      value++;
+    }
+    return value;
+  };
+  const stack = component.slice().sort((a, b) => depth(b) - depth(a) || b.number - a.number);
+  const index = stack.findIndex(pr => `pr:${pr.number}` === cell.id);
+  return { stack, floorNo: index >= 0 ? stack.length - index : 1 };
+}
+
 export function buildCells(payload: VillagePayload, slug: string, asOf = Number.POSITIVE_INFINITY): Cell[] {
   const cells: Cell[] = [];
   let slot = 0;
@@ -294,6 +350,36 @@ export function arcOffset(index: number, count: number): { x: number; y: number 
   const radius = 80 + ring * 40;
   const rad = (deg * Math.PI) / 180;
   return { x: Math.cos(rad) * radius, y: Math.sin(rad) * radius * 0.92 };
+}
+
+type PlacedActor = { actor: Actor; x: number; y: number };
+
+type WorldModel = {
+  cells: Cell[];
+  actors: Actor[];
+  placed: PlacedActor[];
+  occupied: Map<string, number>;
+};
+
+export function worldModelFor(payload: VillagePayload, slug: string, asOf: number): WorldModel {
+  const cells = buildCells(payload, slug, asOf);
+  const actors = actorsAt(payload, cells, asOf);
+
+  const byCell = new Map<string, Actor[]>();
+  for (const actor of actors) byCell.set(actor.cellId, [...(byCell.get(actor.cellId) ?? []), actor]);
+  const placed: PlacedActor[] = [];
+  for (const [cellId, group] of byCell) {
+    const cell = cells.find(candidate => candidate.id === cellId) ?? cells[0];
+    group.forEach((actor, index) => {
+      const offset = arcOffset(index, group.length);
+      placed.push({ actor, x: cell.x + offset.x, y: cell.y + offset.y });
+    });
+  }
+
+  const occupied = new Map<string, number>();
+  for (const actor of actors) occupied.set(actor.cellId, (occupied.get(actor.cellId) ?? 0) + 1);
+
+  return { cells, actors, placed, occupied };
 }
 
 export function hashDelay(login: string): number {

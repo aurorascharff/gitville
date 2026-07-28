@@ -1,11 +1,13 @@
 'use client';
 
-import { ChevronDown, Plus, X } from 'lucide-react';
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { WatchForm } from '@/features/repo/components/watch-form';
-import { unpinRepo } from '@/features/repo/repo-actions';
+import { ChevronDown, Plus } from 'lucide-react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
+
+const AddVillageModal = lazy(() =>
+  import('@/features/repo/components/add-village-modal').then(mod => ({ default: mod.AddVillageModal })),
+);
 
 export function RepoSwitcherShell({ trigger, children }: { trigger: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -58,55 +60,22 @@ export function RepoSwitcherShell({ trigger, children }: { trigger: ReactNode; c
         </div>
       ) : null}
 
-      {adding ? <AddVillageModal onClose={() => setAdding(false)} /> : null}
+      {adding ? (
+        <Suspense fallback={<AddVillageModalFallback />}>
+          <AddVillageModal onClose={() => setAdding(false)} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
 
-export function UnpinRepoButton({ slug }: { slug: string }) {
-  const [, startTransition] = useTransition();
-
+function AddVillageModalFallback() {
   return (
-    <button
-      aria-label={`Stop watching ${slug}`}
-      onClick={() =>
-        startTransition(async () => {
-          await unpinRepo(slug);
-        })
-      }
-      className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-0.5 text-[#8a6d2a] opacity-0 transition group-hover:opacity-100 hover:text-[#3a2f22]"
-    >
-      <X size={13} />
-    </button>
-  );
-}
-
-function AddVillageModal({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/55 p-4"
-      onClick={e => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/55 p-4">
       <p className="font-pixel text-center text-[15px] font-bold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
         watch a new village
       </p>
-      <WatchForm autoFocus />
-      <button
-        onClick={onClose}
-        className="font-pixel cursor-pointer text-[12px] text-white/70 transition-colors hover:text-white"
-      >
-        cancel
-      </button>
+      <div className="pixel h-12 w-full max-w-sm rounded-md border-4 border-[#4a3826] bg-[#f0e6d2] shadow-xl" />
     </div>
   );
 }

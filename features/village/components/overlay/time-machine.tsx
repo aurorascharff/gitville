@@ -1,12 +1,13 @@
 'use client';
 
-import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { SCRUB_MAX, timeWindowFor } from '@/features/village/utils/village-model';
 
 export function TimeMachine() {
   const { slug, scrub, setScrub } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { minT, maxT, asOf, live } = useTimeWindow(payload, scrub);
+  const { minT, maxT, asOf, live } = timeWindowFor(payload, scrub);
   if (!payload.ok) return null;
 
   return (

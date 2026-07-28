@@ -2,16 +2,16 @@
 
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
-import { useTimeWindow, useVillageData, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { WALL_H } from '@/features/village/utils/room-geometry';
-import type { Cell } from '@/features/village/utils/village-model';
+import { timeWindowFor, worldModelFor, type Cell } from '@/features/village/utils/village-model';
 
 export function RoomOccupants({ cell, width, height }: { cell: Cell; width: number; height: number }) {
   const { slug, scrub, setTip } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { actors } = useWorldModel(payload, slug, asOf);
+  const { asOf } = timeWindowFor(payload, scrub);
+  const { actors } = worldModelFor(payload, slug, asOf);
   const here = actors.filter(a => a.cellId === cell.id);
   if (here.length === 0) return null;
 

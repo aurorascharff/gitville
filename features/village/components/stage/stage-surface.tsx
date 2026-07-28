@@ -6,9 +6,9 @@ import { VillageHouse, VillageLamp } from '@/features/village/components/stage/h
 import { Player, travelTo } from '@/features/village/components/stage/player';
 import { VillageRoads } from '@/features/village/components/stage/roads';
 import { Villager } from '@/features/village/components/stage/villager';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import { WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
+import { timeWindowFor, WORLD_H, worldModelFor, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {
@@ -20,8 +20,8 @@ function lampSpots(cells: Cell[]): { x: number; y: number }[] {
 export function VillageStageSurface({ terrain, sky }: { terrain: ReactNode; sky: ReactNode }) {
   const { slug, scrub, focusId, zoom } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { cells, placed, occupied } = useWorldModel(payload, slug, asOf);
+  const { asOf } = timeWindowFor(payload, scrub);
+  const { cells, placed, occupied } = worldModelFor(payload, slug, asOf);
   const worldRef = useRef<HTMLDivElement>(null);
 
   const lamps = lampSpots(cells);

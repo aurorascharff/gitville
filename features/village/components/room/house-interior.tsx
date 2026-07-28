@@ -18,7 +18,7 @@ import {
   WINDOW,
 } from '@/features/village/components/shared/pixel-sprite';
 import { useViewport, type Viewport } from '@/features/village/hooks/use-viewport';
-import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import {
   backdropFor,
@@ -36,15 +36,15 @@ import {
   wallClass,
   type Build,
 } from '@/features/village/utils/room-geometry';
-import { roomFor, type Cell } from '@/features/village/utils/village-model';
+import { roomFor, timeWindowFor, worldModelFor, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { RoomNote } from '@/types/github';
 
 export function HouseInterior() {
   const { slug, scrub, focusId, setFocusId, aiOn, setAiOn } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { cells } = useWorldModel(payload, slug, asOf);
+  const { asOf } = timeWindowFor(payload, scrub);
+  const { cells } = worldModelFor(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTargetRef = useRef<{ x: number; y: number } | null>(null);
   const viewport = useViewport();
@@ -221,8 +221,8 @@ function InteriorScene({
 function WallNotes({ cell, ai }: { cell: Cell; ai: boolean }) {
   const { slug, scrub } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { asOf } = useTimeWindow(payload, scrub);
-  const { cells } = useWorldModel(payload, slug, asOf);
+  const { asOf } = timeWindowFor(payload, scrub);
+  const { cells } = worldModelFor(payload, slug, asOf);
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const outdoors = cell.kind === 'issue' || cell.kind === 'inbox';
 

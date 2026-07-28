@@ -5,8 +5,9 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import { clampZoom } from '@/features/village/components/stage/player';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import { villageKey } from '@/types/github';
 import type { ReactNode } from 'react';
@@ -42,8 +43,8 @@ export function VillageBusy() {
 export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
   const { slug, scrub, focusId } = useVillageUi();
   const { payload, stale } = useVillageData(slug);
-  const { asOf, live } = useTimeWindow(payload, scrub);
-  const { actors } = useWorldModel(payload, slug, asOf);
+  const { asOf, live } = timeWindowFor(payload, scrub);
+  const { actors } = worldModelFor(payload, slug, asOf);
 
   if (focusId) return null;
 

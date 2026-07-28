@@ -6,7 +6,7 @@ import { BARRIER, PixelSprite } from '@/features/village/components/shared/pixel
 import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { wallClass } from '@/features/village/utils/room-geometry';
-import { pickedPrs, type Cell } from '@/features/village/utils/village-model';
+import { pickedPrs, prStackForCell, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 export function HouseSign({
@@ -24,45 +24,7 @@ export function HouseSign({
   const { payload } = useVillageData(slug);
   const { spec } = useRoomSpec(slug, cell.id, ai);
 
-  const prs = payload.prs;
-  const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
-  let stack: typeof prs = [];
-  if (me) {
-    const trunk = payload.defaultBranch;
-    const linked = (p: (typeof prs)[number]) =>
-      prs.filter(
-        q =>
-          q.number !== p.number &&
-          ((p.baseRef !== trunk && q.branch === p.baseRef) || (q.baseRef !== trunk && q.baseRef === p.branch)),
-      );
-    const seen = new Set([me.number]);
-    const comp = [me];
-    for (let i = 0; i < comp.length; i++) {
-      for (const nb of linked(comp[i])) {
-        if (!seen.has(nb.number)) {
-          seen.add(nb.number);
-          comp.push(nb);
-        }
-      }
-    }
-    const depth = (p: (typeof prs)[number]) => {
-      let d = 0;
-      let cur = p;
-      const guard = new Set([p.number]);
-      for (;;) {
-        const parent = comp.find(q => q.branch === cur.baseRef);
-        if (!parent || guard.has(parent.number)) break;
-        guard.add(parent.number);
-        cur = parent;
-        d++;
-      }
-      return d;
-    };
-    stack = comp.slice().sort((a, b) => depth(b) - depth(a) || b.number - a.number);
-  }
-
-  const idx = stack.findIndex(p => `pr:${p.number}` === cell.id);
-  const floorNo = idx >= 0 ? stack.length - idx : 1;
+  const { stack, floorNo } = prStackForCell(payload, cell);
   const isPr = cell.kind === 'pr';
   const desc = cell.sub || spec?.title;
   const chip =
