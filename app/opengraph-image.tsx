@@ -71,7 +71,7 @@ export default async function OpengraphImage() {
         }}
       >
         <span style={{ fontSize: 30, color: '#ffffff' }}>
-          your repo as a tiny village. real people, real commits, live.
+          Explore any GitHub repo as a living pixel village.
         </span>
       </div>
 

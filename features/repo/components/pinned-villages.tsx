@@ -94,7 +94,6 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
     <li className={top ? 'self-start' : 'self-end'}>
       <Link
         href={`/${repo.slug}` as Route}
-        prefetch
         className="group flex h-36 flex-col items-center justify-end text-center transition-transform hover:-translate-y-1"
       >
         <span className="pixel relative flex min-h-20 items-end justify-center">

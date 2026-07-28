@@ -9,7 +9,7 @@ export function HomeHeader() {
         <h1 className="font-pixel text-2xl font-bold tracking-tight text-[#3a2f22]">Gitville</h1>
       </Plaque>
       <p className="font-pixel max-w-md rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">
-        your repo as a tiny village. real people, real commits, live.
+        Explore any GitHub repo as a living pixel village.
       </p>
     </header>
   );

@@ -27,8 +27,6 @@ import { formatStars } from '@/lib/utils';
 import { villageKey, type RepoData } from '@/types/github';
 import type { Route } from 'next';
 
-export const prefetch = 'allow-runtime';
-
 export async function generateMetadata({ params }: PageProps<'/[owner]/[name]'>) {
   const { owner, name } = await params;
   return { title: `${owner}/${name}` };
@@ -85,7 +83,6 @@ function VillageHomeLink({ repo }: { repo: RepoData }) {
   return (
     <Link
       href={'/' as Route}
-      prefetch
       aria-label={`Exit ${repo.name} and return to the repo road`}
       title="Exit"
       className="panel flex h-11 max-w-56 items-center gap-2 rounded-sm px-3 text-[15px] font-bold transition-transform hover:-translate-y-0.5"

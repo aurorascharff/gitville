@@ -5,8 +5,6 @@ import { SourceLink } from '@/features/home/components/source-link';
 import { PinnedVillages, PinnedVillagesSkeleton } from '@/features/repo/components/pinned-villages';
 import { WatchForm } from '@/features/repo/components/watch-form';
 
-export const prefetch = 'allow-runtime';
-
 export default function HomePage() {
   return (
     <div
