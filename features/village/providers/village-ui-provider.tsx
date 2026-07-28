@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
 
@@ -37,22 +37,43 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
   const [buzzOpen, setBuzzOpenState] = useState(false);
   const [peopleOpen, setPeopleOpenState] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
-
   const searchParams = useSearchParams();
-  const focusId = searchParams.get('house');
-  const aiOn = searchParams.get('ai') === '1';
-  const setFocusId = (id: string | null) => {
+  const [focusId, setFocusIdState] = useState(() => searchParams.get('house'));
+  const [aiCellId, setAiCellId] = useState<string | null>(() =>
+    searchParams.get('ai') === '1' ? searchParams.get('house') : null,
+  );
+  const aiOn = Boolean(focusId && aiCellId === focusId);
+
+  useEffect(() => {
+    const syncUrlState = () => {
+      const url = new URL(window.location.href);
+      const nextFocusId = url.searchParams.get('house');
+      setFocusIdState(nextFocusId);
+      setAiCellId(url.searchParams.get('ai') === '1' ? nextFocusId : null);
+    };
+    window.addEventListener('popstate', syncUrlState);
+    return () => window.removeEventListener('popstate', syncUrlState);
+  }, []);
+
+  const writeUrlState = (nextFocusId: string | null, nextAiOn: boolean) => {
     const url = new URL(window.location.href);
-    if (id) url.searchParams.set('house', id);
+    if (nextFocusId) url.searchParams.set('house', nextFocusId);
     else url.searchParams.delete('house');
-    url.searchParams.delete('ai');
-    window.history.pushState(null, '', url);
-  };
-  const setAiOn = (on: boolean) => {
-    const url = new URL(window.location.href);
-    if (on) url.searchParams.set('ai', '1');
+    if (nextAiOn && nextFocusId) url.searchParams.set('ai', '1');
     else url.searchParams.delete('ai');
     window.history.pushState(null, '', url);
+  };
+
+  const setFocusId = (id: string | null) => {
+    setFocusIdState(id);
+    setAiCellId(null);
+    writeUrlState(id, false);
+  };
+
+  const setAiOn = (on: boolean) => {
+    if (!focusId) return;
+    setAiCellId(on ? focusId : null);
+    writeUrlState(focusId, on);
   };
 
   return (

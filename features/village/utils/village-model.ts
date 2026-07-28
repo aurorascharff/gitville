@@ -3,6 +3,7 @@ import type { RepoData, VersionChannel, VillagePayload, VillagePerson, WireEvent
 
 export const WORLD_W = 3500;
 export const WORLD_H = 3000;
+export const TOWN_EXIT = { x: 72, y: WORLD_H / 2 + 170 };
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
 
@@ -418,7 +419,7 @@ export function buildCells(
     id: 'inbox',
     kind: 'inbox',
     label: 'town square',
-    sub: 'passing through',
+    sub: 'unplaced repo activity',
     url: `https://github.com/${slug}/issues`,
     ...squarePos,
   });

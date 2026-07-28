@@ -11,23 +11,29 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   const { slug } = useVillageUi();
   const { spec, aiPending } = useRoomSpec(slug, cell.id, ai);
   const working = aiPending;
+  const generated = Boolean(ai && spec?.ai);
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working
     ? 'Working on this room. You can come back later.'
-    : ai
-      ? spec?.ai
-        ? `Showing ${spec.theme}`
-        : 'Showing the AI-built scene'
-      : 'Generate a themed room from the real commits.';
+    : generated
+      ? `Showing ${spec?.theme ?? 'the AI scene'}`
+      : ai
+        ? 'Could not finish this room yet. Press G to return to the plain room.'
+        : 'Generate a themed room from the real commits.';
+  const title = generated ? 'AI scene ready' : working ? 'Drawing with AI' : 'Draw with AI';
 
   return (
     <aside className="absolute top-4 right-4 z-50 w-72">
       <button
         type="button"
-        onClick={() => onToggle(!ai)}
+        onClick={() => {
+          if (!ai) onToggle(true);
+          else if (!working && !generated) onToggle(false);
+        }}
         role="switch"
         aria-checked={ai}
+        aria-disabled={working || generated}
         aria-keyshortcuts="G"
         aria-label="Visualize this room with AI"
         className={cn(
@@ -55,7 +61,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-1.5 text-[16px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
               <WandSparkles size={14} strokeWidth={3} />
-              Draw with AI
+              {title}
               <KeyHint>G</KeyHint>
             </span>
             <span className="block max-w-72 text-[14px] leading-snug text-[#6b5b43]">{status}</span>

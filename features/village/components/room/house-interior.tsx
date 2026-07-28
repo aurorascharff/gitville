@@ -118,12 +118,13 @@ function InteriorScene({
       }
       if (key === 'g' && (scene.spec?.aiAvailable || scene.aiPending)) {
         e.preventDefault();
-        setAiOn(!ai);
+        if (!ai) setAiOn(true);
+        else if (!scene.aiPending && !scene.spec?.ai) setAiOn(false);
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [ai, scene.aiPending, scene.spec?.aiAvailable, setAiOn]);
+  }, [ai, scene.aiPending, scene.spec?.ai, scene.spec?.aiAvailable, setAiOn]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

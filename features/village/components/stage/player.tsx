@@ -1,8 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import { WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
+import { TOWN_EXIT, WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 
 type TravelDetail = { x: number; y: number; cellId?: string };
 
@@ -30,6 +31,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.RefObject<HTMLDivElement | null> }) {
   const { focusId, setFocusId, zoom, setZoom } = useVillageUi();
+  const router = useRouter();
   const zoomRef = useRef(zoom);
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     dir: 1,
     follow: true,
     anchor: null as { sx: number; sy: number } | null,
+    leavingTown: false,
   });
   const paused = useRef(false);
   const cellsRef = useRef(cells);
@@ -196,6 +199,10 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
         }
         if (dx !== 0) s.dir = dx > 0 ? 1 : -1;
         inner.current?.classList.add('sprite-bob');
+        if (!s.leavingTown && s.x <= TOWN_EXIT.x + 20 && Math.abs(s.y - TOWN_EXIT.y) < 76) {
+          s.leavingTown = true;
+          router.push('/');
+        }
       } else {
         inner.current?.classList.remove('sprite-bob');
       }
@@ -211,7 +218,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
       window.removeEventListener('keyup', onKeyUp);
       stage?.removeEventListener('wheel', onWheel);
     };
-  }, [setFocusId, setZoom, worldRef]);
+  }, [router, setFocusId, setZoom, worldRef]);
 
   return (
     <div

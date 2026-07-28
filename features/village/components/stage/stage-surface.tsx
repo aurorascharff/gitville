@@ -8,7 +8,14 @@ import { VillageRoads } from '@/features/village/components/stage/roads';
 import { Villager } from '@/features/village/components/stage/villager';
 import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import { timeWindowFor, WORLD_H, worldModelFor, WORLD_W, type Cell } from '@/features/village/utils/village-model';
+import {
+  timeWindowFor,
+  TOWN_EXIT,
+  WORLD_H,
+  worldModelFor,
+  WORLD_W,
+  type Cell,
+} from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
 
@@ -50,6 +57,7 @@ export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode
         }}
       >
         {terrain}
+        <TownExitGate />
         <VillageRoads cells={cells} />
 
         {lamps.map((l, i) => (
@@ -69,5 +77,26 @@ export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode
       </div>
       {sky}
     </div>
+  );
+}
+
+function TownExitGate() {
+  return (
+    <button
+      type="button"
+      data-stop-walk
+      onClick={() => travelTo(TOWN_EXIT)}
+      className="pixel absolute z-10 cursor-pointer text-left transition-transform hover:-translate-y-1"
+      style={{ left: TOWN_EXIT.x - 56, top: TOWN_EXIT.y - 118 }}
+      aria-label="Walk to the road home"
+    >
+      <span className="absolute top-18 left-0 h-18 w-22 rounded-r-sm border-y-4 border-r-4 border-[#4a3826] bg-[#a5814e] shadow-[inset_-4px_0_0_rgb(255_255_255/0.16)]" />
+      <span className="absolute top-0 left-8 h-24 w-3 bg-[#5a3b24]" />
+      <span className="absolute top-4 left-0 rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] px-2 py-1 text-[12px] leading-4 font-bold whitespace-nowrap text-[#3a2f22] shadow-[3px_3px_0_rgb(0_0_0/0.28)]">
+        home road
+      </span>
+      <span className="absolute top-30 left-16 h-8 w-2 rounded-sm bg-[#d8bb7a]" />
+      <span className="absolute top-40 left-10 h-8 w-2 rounded-sm bg-[#d8bb7a]" />
+    </button>
   );
 }

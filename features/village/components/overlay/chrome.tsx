@@ -27,7 +27,7 @@ export function VillageBusy() {
           the village is resting
         </p>
         <p className="max-w-xs text-[14px] leading-snug text-[#6b5b43]">
-          GitHub is rate limiting us right now. Switch villages from the picker, or come back in a minute.
+          GitHub is rate limiting us right now. Head back to the road, or come back in a minute.
         </p>
         <button
           type="button"
@@ -41,7 +41,7 @@ export function VillageBusy() {
   );
 }
 
-export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
+export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
   const { slug, scrub, focusId } = useVillageUi();
   const { payload, stale } = useVillageData(slug);
   const { asOf, live } = timeWindowFor(payload, scrub);
@@ -51,7 +51,7 @@ export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
 
   return (
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
-      {repoSwitcher}
+      {repoNav}
       {payload.ok ? (
         <p className="flex h-6 items-center gap-2 px-1 text-[14px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
           <span

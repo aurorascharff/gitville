@@ -15,7 +15,7 @@ export default function HomePage() {
     >
       <div aria-hidden className="village-vignette absolute inset-0" />
       <HomeScenery />
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col items-center justify-center gap-8 px-4 py-14">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 py-14">
         <HomeHeader />
         <Suspense fallback={<PinnedVillagesSkeleton />}>
           <PinnedVillages />

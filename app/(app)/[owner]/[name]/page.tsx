@@ -1,8 +1,9 @@
-import { Star } from 'lucide-react';
+import { Home, Star } from 'lucide-react';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { preload, SWRConfig } from 'swr';
-import { RepoSwitcher, RepoSwitcherSkeleton } from '@/features/repo/components/repo-switcher';
+import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { getRepoData } from '@/features/repo/repo-queries';
 import { BuzzPanel, PeoplePanel } from '@/features/village/components/overlay/buzz-panel';
 import {
@@ -24,6 +25,7 @@ import { WORLD_H, WORLD_W } from '@/features/village/utils/village-model';
 import { getVillagePayload } from '@/features/village/village-queries';
 import { formatStars } from '@/lib/utils';
 import { villageKey, type RepoData } from '@/types/github';
+import type { Route } from 'next';
 
 export const prefetch = 'allow-runtime';
 
@@ -65,13 +67,7 @@ async function Village({ slug }: { slug: string }) {
             sky={<VillageSky />}
           />
           <VillageBusy />
-          <VillageStatus
-            repoSwitcher={
-              <Suspense fallback={<RepoSwitcherSkeleton repo={repo} />}>
-                <RepoSwitcher repo={repo} />
-              </Suspense>
-            }
-          />
+          <VillageStatus repoNav={<VillageHomeLink repo={repo} />} />
           <VillageControls repoLink={<VillageRepoLink repo={repo} />} />
           <BuzzPanel />
           <PeoplePanel />
@@ -83,6 +79,24 @@ async function Village({ slug }: { slug: string }) {
         </div>
       </VillageUiProvider>
     </SWRConfig>
+  );
+}
+
+function VillageHomeLink({ repo }: { repo: RepoData }) {
+  return (
+    <Link
+      href={'/' as Route}
+      prefetch
+      aria-label={`Exit ${repo.name} and return to the repo road`}
+      className="panel flex h-11 items-center gap-2.5 rounded-sm px-3 text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+    >
+      <Home size={15} strokeWidth={3} />
+      <RepoAvatar src={repo.ownerAvatar} name={repo.owner} size={20} className="rounded-full" />
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="text-[12px] font-bold text-[#8a6d2a] uppercase">Exit to road</span>
+        <span className="max-w-44 truncate text-sm font-semibold">{repo.name}</span>
+      </span>
+    </Link>
   );
 }
 

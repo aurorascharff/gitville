@@ -71,7 +71,7 @@ export function VillageHelp() {
               palette={WELL.palette}
               scale={3}
               title="The well"
-              text="The town square. People end up here when their latest work points somewhere else."
+              text="The town square. GitHub comments and reviews collect here when they do not map to a visible building."
             />
             <LegendRow
               art={FURNITURE[1].art}
@@ -121,7 +121,7 @@ export function VillageHelp() {
             </div>
             <div className="flex items-center gap-3">
               <Key>G</Key>
-              <span>Toggle Draw with AI inside a room</span>
+              <span>Start Draw with AI inside a room</span>
             </div>
             <div className="flex items-center gap-3">
               <Key>I</Key>
@@ -130,6 +130,10 @@ export function VillageHelp() {
             <div className="flex items-center gap-3">
               <Key wide>Esc</Key>
               <span>Close panels or leave a room</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Key>←</Key>
+              <span>Walk to the home road at the town edge</span>
             </div>
           </div>
 
