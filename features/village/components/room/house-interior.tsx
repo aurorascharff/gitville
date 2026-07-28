@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import type { RoomNote } from '@/types/github';
 
 export function HouseInterior() {
-  const { slug, scrub, focusId, setFocusId, aiOn, setAiOn } = useVillageUi();
+  const { slug, scrub, focusId, setFocusId, aiOn, setAiOn, setAiRoomDecor } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = timeWindowFor(payload, scrub);
   const { cells } = worldModelFor(payload, slug, asOf);
@@ -53,13 +53,14 @@ export function HouseInterior() {
     walkTargetRef.current = null;
   }, [focusId]);
 
-  if (!cell) return null;
+  if (!cell || !viewport.ready) return null;
 
   return (
     <InteriorScene
       cell={cell}
       ai={aiOn}
       setAiOn={setAiOn}
+      setAiRoomDecor={setAiRoomDecor}
       setFocusId={setFocusId}
       viewport={viewport}
       walkTargetRef={walkTargetRef}
@@ -71,6 +72,7 @@ function InteriorScene({
   cell,
   ai,
   setAiOn,
+  setAiRoomDecor,
   setFocusId,
   viewport,
   walkTargetRef,
@@ -78,6 +80,7 @@ function InteriorScene({
   cell: Cell;
   ai: boolean;
   setAiOn: (on: boolean) => void;
+  setAiRoomDecor: (cellId: string, decor: { theme: string; title: string | null }) => void;
   setFocusId: (id: string | null) => void;
   viewport: Viewport;
   walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
@@ -109,6 +112,11 @@ function InteriorScene({
   }, [inspectIndex]);
 
   useEffect(() => {
+    if (!ai || !spec?.ai) return;
+    setAiRoomDecor(cell.id, { theme: spec.theme, title: spec.title ?? cell.sub ?? null });
+  }, [ai, cell.id, cell.sub, spec?.ai, spec?.theme, spec?.title, setAiRoomDecor]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a')) return;
       const key = e.key.toLowerCase();
@@ -119,7 +127,6 @@ function InteriorScene({
       if (key === 'g' && (scene.spec?.aiAvailable || scene.aiPending)) {
         e.preventDefault();
         if (!ai) setAiOn(true);
-        else if (!scene.aiPending && !scene.spec?.ai) setAiOn(false);
       }
     }
     document.addEventListener('keydown', onKey);
@@ -202,7 +209,7 @@ function InteriorScene({
         />
         {ai && (spec?.ai || scene.aiPending) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-            {spec?.ai ? spec.theme : 'AI at work…'}
+            {spec?.ai ? spec.theme : 'carpenter painting…'}
           </span>
         ) : null}
       </div>
@@ -451,7 +458,7 @@ function Furniture({
           onClick={onInspect}
           aria-label={`Look closer at ${name}`}
           className={cn(
-            'font-pixel mb-1 cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-1.5 py-0.5 text-[10px] font-bold text-[#3a2f22] shadow transition-opacity',
+            'font-pixel mb-1 cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22] shadow transition-opacity',
             near ? 'animate-bounce opacity-100' : 'pointer-events-none opacity-0',
           )}
         >
@@ -470,20 +477,33 @@ function Furniture({
                 tabIndex={-1}
                 data-stop-walk
                 aria-label={`View commit: ${commit.message.split('\n')[0]}`}
-                className="cursor-pointer"
+                className="flex cursor-pointer flex-col items-center"
                 style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
               >
                 <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
+                <CommitAuthor author={commit.author} />
               </a>
             );
           })}
         </span>
         <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
-        <span className="font-pixel mt-0.5 block max-w-28 truncate rounded-sm bg-black/45 px-1 text-[11px] leading-4 text-white/90">
+        <span className="font-pixel mt-1 block max-w-36 truncate rounded-sm bg-black/50 px-1.5 text-[12px] leading-5 text-white/95">
           {name}
         </span>
       </div>
     </div>
+  );
+}
+
+function CommitAuthor({ author }: { author: string }) {
+  const initial = author.trim().charAt(0).toUpperCase() || '?';
+  return (
+    <span className="mt-1 flex max-w-28 items-center gap-1 rounded-sm bg-black/55 px-1.5 py-0.5 text-[12px] leading-4 font-bold text-white/95 shadow-[1px_1px_0_rgb(0_0_0/0.25)]">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] bg-[#d8c9a8] text-[10px] leading-none text-[#3a2f22]">
+        {initial}
+      </span>
+      <span className="min-w-0 truncate">{author}</span>
+    </span>
   );
 }
 

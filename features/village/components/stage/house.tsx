@@ -35,7 +35,7 @@ function stateLine(cell: Cell): string | null {
 }
 
 export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
-  const { slug, focusId, nearCellId, setFocusId, setTip } = useVillageUi();
+  const { slug, focusId, nearCellId, aiCellIds, aiRoomDecor, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
   const near = nearCellId === cell.id;
   const awake = lit || near;
@@ -44,11 +44,15 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
   const palette = housePalette(roof, roofShade, awake);
   const state = stateLine(cell);
   const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
-  const { data: aiSpec } = useSWR<RoomSpecPayload>(cell.kind === 'pr' ? roomSpecKey(slug, cell.id, true) : null, null, {
+  const { data: aiSpec } = useSWR<RoomSpecPayload>(roomSpecKey(slug, cell.id, true), null, {
     revalidateIfStale: false,
     revalidateOnFocus: false,
     revalidateOnMount: false,
   });
+  const aiDecor =
+    aiRoomDecor[cell.id] ?? (aiSpec?.ok && aiSpec.ai ? { theme: aiSpec.theme, title: aiSpec.title ?? cell.sub } : null);
+  const canDecorate = cell.kind !== 'inbox';
+  const aiPending = aiCellIds.has(cell.id) && !aiDecor;
 
   return (
     <button
@@ -98,7 +102,9 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         {main && cell.versions?.length ? <TownHallBanners cell={cell} /> : null}
         {cell.kind === 'pr' && cell.stale ? <Moss /> : null}
         {cell.kind === 'pr' && cell.checkState ? <CheckFlag state={cell.checkState} /> : null}
-        {aiSpec?.ok && aiSpec.ai ? <AiExteriorDecor theme={aiSpec.theme} title={aiSpec.title ?? cell.sub} /> : null}
+        {canDecorate ? (
+          <AiExteriorDecor theme={aiDecor?.theme ?? null} title={aiDecor?.title ?? cell.sub} pending={aiPending} />
+        ) : null}
         {cell.kind === 'pr' && cell.prState === 'ready' && (cell.floors ?? 1) === 1 && lit ? <ChimneySmoke /> : null}
 
         {cell.kind === 'inbox' ? (
@@ -158,35 +164,47 @@ function EnterHint() {
   );
 }
 
-function AiExteriorDecor({ theme, title }: { theme: string; title: string | null }) {
+function AiExteriorDecor({ theme, title, pending }: { theme: string | null; title: string | null; pending: boolean }) {
   const { setTip } = useVillageUi();
+  const generated = Boolean(theme);
+  const unfinished = pending && !generated;
   const text = `${theme} ${title ?? ''}`;
-  const kind = /test|lab|root|detect|debug|trace|verify|check/i.test(text)
-    ? 'lab'
-    : /design|css|ui|style|paint|theme/i.test(text)
-      ? 'studio'
-      : /cache|perf|speed|turbo|build|compile/i.test(text)
-        ? 'machine'
-        : 'garden';
-  const label =
-    kind === 'lab'
+  const release = /canary|preview|stable|release|version|tag|ship/i.test(text);
+  const kind = release
+    ? 'studio'
+    : /test|lab|root|detect|debug|trace|verify|check/i.test(text)
+      ? 'lab'
+      : /design|css|ui|style|paint|theme/i.test(text)
+        ? 'studio'
+        : /cache|perf|speed|turbo|build|compile/i.test(text)
+          ? 'machine'
+          : 'garden';
+  const label = release
+    ? 'release studio'
+    : kind === 'lab'
       ? 'detection lab'
       : kind === 'studio'
         ? 'design studio'
         : kind === 'machine'
           ? 'machine shop'
-          : 'AI garden';
+          : 'painted garden';
 
   return (
     <span
-      title={label}
+      title={generated ? label : unfinished ? 'painting in progress' : 'blank canvas'}
       onMouseMove={e => {
         e.stopPropagation();
         setTip({
           x: e.clientX,
           y: e.clientY,
-          title: label,
-          body: `AI decorated this house from the cached "${theme}" room.`,
+          title: generated ? label : unfinished ? 'painting in progress' : 'blank canvas',
+          body: generated
+            ? title
+              ? `The carpenter painted this house into ${label}: ${title}.`
+              : `The carpenter painted this house into ${label}.`
+            : unfinished
+              ? 'The carpenter is redesigning this room.'
+              : 'Go inside to paint this sign.',
           when: null,
         });
       }}
@@ -196,7 +214,11 @@ function AiExteriorDecor({ theme, title }: { theme: string; title: string | null
       }}
       className="absolute -right-11 bottom-13 z-10 flex items-end"
     >
-      {kind === 'lab' ? (
+      {unfinished ? (
+        <PaintSign pending />
+      ) : !generated ? (
+        <PaintSign blank />
+      ) : kind === 'lab' ? (
         <LabSign />
       ) : kind === 'studio' ? (
         <PaintSign />
@@ -222,14 +244,27 @@ function LabSign() {
   );
 }
 
-function PaintSign() {
+function PaintSign({ blank = false, pending = false }: { blank?: boolean; pending?: boolean }) {
   return (
     <span className="pixel relative block h-10 w-10">
       <span className="absolute bottom-0 left-5 h-6 w-1 bg-[#4a3826]" />
       <span className="absolute top-0 left-1 h-6 w-8 border-2 border-[#2e2418] bg-[#f7efdc] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
-        <span className="absolute top-1 left-1 h-2 w-2 bg-[#c85b5b]" />
-        <span className="absolute top-1 left-4 h-2 w-2 bg-[#3b6bff]" />
-        <span className="absolute top-3 left-2 h-2 w-4 bg-[#58a55c]" />
+        {pending ? (
+          <>
+            <span className="absolute top-1 bottom-1 left-1 w-3 bg-[#e4c05a]" />
+            <span className="absolute top-1 left-4 h-2 w-2 bg-[#58a55c]" />
+            <span className="absolute right-1 bottom-1 h-2 w-2 bg-[#d8c9a8]" />
+            <span className="font-pixel absolute top-0 right-1 text-[10px] leading-3 font-bold text-[#8a4a2b]">?</span>
+          </>
+        ) : blank ? (
+          <span className="absolute inset-1 border border-[#d8c9a8] bg-[#fff8e8]" />
+        ) : (
+          <>
+            <span className="absolute top-1 left-1 h-2 w-2 bg-[#c85b5b]" />
+            <span className="absolute top-1 left-4 h-2 w-2 bg-[#3b6bff]" />
+            <span className="absolute top-3 left-2 h-2 w-4 bg-[#58a55c]" />
+          </>
+        )}
       </span>
     </span>
   );

@@ -1,4 +1,11 @@
-import { BARREL, CHEST, FIREPLACE, TABLE_LONG, WELL, WORKBENCH } from '@/features/village/components/shared/pixel-sprite';
+import {
+  BARREL,
+  CHEST,
+  FIREPLACE,
+  TABLE_LONG,
+  WELL,
+  WORKBENCH,
+} from '@/features/village/components/shared/pixel-sprite';
 import type { RoomSpecItem } from '@/features/village/hooks/use-village-data';
 import type { Cell } from '@/features/village/utils/village-model';
 import { hashString } from '@/lib/utils';
@@ -111,11 +118,11 @@ export function pieceScale(build: Build): number {
 }
 
 export function sizeScale(commit: BranchCommit): number {
-  if (commit.size >= 600) return 7;
-  if (commit.size >= 200) return 6;
-  if (commit.size >= 50) return 5;
-  if (commit.size > 0) return 4;
-  return 5;
+  if (commit.size >= 600) return 8;
+  if (commit.size >= 200) return 7;
+  if (commit.size >= 50) return 6;
+  if (commit.size > 0) return 5;
+  return 6;
 }
 
 function buildWidth(build: Build): number {

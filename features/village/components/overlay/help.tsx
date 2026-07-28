@@ -109,10 +109,8 @@ export function VillageHelp() {
               <span>Click the ground to walk there</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex gap-1">
-                <Key>+</Key>
-                <Key>-</Key>
-              </span>
+              <KeyCombo keys={['⌘', '+']} />
+              <KeyCombo keys={['⌘', '-']} />
               <span>Zoom the village while walking</span>
             </div>
             <div className="flex items-center gap-3">
@@ -121,7 +119,7 @@ export function VillageHelp() {
             </div>
             <div className="flex items-center gap-3">
               <Key>G</Key>
-              <span>Start Draw with AI inside a room</span>
+              <span>Ask the carpenter to redesign a room</span>
             </div>
             <div className="flex items-center gap-3">
               <Key>I</Key>
@@ -133,7 +131,7 @@ export function VillageHelp() {
             </div>
             <div className="flex items-center gap-3">
               <Key>←</Key>
-              <span>Walk to the home road at the town edge</span>
+              <span>Town edge returns home</span>
             </div>
           </div>
 
@@ -141,12 +139,11 @@ export function VillageHelp() {
             Inside a stacked house the sign lists every floor. Click one to visit that PR.
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-            <span className="font-bold text-[#3a2f22]">Draw with AI</span> rebuilds a room from its real commits, one
-            invented machine per piece of work. If it is still working, you can leave and come back later.
+            <span className="font-bold text-[#3a2f22]">Redesign room</span> gives the carpenter the real commits as
+            building plans.
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-            AI-decorated rooms can leave a small themed sign outside the house. The village only shows this for rooms
-            already cached from a visit or generation.
+            Blank canvases outside houses fill in when the carpenter paints a room.
           </div>
           <div className="mt-auto border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
             Made by{' '}
@@ -184,6 +181,16 @@ function Key({ children, wide }: { children: React.ReactNode; wide?: boolean }) 
     >
       {children}
     </kbd>
+  );
+}
+
+function KeyCombo({ keys }: { keys: string[] }) {
+  return (
+    <span className="flex items-center gap-1">
+      {keys.map(key => (
+        <Key key={key}>{key}</Key>
+      ))}
+    </span>
   );
 }
 

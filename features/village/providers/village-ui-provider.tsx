@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
+type AiRoomDecor = { theme: string; title: string | null };
 
 type VillageUi = {
   slug: string;
@@ -21,6 +22,9 @@ type VillageUi = {
   setNearCellId: (id: string | null) => void;
   aiOn: boolean;
   setAiOn: (on: boolean) => void;
+  aiCellIds: ReadonlySet<string>;
+  aiRoomDecor: Record<string, AiRoomDecor>;
+  setAiRoomDecor: (cellId: string, decor: AiRoomDecor) => void;
   tip: Tooltip | null;
   setTip: (t: Tooltip | null) => void;
 };
@@ -40,43 +44,53 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
   const [peopleOpen, setPeopleOpenState] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
   const [nearCellId, setNearCellId] = useState<string | null>(null);
+  const [aiRoomDecor, setAiRoomDecorState] = useState<Record<string, AiRoomDecor>>({});
   const searchParams = useSearchParams();
   const [focusId, setFocusIdState] = useState(() => searchParams.get('house'));
-  const [aiCellId, setAiCellId] = useState<string | null>(() =>
-    searchParams.get('ai') === '1' ? searchParams.get('house') : null,
-  );
-  const aiOn = Boolean(focusId && aiCellId === focusId);
+  const [aiCellIds, setAiCellIds] = useState<Set<string>>(() => {
+    const house = searchParams.get('house');
+    return searchParams.get('ai') === '1' && house ? new Set([house]) : new Set();
+  });
+  const aiOn = Boolean(focusId && aiCellIds.has(focusId));
 
   useEffect(() => {
     const syncUrlState = () => {
       const url = new URL(window.location.href);
       const nextFocusId = url.searchParams.get('house');
       setFocusIdState(nextFocusId);
-      setAiCellId(url.searchParams.get('ai') === '1' ? nextFocusId : null);
+      if (url.searchParams.get('ai') === '1' && nextFocusId) {
+        setAiCellIds(ids => new Set(ids).add(nextFocusId));
+      }
     };
     window.addEventListener('popstate', syncUrlState);
     return () => window.removeEventListener('popstate', syncUrlState);
   }, []);
 
-  const writeUrlState = (nextFocusId: string | null, nextAiOn: boolean) => {
+  const writeUrlState = (nextFocusId: string | null) => {
     const url = new URL(window.location.href);
     if (nextFocusId) url.searchParams.set('house', nextFocusId);
     else url.searchParams.delete('house');
-    if (nextAiOn && nextFocusId) url.searchParams.set('ai', '1');
-    else url.searchParams.delete('ai');
+    url.searchParams.delete('ai');
     window.history.pushState(null, '', url);
   };
 
   const setFocusId = (id: string | null) => {
     setFocusIdState(id);
-    setAiCellId(null);
-    writeUrlState(id, false);
+    writeUrlState(id);
   };
 
   const setAiOn = (on: boolean) => {
-    if (!focusId) return;
-    setAiCellId(on ? focusId : null);
-    writeUrlState(focusId, on);
+    if (!focusId || !on) return;
+    setAiCellIds(ids => new Set(ids).add(focusId));
+    writeUrlState(focusId);
+  };
+
+  const setAiRoomDecor = (cellId: string, decor: AiRoomDecor) => {
+    setAiRoomDecorState(current => {
+      const previous = current[cellId];
+      if (previous?.theme === decor.theme && previous.title === decor.title) return current;
+      return { ...current, [cellId]: decor };
+    });
   };
 
   return (
@@ -97,6 +111,9 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
         setNearCellId,
         aiOn,
         setAiOn,
+        aiCellIds,
+        aiRoomDecor,
+        setAiRoomDecor,
         tip,
         setTip,
       }}

@@ -88,14 +88,12 @@ function VillageHomeLink({ repo }: { repo: RepoData }) {
       href={'/' as Route}
       prefetch
       aria-label={`Exit ${repo.name} and return to the repo road`}
-      className="panel flex h-11 items-center gap-2.5 rounded-sm px-3 text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+      title="Exit"
+      className="panel flex h-11 max-w-56 items-center gap-2 rounded-sm px-3 text-[15px] font-bold transition-transform hover:-translate-y-0.5"
     >
       <Home size={15} strokeWidth={3} />
       <RepoAvatar src={repo.ownerAvatar} name={repo.owner} size={20} className="rounded-full" />
-      <span className="flex min-w-0 flex-col leading-tight">
-        <span className="text-[12px] font-bold text-[#8a6d2a] uppercase">Exit to road</span>
-        <span className="max-w-44 truncate text-sm font-semibold">{repo.name}</span>
-      </span>
+      <span className="min-w-0 truncate text-sm font-semibold">{repo.name}</span>
     </Link>
   );
 }

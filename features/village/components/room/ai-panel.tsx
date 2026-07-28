@@ -15,13 +15,13 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working
-    ? 'Working on this room. You can come back later.'
+    ? 'The carpenter is redesigning this room.'
     : generated
-      ? `Showing ${spec?.theme ?? 'the AI scene'}`
+      ? `Painted as ${spec?.theme ?? 'a new room'}`
       : ai
-        ? 'Could not finish this room yet. Press G to return to the plain room.'
-        : 'Generate a themed room from the real commits.';
-  const title = generated ? 'AI scene ready' : working ? 'Drawing with AI' : 'Draw with AI';
+        ? 'The carpenter has the room plans.'
+        : 'Ask the carpenter to redraw this room.';
+  const title = generated ? 'Room redesigned' : ai ? 'Painting room' : 'Redesign room';
 
   return (
     <aside className="absolute top-4 right-4 z-50 w-72">
@@ -29,16 +29,16 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         type="button"
         onClick={() => {
           if (!ai) onToggle(true);
-          else if (!working && !generated) onToggle(false);
         }}
+        disabled={ai}
         role="switch"
         aria-checked={ai}
-        aria-disabled={working || generated}
         aria-keyshortcuts="G"
-        aria-label="Visualize this room with AI"
+        aria-label="Ask the carpenter to redesign this room"
         className={cn(
           'panel flex min-h-20 w-full cursor-pointer items-start gap-3 rounded-sm p-3 text-left transition-transform hover:-translate-y-0.5',
           ai && 'ring-2 ring-[#e4c05a]',
+          ai && 'cursor-default hover:translate-y-0',
         )}
       >
         <span className="pixel relative flex h-8 w-8 shrink-0 items-center justify-center">

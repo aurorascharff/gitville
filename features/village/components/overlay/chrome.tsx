@@ -84,17 +84,23 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
-            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            aria-keyshortcuts="Meta+- Control+-"
+            title="Zoom out (⌘−)"
+            className="panel flex h-9 w-12 cursor-pointer items-center justify-center gap-1 rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
-            -
+            <span aria-hidden>-</span>
+            <KeyPin>⌘−</KeyPin>
           </button>
           <button
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
-            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            aria-keyshortcuts="Meta+= Control+="
+            title="Zoom in (⌘+)"
+            className="panel flex h-9 w-12 cursor-pointer items-center justify-center gap-1 rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
-            +
+            <span aria-hidden>+</span>
+            <KeyPin>⌘+</KeyPin>
           </button>
           <button
             type="button"
@@ -128,6 +134,14 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
         </>
       ) : null}
     </div>
+  );
+}
+
+function KeyPin({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-pixel rounded-[2px] border border-[#4a3826] bg-[#f7efdc] px-0.5 text-[8px] leading-3 text-[#3a2f22]">
+      {children}
+    </span>
   );
 }
 
