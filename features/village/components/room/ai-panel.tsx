@@ -1,6 +1,6 @@
 'use client';
 
-import { CARPENTER, PixelSprite } from '@/features/village/components/pixel-sprite';
+import { CARPENTER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomSpec } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 
 export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
   const { slug } = useVillageUi();
-  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
-  const working = ai && loading;
+  const { spec, aiPending } = useRoomSpec(slug, cell.id, ai);
+  const working = aiPending;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working

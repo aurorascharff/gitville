@@ -7,7 +7,7 @@ import {
   ROOF,
   Sprite,
   TREE,
-} from '@/features/village/components/pixel-sprite';
+} from '@/features/village/components/shared/pixel-sprite';
 
 export function HomeScenery() {
   const cottage = housePalette(...ROOF.pr, true);

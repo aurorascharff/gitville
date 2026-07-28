@@ -13,9 +13,9 @@ import {
   ROOF,
   tentArt,
   WELL,
-} from '@/features/village/components/pixel-sprite';
-import { Placed } from '@/features/village/components/placed';
-import { travelTo } from '@/features/village/components/player';
+} from '@/features/village/components/shared/pixel-sprite';
+import { Placed } from '@/features/village/components/shared/placed';
+import { travelTo } from '@/features/village/components/stage/player';
 import { preloadRoomSpec } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';

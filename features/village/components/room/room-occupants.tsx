@@ -1,7 +1,7 @@
 'use client';
 
 import { AvatarImage } from '@/components/ui/avatar-image';
-import { KindBadge } from '@/features/village/components/pixel-sprite';
+import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
 import { WALL_H } from '@/features/village/room-geometry';
 import { useTimeWindow, useVillageData, useWorldModel } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';

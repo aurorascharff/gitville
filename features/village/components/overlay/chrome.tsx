@@ -1,13 +1,44 @@
 'use client';
 
-import { Star } from 'lucide-react';
+import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
-import { clampZoom } from '@/features/village/components/player';
+import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
+import { clampZoom } from '@/features/village/components/stage/player';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
 import { useVillageUi } from '@/features/village/village-ui-context';
-import { cn, formatStars } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { villageKey } from '@/types/github';
+import type { ReactNode } from 'react';
+
+export function VillageBusy() {
+  const { slug } = useVillageUi();
+  const { payload } = useVillageData(slug);
+  const { mutate } = useSWRConfig();
+  if (payload.ok) return null;
+
+  return (
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-[#24462c] dark:bg-[#0e1f14]">
+      <div aria-hidden className="village-vignette absolute inset-0" />
+      <div className="pixel relative flex flex-col items-center gap-4 px-6 text-center">
+        <PixelSprite art={cottageArt(1, false)} palette={housePalette(...ROOF.pr, true)} scale={5} />
+        <p className="font-pixel text-[18px] text-white drop-shadow-[0_2px_2px_rgb(0_0_0/0.6)]">
+          the village is resting
+        </p>
+        <p className="max-w-xs font-mono text-[13px] text-white/70">
+          GitHub is rate limiting us right now. Switch villages from the picker, or come back in a minute.
+        </p>
+        <button
+          onClick={() => mutate(villageKey(slug))}
+          className="panel font-pixel mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+        >
+          try again
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function VillageStatus() {
   const { slug, repo, pinned, scrub, focusId } = useVillageUi();
@@ -41,18 +72,11 @@ export function VillageStatus() {
   );
 }
 
-export function VillageControls() {
-  const { repo, buzzOpen, setBuzzOpen, focusId, setZoom } = useVillageUi();
+export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
+  const { buzzOpen, setBuzzOpen, focusId, setZoom } = useVillageUi();
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
-      <a
-        href={`https://github.com/${repo.slug}`}
-        target="_blank"
-        rel="noreferrer"
-        className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
-      >
-        <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
-      </a>
+      {repoLink}
       {!focusId ? (
         <>
           <button
@@ -60,7 +84,7 @@ export function VillageControls() {
             aria-label="Zoom out to see more of the village"
             className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
           >
-            −
+            -
           </button>
           <button
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}

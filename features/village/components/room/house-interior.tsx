@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { AiPanel } from '@/features/village/components/ai-panel';
-import { FurnitureCloseup } from '@/features/village/components/furniture-closeup';
-import { HouseSign } from '@/features/village/components/house-sign';
-import { InteriorPlayer } from '@/features/village/components/interior-player';
+import { AiPanel } from '@/features/village/components/room/ai-panel';
+import { FurnitureCloseup } from '@/features/village/components/room/furniture-closeup';
+import { HouseSign } from '@/features/village/components/room/house-sign';
+import { InteriorPlayer } from '@/features/village/components/room/interior-player';
+import { RoomOccupants } from '@/features/village/components/room/room-occupants';
 import {
   AI_ART_PALETTE,
   CAMPFIRE,
@@ -15,8 +16,7 @@ import {
   LOG_SEAT,
   PixelSprite,
   WINDOW,
-} from '@/features/village/components/pixel-sprite';
-import { RoomOccupants } from '@/features/village/components/room-occupants';
+} from '@/features/village/components/shared/pixel-sprite';
 import {
   backdropFor,
   centerpiece,
@@ -182,7 +182,7 @@ function InteriorScene({
           onNear={setNearIndex}
           frozenRef={frozenRef}
         />
-        {ai ? (
+        {ai && (spec?.ai || scene.aiPending) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
             {spec?.ai ? spec.theme : 'AI at work…'}
           </span>
@@ -281,6 +281,7 @@ function WallNotes({ cell, ai }: { cell: Cell; ai: boolean }) {
 type Scene = {
   spec: ReturnType<typeof useRoomSpec>['spec'];
   loading: boolean;
+  aiPending: boolean;
   campsite: boolean;
   builds: Build[];
   slots: { x: number; y: number }[];
@@ -290,7 +291,7 @@ type Scene = {
 
 function useRoomScene(cell: Cell, ai: boolean, width: number, height: number): Scene {
   const { slug } = useVillageUi();
-  const { spec, loading } = useRoomSpec(slug, cell.id, ai);
+  const { spec, loading, aiPending } = useRoomSpec(slug, cell.id, ai);
   const campsite = cell.kind === 'issue';
   const plaza = cell.kind === 'inbox';
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
@@ -302,7 +303,7 @@ function useRoomScene(cell: Cell, ai: boolean, width: number, height: number): S
   const anchor = campsite ? null : centerpiece(cell);
   const slots = aiScene ? composeScene(builds, width, floorH, hero) : layoutBuilds(builds, width, floorH);
 
-  return { spec, loading, campsite, builds, slots, hero, anchor };
+  return { spec, loading, aiPending, campsite, builds, slots, hero, anchor };
 }
 
 function Floor({

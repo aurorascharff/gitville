@@ -3,8 +3,8 @@
 import { ArrowUpRight } from 'lucide-react';
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { KindBadge } from '@/features/village/components/pixel-sprite';
-import { travelTo } from '@/features/village/components/player';
+import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
+import { travelTo } from '@/features/village/components/stage/player';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
 import { cellForEvent, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';

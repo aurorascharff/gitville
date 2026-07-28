@@ -1,4 +1,4 @@
-import { BARREL, CHEST, FIREPLACE, TABLE_LONG, WELL, WORKBENCH } from '@/features/village/components/pixel-sprite';
+import { BARREL, CHEST, FIREPLACE, TABLE_LONG, WELL, WORKBENCH } from '@/features/village/components/shared/pixel-sprite';
 import type { RoomSpecItem } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
 import { hashString } from '@/lib/utils';

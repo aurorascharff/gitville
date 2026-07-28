@@ -1,7 +1,7 @@
 'use client';
 
 import { catchError, type ErrorInfo } from 'next/error';
-import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
+import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 
 function SplashFallback(props: { title?: string }, { retry }: ErrorInfo) {
   return (

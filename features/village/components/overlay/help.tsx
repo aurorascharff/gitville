@@ -11,7 +11,7 @@ import {
   ROOF,
   tentArt,
   WELL,
-} from '@/features/village/components/pixel-sprite';
+} from '@/features/village/components/shared/pixel-sprite';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 

@@ -1,12 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
-import { Player, travelTo } from '@/features/village/components/player';
-import { NightGlow, NightTint, VillageSky } from '@/features/village/components/village-ambience';
-import { GrassPatches, VillageDecor } from '@/features/village/components/village-decor';
-import { VillageHouse, VillageLamp } from '@/features/village/components/village-house';
-import { VillageRoads } from '@/features/village/components/village-roads';
-import { Villager } from '@/features/village/components/villager';
+import { useRef, type ReactNode } from 'react';
+import { NightGlow } from '@/features/village/components/stage/ambience';
+import { VillageHouse, VillageLamp } from '@/features/village/components/stage/house';
+import { Player, travelTo } from '@/features/village/components/stage/player';
+import { VillageRoads } from '@/features/village/components/stage/roads';
+import { Villager } from '@/features/village/components/stage/villager';
 import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
 import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
@@ -18,7 +17,7 @@ function lampSpots(cells: Cell[]): { x: number; y: number }[] {
     .map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
 
-export function VillageStage() {
+export function VillageStageSurface({ terrain, sky }: { terrain: ReactNode; sky: ReactNode }) {
   const { slug, scrub, focusId, zoom } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
@@ -49,10 +48,8 @@ export function VillageStage() {
           boxShadow: 'inset 0 0 140px 80px rgb(14 30 18 / 0.6)',
         }}
       >
-        <GrassPatches />
+        {terrain}
         <VillageRoads cells={cells} />
-        <VillageDecor />
-        <NightTint />
 
         {lamps.map((l, i) => (
           <VillageLamp key={i} x={l.x} y={l.y} />
@@ -69,7 +66,7 @@ export function VillageStage() {
 
         <NightGlow lamps={lamps} litCells={litCells} />
       </div>
-      <VillageSky />
+      {sky}
     </div>
   );
 }

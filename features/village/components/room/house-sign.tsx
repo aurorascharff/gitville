@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, X } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { BARRIER, PixelSprite } from '@/features/village/components/pixel-sprite';
+import { BARRIER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { wallClass } from '@/features/village/room-geometry';
 import { useRoomSpec, useVillageData } from '@/features/village/use-village-data';
 import { pickedPrs, type Cell } from '@/features/village/village-model';

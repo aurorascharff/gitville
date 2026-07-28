@@ -63,12 +63,23 @@ export function useRoomSpec(
   slug: string,
   cellId: string,
   ai = false,
-): { spec: RoomSpecPayload | null; loading: boolean } {
-  const { data, isLoading } = useSWR<RoomSpecPayload>(roomKey(slug, cellId, ai), specFetcher, {
+): { spec: RoomSpecPayload | null; loading: boolean; aiPending: boolean } {
+  const base = useSWR<RoomSpecPayload>(roomKey(slug, cellId, false), specFetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
-  return { spec: data?.ok ? data : null, loading: isLoading };
+  const aiRes = useSWR<RoomSpecPayload>(ai ? roomKey(slug, cellId, true) : null, specFetcher, {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  const aiSpec = aiRes.data?.ok ? aiRes.data : null;
+  const baseSpec = base.data?.ok ? base.data : null;
+  const spec = aiSpec ?? baseSpec;
+  return {
+    spec,
+    loading: !spec && base.isLoading,
+    aiPending: ai && !aiSpec && aiRes.isLoading,
+  };
 }
 
 export const SCRUB_MAX = 1000;

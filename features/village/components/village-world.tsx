@@ -1,15 +1,18 @@
+import { Star } from 'lucide-react';
 import { preload, SWRConfig } from 'swr';
-import { BuzzPanel } from '@/features/village/components/buzz-panel';
-import { HouseInterior } from '@/features/village/components/house-interior';
-import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
-import { TimeMachine } from '@/features/village/components/time-machine';
-import { VillageBusy } from '@/features/village/components/village-busy';
-import { VillageHelp } from '@/features/village/components/village-help';
-import { VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/village-hud';
-import { VillageMusic } from '@/features/village/components/village-music';
-import { VillageStage } from '@/features/village/components/village-stage';
+import { BuzzPanel } from '@/features/village/components/overlay/buzz-panel';
+import { VillageBusy, VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/overlay/chrome';
+import { VillageHelp } from '@/features/village/components/overlay/help';
+import { VillageMusic } from '@/features/village/components/overlay/music';
+import { TimeMachine } from '@/features/village/components/overlay/time-machine';
+import { HouseInterior } from '@/features/village/components/room/house-interior';
+import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
+import { NightTint, VillageSky } from '@/features/village/components/stage/ambience';
+import { GrassPatches, VillageDecor } from '@/features/village/components/stage/background';
+import { VillageStageSurface } from '@/features/village/components/stage/stage-surface';
 import { getVillagePayload } from '@/features/village/village-queries';
 import { VillageUiProvider } from '@/features/village/village-ui-context';
+import { formatStars } from '@/lib/utils';
 import { villageKey, type RepoData } from '@/types/github';
 
 export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[] }) {
@@ -20,10 +23,19 @@ export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[
       <VillageUiProvider repo={repo} pinned={pinned}>
         <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
           <div aria-hidden className="village-vignette absolute inset-0" />
-          <VillageStage />
+          <VillageStageSurface
+            terrain={
+              <>
+                <GrassPatches />
+                <VillageDecor />
+                <NightTint />
+              </>
+            }
+            sky={<VillageSky />}
+          />
           <VillageBusy />
           <VillageStatus />
-          <VillageControls />
+          <VillageControls repoLink={<VillageRepoLink repo={repo} />} />
           <BuzzPanel />
           <HouseInterior />
           <TimeMachine />
@@ -55,5 +67,18 @@ export function VillageWorldSkeleton() {
         <p className="font-pixel rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">raising the village…</p>
       </div>
     </div>
+  );
+}
+
+function VillageRepoLink({ repo }: { repo: RepoData }) {
+  return (
+    <a
+      href={`https://github.com/${repo.slug}`}
+      target="_blank"
+      rel="noreferrer"
+      className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+    >
+      <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
+    </a>
   );
 }

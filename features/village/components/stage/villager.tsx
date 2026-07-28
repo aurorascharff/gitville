@@ -1,8 +1,8 @@
 'use client';
 
 import { AvatarImage } from '@/components/ui/avatar-image';
-import { KindBadge } from '@/features/village/components/pixel-sprite';
-import { travelTo } from '@/features/village/components/player';
+import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
+import { travelTo } from '@/features/village/components/stage/player';
 import { hashDelay, type Actor } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';

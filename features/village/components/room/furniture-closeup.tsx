@@ -3,7 +3,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { AI_ART_PALETTE, furnitureByName, furnitureFor, PixelSprite } from '@/features/village/components/pixel-sprite';
+import { AI_ART_PALETTE, furnitureByName, furnitureFor, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { backdropFor, pieceScale, sizeScale, type Build } from '@/features/village/room-geometry';
 import type { RoomSpecPayload } from '@/features/village/use-village-data';
 import type { Cell } from '@/features/village/village-model';
