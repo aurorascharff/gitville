@@ -56,74 +56,78 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
     <aside
       className={cn(
         wallClass(cell),
-        'absolute inset-y-0 left-0 z-50 w-[min(360px,40vw)] overflow-y-auto rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)]',
+        'absolute inset-y-0 left-0 z-50 w-[min(360px,40vw)] overflow-hidden rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)]',
       )}
     >
       {/* A dark scrim over the room's own wall texture: the panel reads as part
           of the scene (green hedge, wood, stone …) while light text stays legible
-          on any wall colour. */}
-      <div className="min-h-full bg-[#221a12]/80 px-6 py-7 text-[#f0e6d2]">
-        {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              'font-pixel font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
-              isPr ? 'text-[16px] text-[#e4c05a]' : 'text-[24px] leading-7',
-            )}
-          >
-            {cell.label}
-          </span>
-          {chip ? (
+          on any wall colour. Fixed regions: the variable identity/title/meta
+          scrolls in the top region while the stack navigator and GitHub link
+          stay pinned to the bottom, so switching floors never shifts them. */}
+      <div className="flex h-full flex-col bg-[#221a12]/80 text-[#f0e6d2]">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-7 pb-4">
+          {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                'font-pixel inline-block rounded-sm border-2 border-[#2e2418] px-2 py-0.5 text-[13px] font-bold',
-                stack.length > 1 ? 'bg-[#a986bd] text-[#1c1424]' : 'bg-[#58a55c] text-[#0e2410]',
+                'font-pixel font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
+                isPr ? 'text-[16px] text-[#e4c05a]' : 'text-[24px] leading-7',
               )}
             >
-              {chip}
+              {cell.label}
             </span>
+            {chip ? (
+              <span
+                className={cn(
+                  'font-pixel inline-block rounded-sm border-2 border-[#2e2418] px-2 py-0.5 text-[13px] font-bold',
+                  stack.length > 1 ? 'bg-[#a986bd] text-[#1c1424]' : 'bg-[#58a55c] text-[#0e2410]',
+                )}
+              >
+                {chip}
+              </span>
+            ) : null}
+            {cell.draft ? (
+              <span className="pixel" title="draft, under construction">
+                <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
+              </span>
+            ) : null}
+          </div>
+
+          {/* The headline you actually read: the PR/issue title, or the place name. */}
+          {desc ? (
+            <p
+              className={cn(
+                'mt-2 font-bold',
+                isPr ? 'text-[20px] leading-6' : 'line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]',
+              )}
+            >
+              {desc}
+            </p>
           ) : null}
-          {cell.draft ? (
-            <span className="pixel" title="draft, under construction">
-              <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
-            </span>
+
+          {/* Meta, each with a tiny label so it is obvious what you are looking at. */}
+          {cell.author || cell.ref ? (
+            <dl className="mt-4 flex flex-col gap-2.5">
+              {cell.author ? (
+                <div>
+                  <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Author</dt>
+                  <dd className="mt-0.5 text-[15px] text-[#e4d7ba]">{cell.author}</dd>
+                </div>
+              ) : null}
+              {cell.ref ? (
+                <div>
+                  <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Branch</dt>
+                  <dd className="mt-0.5 truncate font-mono text-[13px] text-[#c9b892]">
+                    {cell.ref} → {cell.baseRef}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
           ) : null}
         </div>
 
-        {/* The headline you actually read: the PR/issue title, or the place name. */}
-        {desc ? (
-          <p
-            className={cn(
-              'mt-2 font-bold',
-              isPr ? 'text-[20px] leading-6' : 'line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]',
-            )}
-          >
-            {desc}
-          </p>
-        ) : null}
-
-        {/* Meta, each with a tiny label so it is obvious what you are looking at. */}
-        {cell.author || cell.ref ? (
-          <dl className="mt-4 flex flex-col gap-2.5">
-            {cell.author ? (
-              <div>
-                <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Author</dt>
-                <dd className="mt-0.5 text-[15px] text-[#e4d7ba]">{cell.author}</dd>
-              </div>
-            ) : null}
-            {cell.ref ? (
-              <div>
-                <dt className="font-pixel text-[11px] tracking-wide text-[#9a8c6d] uppercase">Branch</dt>
-                <dd className="mt-0.5 truncate font-mono text-[13px] text-[#c9b892]">
-                  {cell.ref} → {cell.baseRef}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-
         {stack.length > 1 ? (
-          <div className="mt-5 border-t-2 border-[#f0e6d2]/15 pt-4">
+          <div className="max-h-[45%] shrink-0 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
             <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">In this stack</p>
             <ul className="flex flex-col gap-1">
               {stack.map(pr => {
@@ -157,7 +161,7 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
             </ul>
           </div>
         ) : null}
-        <div className="mt-5 border-t-2 border-[#f0e6d2]/15 pt-4">
+        <div className="shrink-0 border-t-2 border-[#f0e6d2]/15 px-6 py-4">
           <a
             href={cell.url}
             target="_blank"
