@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
+import { RelativeTime } from '@/components/ui/relative-time';
 import { BARRIER, PixelSprite } from '@/features/village/components/pixel-sprite';
 import { wallClass } from '@/features/village/room-geometry';
 import { useRoomSpec, useVillageData } from '@/features/village/use-village-data';
@@ -78,11 +79,11 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
     >
       {/* A dark scrim over the room's own wall texture: the panel reads as part
           of the scene (green hedge, wood, stone …) while light text stays legible
-          on any wall colour. Fixed regions: the variable identity/title/meta
-          scrolls in the top region while the stack navigator and GitHub link
-          stay pinned to the bottom, so switching floors never shifts them. */}
+          on any wall colour. Fixed regions: the identity/title/meta header and
+          the stack navigator + GitHub link stay pinned; only the commit list
+          between them scrolls, so switching floors never shifts the frame. */}
       <div className="flex h-full flex-col bg-[#221a12]/80 text-[#f0e6d2]">
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-7 pb-4">
+        <div className="shrink-0 px-6 pt-7 pb-4">
           {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -169,6 +170,45 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
             </dl>
           ) : null}
         </div>
+
+        {/* The real commits that build this room, newest first — the same list
+            the noticeboard shows outside, so a place with no PR meta (the hall,
+            a bare branch) still has something to read, and a PR shows exactly
+            what shipped in it. This is the only scrolling region: it soaks up
+            the free space below the fixed header while the stack list and
+            GitHub link below stay pinned. */}
+        {spec?.commits?.length ? (
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
+            <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">Recent commits</p>
+            <ul className="flex flex-col gap-1">
+              {spec.commits.map(c => (
+                <li key={c.sha}>
+                  <a
+                    href={c.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex items-start gap-2 rounded-xs border-2 border-transparent px-2 py-1.5 hover:border-[#f0e6d2]/40"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] text-[#e4d7ba]">{c.message.split('\n')[0]}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#9a8c6d]">
+                        <span className="truncate">{c.author}</span>
+                        <RelativeTime date={c.at} />
+                      </span>
+                    </span>
+                    <ArrowUpRight
+                      size={13}
+                      strokeWidth={3}
+                      className="mt-0.5 shrink-0 text-[#8a6d2a] opacity-0 transition-opacity group-hover:opacity-100"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {stack.length > 1 ? (
           <div className="max-h-[45%] shrink-0 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
