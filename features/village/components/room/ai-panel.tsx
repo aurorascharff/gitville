@@ -1,5 +1,6 @@
 'use client';
 
+import { WandSparkles } from 'lucide-react';
 import { CARPENTER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomSpec } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
@@ -13,27 +14,28 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working
-    ? 'Building this room from its commits...'
+    ? 'Working on this room. You can come back later.'
     : ai
       ? spec?.ai
-        ? `Showing "${spec.theme}"`
+        ? `Showing ${spec.theme}`
         : 'Showing the AI-built scene'
-      : 'Redraw this room from its real commits as an invented scene.';
+      : 'Generate a themed room from the real commits.';
 
   return (
-    <aside className="absolute right-4 bottom-4 z-50 w-52">
+    <aside className="absolute top-4 right-4 z-50 w-72">
       <button
+        type="button"
         onClick={() => onToggle(!ai)}
         role="switch"
         aria-checked={ai}
         aria-keyshortcuts="G"
         aria-label="Visualize this room with AI"
         className={cn(
-          'panel pixel flex w-full cursor-pointer flex-col items-center gap-2 rounded-sm p-3 transition-transform hover:-translate-y-0.5',
+          'panel flex min-h-20 w-full cursor-pointer items-start gap-3 rounded-sm p-3 text-left transition-transform hover:-translate-y-0.5',
           ai && 'ring-2 ring-[#e4c05a]',
         )}
       >
-        <span className="relative">
+        <span className="pixel relative flex h-8 w-8 shrink-0 items-center justify-center">
           {working ? (
             <span aria-hidden className="absolute -top-1 -right-2">
               {[0, 1].map(i => (
@@ -46,30 +48,32 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
             </span>
           ) : null}
           <span className={cn('block', working && 'sprite-bob')}>
-            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={3} />
+            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.8} />
           </span>
         </span>
-        <span className="font-pixel flex items-center gap-1 text-[13px] font-bold text-[#3a2f22]">
-          <KeyHint>G</KeyHint> Draw with AI
-        </span>
-        <span className="flex min-h-10 items-center text-center text-[12px] leading-snug text-[#6b5b43]">{status}</span>
-        <span
-          aria-hidden
-          className={cn(
-            'flex h-4 w-8 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
-            ai ? 'justify-end bg-[#e4c05a]' : 'justify-start bg-[#b5a687]',
-          )}
-        >
-          <span className="h-2 w-2.5 rounded-xs border border-[#4a3826] bg-[#f7efdc]" />
+        <span className="flex min-w-0 flex-1 items-start gap-1.5">
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-[16px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
+              <WandSparkles size={14} strokeWidth={3} />
+              Draw with AI
+              <KeyHint>G</KeyHint>
+            </span>
+            <span className="block max-w-72 text-[14px] leading-snug text-[#6b5b43]">{status}</span>
+          </span>
         </span>
       </button>
     </aside>
   );
 }
 
-function KeyHint({ children }: { children: React.ReactNode }) {
+function KeyHint({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
+    <span
+      className={cn(
+        'font-pixel inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]',
+        className,
+      )}
+    >
       {children}
     </span>
   );

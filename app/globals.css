@@ -33,7 +33,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-pixel: var(--font-pixel);
-  --tracking-tight: -0.014em;
+  --tracking-tight: 0em;
 }
 
 :root {
@@ -101,7 +101,7 @@
       'cv01' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.011em;
+    letter-spacing: 0;
   }
   ::selection {
     background: color-mix(in oklch, var(--brand) 32%, transparent);

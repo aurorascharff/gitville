@@ -65,7 +65,7 @@ export function HouseSign({
           type="button"
           onClick={onClose}
           aria-label="Close info panel"
-          className="font-pixel absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] text-[#3a2f22] transition-transform hover:-translate-y-0.5 sm:hidden"
+          className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] text-[#3a2f22] transition-transform hover:-translate-y-0.5 sm:hidden"
         >
           <X size={16} strokeWidth={3} />
         </button>
@@ -73,8 +73,8 @@ export function HouseSign({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                'font-pixel font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
-                isPr ? 'text-[16px] text-[#e4c05a]' : 'text-[24px] leading-7',
+                'font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
+                isPr ? 'text-[18px] leading-6 text-[#e4c05a]' : 'text-[24px] leading-7',
               )}
             >
               {cell.label}
@@ -82,7 +82,7 @@ export function HouseSign({
             {chip ? (
               <span
                 className={cn(
-                  'font-pixel inline-block rounded-sm border-2 border-[#2e2418] px-2 py-0.5 text-[13px] font-bold',
+                  'inline-block rounded-sm border-2 border-[#2e2418] px-2 py-0.5 text-[13px] font-bold',
                   stack.length > 1 ? 'bg-[#a986bd] text-[#1c1424]' : 'bg-[#58a55c] text-[#0e2410]',
                 )}
               >
@@ -107,8 +107,8 @@ export function HouseSign({
           {desc ? (
             <p
               className={cn(
-                'mt-2 font-bold',
-                isPr ? 'text-[20px] leading-6' : 'line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]',
+                'mt-2 font-semibold',
+                isPr ? 'text-[19px] leading-6' : 'line-clamp-3 text-[16px] leading-5.5 text-[#e4d7ba]',
               )}
             >
               {desc}
@@ -119,8 +119,8 @@ export function HouseSign({
             <dl className="mt-4 flex flex-col gap-2.5">
               {cell.author ? (
                 <div>
-                  <dt className="font-pixel text-[11px] tracking-wide text-[#d8b24a] uppercase">Author</dt>
-                  <dd className="mt-0.5 text-[15px]">
+                  <dt className="text-[12px] font-bold text-[#d8b24a] uppercase">Author</dt>
+                  <dd className="mt-0.5 text-[15px] leading-5">
                     <a
                       href={`https://github.com/${cell.author}`}
                       target="_blank"
@@ -134,8 +134,8 @@ export function HouseSign({
               ) : null}
               {cell.ref ? (
                 <div>
-                  <dt className="font-pixel text-[11px] tracking-wide text-[#d8b24a] uppercase">Branch</dt>
-                  <dd className="mt-0.5 font-mono text-[13px] wrap-anywhere text-[#d8c8a2]">
+                  <dt className="text-[12px] font-bold text-[#d8b24a] uppercase">Branch</dt>
+                  <dd className="mt-0.5 font-mono text-[13px] leading-5 wrap-anywhere text-[#d8c8a2]">
                     <a
                       href={`https://github.com/${slug}/tree/${encodeURIComponent(cell.ref)}`}
                       target="_blank"
@@ -164,7 +164,7 @@ export function HouseSign({
 
         {spec?.commits?.length ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
-            <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">Recent commits</p>
+            <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">Recent commits</p>
             <ul className="flex flex-col gap-1">
               {spec.commits.map(c => (
                 <li key={c.sha}>
@@ -175,8 +175,10 @@ export function HouseSign({
                     className="group flex items-start gap-2 rounded-xs border-2 border-transparent px-2 py-1.5 hover:border-[#f0e6d2]/40"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14px] text-[#e4d7ba]">{c.message.split('\n')[0]}</span>
-                      <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#9a8c6d]">
+                      <span className="block truncate text-[14px] leading-5 text-[#e4d7ba]">
+                        {c.message.split('\n')[0]}
+                      </span>
+                      <span className="mt-1 flex items-center gap-1.5 text-[12px] text-[#9a8c6d]">
                         <span className="truncate">{c.author}</span>
                         <RelativeTime date={c.at} />
                       </span>
@@ -197,7 +199,7 @@ export function HouseSign({
 
         {stack.length > 1 ? (
           <div className="max-h-[45%] shrink-0 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
-            <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">In this stack</p>
+            <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">In this stack</p>
             <ul ref={stackNavRef} className="flex flex-col gap-1">
               {stack.map(pr => {
                 const here = `pr:${pr.number}` === cell.id;
@@ -205,8 +207,8 @@ export function HouseSign({
                 const base = 'flex w-full min-w-0 items-baseline gap-2 rounded-xs border-2 px-2 py-1.5 text-left';
                 const inner = (
                   <>
-                    <span className="font-pixel shrink-0 text-[15px] font-bold">#{pr.number}</span>
-                    <span className="truncate text-[14px] opacity-90">{pr.title}</span>
+                    <span className="shrink-0 text-[14px] font-bold">#{pr.number}</span>
+                    <span className="truncate text-[14px] leading-5 opacity-90">{pr.title}</span>
                     {pr.draft ? (
                       <span className="pixel shrink-0 self-center" title="draft">
                         <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
@@ -290,7 +292,7 @@ export function HouseSign({
             href={cell.url}
             target="_blank"
             rel="noreferrer"
-            className="font-pixel flex items-center gap-1.5 text-[15px] font-bold text-[#f0b98a] hover:underline"
+            className="flex items-center gap-1.5 text-[15px] font-bold text-[#f0b98a] hover:underline"
           >
             open on github <ArrowUpRight size={14} strokeWidth={3} />
           </a>
@@ -310,10 +312,7 @@ function StatusChip({ tone, children }: { tone: 'good' | 'warn' | 'danger' | 'qu
 
   return (
     <span
-      className={cn(
-        'font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[11px] font-bold',
-        colors[tone],
-      )}
+      className={cn('rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[12px] leading-4 font-bold', colors[tone])}
     >
       {children}
     </span>

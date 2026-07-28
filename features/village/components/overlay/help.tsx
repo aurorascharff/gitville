@@ -22,7 +22,7 @@ export function VillageHelp() {
     <VillageHelpShell>
       <div className="grid min-h-0 flex-1 gap-x-8 overflow-y-auto px-5 py-3 sm:grid-cols-2">
         <div>
-          <p className="font-pixel pb-1 text-[12px] tracking-wide text-[#8a6d2a] uppercase">Places</p>
+          <p className="pb-1 text-[12px] font-bold text-[#8a6d2a] uppercase">Places</p>
           <ul>
             <LegendRow
               art={hallArt()}
@@ -85,7 +85,7 @@ export function VillageHelp() {
                 <span className="sticky-note block h-10 w-10" />
               </span>
               <div className="min-w-0">
-                <p className="font-pixel text-[15px] font-bold text-[#3a2f22]">Wall notes</p>
+                <p className="text-[15px] font-bold text-[#3a2f22]">Wall notes</p>
                 <p className="text-[13px] leading-snug text-[#6b5b43]">Reviews and comments pinned inside.</p>
               </div>
             </li>
@@ -93,9 +93,7 @@ export function VillageHelp() {
         </div>
 
         <div className="flex flex-col">
-          <p className="font-pixel pt-4 pb-1 text-[12px] tracking-wide text-[#8a6d2a] uppercase sm:pt-0">
-            Getting around
-          </p>
+          <p className="pt-4 pb-1 text-[12px] font-bold text-[#8a6d2a] uppercase sm:pt-0">Getting around</p>
           <div className="flex flex-col gap-3 py-2 text-[13px] text-[#6b5b43]">
             <div className="flex items-center gap-3">
               <span className="flex gap-1">
@@ -109,6 +107,13 @@ export function VillageHelp() {
             <div className="flex items-center gap-3">
               <MouseKey />
               <span>Click the ground to walk there</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex gap-1">
+                <Key>+</Key>
+                <Key>-</Key>
+              </span>
+              <span>Zoom the village while walking</span>
             </div>
             <div className="flex items-center gap-3">
               <Key wide>Enter</Key>
@@ -133,7 +138,11 @@ export function VillageHelp() {
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
             <span className="font-bold text-[#3a2f22]">Draw with AI</span> rebuilds a room from its real commits, one
-            invented machine per piece of work. Drawn rooms are cached and shared.
+            invented machine per piece of work. If it is still working, you can leave and come back later.
+          </div>
+          <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
+            AI-decorated rooms can leave a small themed sign outside the house. The village only shows this for rooms
+            already cached from a visit or generation.
           </div>
           <div className="mt-auto border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
             Made by{' '}
@@ -204,7 +213,7 @@ function LegendRow({
         <PixelSprite art={art} palette={palette} scale={scale} />
       </span>
       <div className="min-w-0">
-        <p className="font-pixel text-[15px] font-bold text-[#3a2f22]">{title}</p>
+        <p className="text-[15px] font-bold text-[#3a2f22]">{title}</p>
         <p className="text-[13px] leading-snug text-[#6b5b43]">{text}</p>
       </div>
     </li>

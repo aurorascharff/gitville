@@ -34,7 +34,7 @@ export function WatchForm({ autoFocus = false }: { autoFocus?: boolean } = {}) {
       <button
         type="submit"
         disabled={pending || !value.trim()}
-        className="flex items-center gap-1.5 border-l-4 border-[#4a3826] bg-[#5a8f52] px-4 font-mono text-xs font-bold text-white transition-colors hover:bg-[#4d7d46] disabled:opacity-60"
+        className="flex items-center gap-1.5 border-l-4 border-[#4a3826] bg-[#5a8f52] px-4 text-sm font-bold text-white transition-colors hover:bg-[#4d7d46] disabled:opacity-60"
       >
         {pending ? <Loader2 size={13} className="animate-spin" /> : null}
         settle

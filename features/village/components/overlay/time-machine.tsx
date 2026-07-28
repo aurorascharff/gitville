@@ -14,7 +14,7 @@ export function TimeMachine() {
     <div className="absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">
       <div className="panel flex w-full max-w-xl items-center gap-3 rounded-sm py-2 pr-2 pl-3">
         <ClockFace t={asOf} />
-        <span className="hidden shrink-0 font-mono text-[10px] text-[#8a6d2a] sm:inline">
+        <span className="hidden shrink-0 font-mono text-[12px] text-[#8a6d2a] sm:inline">
           {spanLabel(maxT - minT)} ago
         </span>
         <input
@@ -26,15 +26,16 @@ export function TimeMachine() {
           aria-label="Wind the village clock back in time"
           className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[#8a4a2b]"
         />
-        <span className="hidden shrink-0 font-mono text-[10px] text-[#8a6d2a] sm:inline">now</span>
+        <span className="hidden shrink-0 font-mono text-[12px] text-[#8a6d2a] sm:inline">now</span>
         {live ? (
-          <span className="font-pixel flex w-28 items-center justify-center gap-1.5 rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] py-1 text-[12px] font-bold text-[#3a2f22]">
+          <span className="flex w-28 items-center justify-center gap-1.5 rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] py-1 text-[13px] font-bold text-[#3a2f22]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#58a55c]" /> LIVE
           </span>
         ) : (
           <button
+            type="button"
             onClick={() => setScrub(SCRUB_MAX)}
-            className="font-pixel w-28 cursor-pointer rounded-sm border-2 border-[#4a3826] py-1 text-center text-[12px] font-bold text-[#6b5b43] transition-colors hover:bg-[#e0d3b8] hover:text-[#3a2f22]"
+            className="w-32 cursor-pointer rounded-sm border-2 border-[#4a3826] py-1 text-center text-[13px] font-bold text-[#6b5b43] transition-colors hover:bg-[#e0d3b8] hover:text-[#3a2f22]"
           >
             {clockLabel(asOf)} ↺
           </button>

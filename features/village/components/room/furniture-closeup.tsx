@@ -3,7 +3,12 @@
 import { ArrowUpRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { AI_ART_PALETTE, furnitureByName, furnitureFor, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
+import {
+  AI_ART_PALETTE,
+  furnitureByName,
+  furnitureFor,
+  PixelSprite,
+} from '@/features/village/components/shared/pixel-sprite';
 import type { RoomSpecPayload } from '@/features/village/hooks/use-village-data';
 import { backdropFor, pieceScale, sizeScale, type Build } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
@@ -46,7 +51,7 @@ export function FurnitureCloseup({
           type="button"
           onClick={onClose}
           aria-label="Back to the room (Esc)"
-          className="font-pixel absolute top-2 right-2 z-10 cursor-pointer text-[18px] font-bold text-[#e0d3b8] transition-colors hover:text-white"
+          className="absolute top-2 right-2 z-10 cursor-pointer text-[18px] font-bold text-[#e0d3b8] transition-colors hover:text-white"
         >
           x
         </button>
@@ -68,16 +73,18 @@ export function FurnitureCloseup({
           </div>
           <span aria-hidden className="block h-1.5 w-16 rounded-full bg-black/40 blur-[1px]" />
           <div className="flex flex-col items-center gap-1.5">
-            <p className="font-pixel text-center text-[18px] font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]">{name}</p>
+            <p className="text-center text-[18px] leading-tight font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]">
+              {name}
+            </p>
             {spec?.ai ? (
-              <span className="font-pixel rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+              <span className="rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[12px] font-bold text-[#3a2f22]">
                 {spec.theme}
               </span>
             ) : null}
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
-          <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">
+          <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">
             {build.commits.length > 1 ? `Built from ${build.commits.length} commits` : 'From this commit'}
           </p>
           <ul className="flex flex-col gap-2">
@@ -92,10 +99,10 @@ export function FurnitureCloseup({
                   <span className="text-[14px] leading-snug wrap-anywhere whitespace-pre-wrap text-[#e4d7ba]">
                     {commit.message}
                   </span>
-                  <span className="flex items-center gap-1.5 text-[11px] text-[#9a8c6d]">
+                  <span className="flex items-center gap-1.5 text-[12px] text-[#9a8c6d]">
                     <span className="font-bold text-[#d8b24a]">{commit.author}</span>
                     <RelativeTime date={commit.at} />
-                    <span className="font-pixel ml-auto flex items-center gap-1 text-[#f0b98a] opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="ml-auto flex items-center gap-1 text-[#f0b98a] opacity-0 transition-opacity group-hover:opacity-100">
                       view commit <ArrowUpRight size={12} strokeWidth={3} />
                     </span>
                   </span>

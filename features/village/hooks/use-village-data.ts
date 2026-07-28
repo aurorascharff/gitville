@@ -51,11 +51,11 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
       aiAvailable: false,
     }));
 
-const roomKey = (slug: string, cellId: string, ai: boolean) =>
+export const roomSpecKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
 
 export function preloadRoomSpec(slug: string, cellId: string): void {
-  void preload(roomKey(slug, cellId, false), specFetcher);
+  void preload(roomSpecKey(slug, cellId, false), specFetcher);
 }
 
 export function useRoomSpec(
@@ -63,11 +63,11 @@ export function useRoomSpec(
   cellId: string,
   ai = false,
 ): { spec: RoomSpecPayload | null; loading: boolean; aiPending: boolean } {
-  const base = useSWR<RoomSpecPayload>(roomKey(slug, cellId, false), specFetcher, {
+  const base = useSWR<RoomSpecPayload>(roomSpecKey(slug, cellId, false), specFetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
-  const aiRes = useSWR<RoomSpecPayload>(ai ? roomKey(slug, cellId, true) : null, specFetcher, {
+  const aiRes = useSWR<RoomSpecPayload>(ai ? roomSpecKey(slug, cellId, true) : null, specFetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });

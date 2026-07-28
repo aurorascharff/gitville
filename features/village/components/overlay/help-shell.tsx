@@ -37,11 +37,12 @@ export function VillageHelpShell({ children }: { children: ReactNode }) {
         >
           <aside className="panel flex max-h-[86dvh] w-216 max-w-[94vw] flex-col overflow-hidden rounded-sm">
             <header className="panel-wood flex shrink-0 items-center justify-between border-x-0 border-t-0 px-5 py-2.5">
-              <p className="font-pixel text-[18px] font-bold">How to read the village</p>
+              <p className="text-[18px] font-bold">How to read the village</p>
               <button
+                type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close (Esc)"
-                className="font-pixel cursor-pointer text-[18px] font-bold text-[#e0d3b8] transition-colors hover:text-white"
+                className="cursor-pointer text-[18px] font-bold text-[#e0d3b8] transition-colors hover:text-white"
               >
                 x
               </button>

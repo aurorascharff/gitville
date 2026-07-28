@@ -46,7 +46,7 @@ export async function RepoSwitcher({ repo }: { repo: RepoData }) {
 
 export function RepoSwitcherSkeleton({ repo }: { repo: RepoData }) {
   return (
-    <div className="panel font-pixel flex h-11 items-center gap-2.5 rounded-sm pr-4 pl-2 text-[15px]">
+    <div className="panel flex h-11 items-center gap-2.5 rounded-sm pr-4 pl-2 text-[15px] font-bold">
       <SwitcherIdentity repo={repo} />
       <span aria-hidden className="h-3.5 w-3.5 rounded-sm bg-[#8a6d2a]/30" />
     </div>
@@ -58,7 +58,7 @@ function SwitcherIdentity({ repo }: { repo: RepoData }) {
     <>
       <GitvilleMark size={26} />
       <RepoAvatar src={repo.ownerAvatar} name={repo.owner} size={20} className="rounded-full" />
-      <span className="max-w-44 truncate text-sm font-semibold tracking-tight">{repo.name}</span>
+      <span className="max-w-44 truncate text-sm font-semibold">{repo.name}</span>
     </>
   );
 }

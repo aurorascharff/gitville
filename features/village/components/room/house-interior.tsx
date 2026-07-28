@@ -210,7 +210,7 @@ function InteriorScene({
         onClick={() => setSignOpen(true)}
         aria-keyshortcuts="I"
         aria-label="Show pull request info"
-        className="panel font-pixel absolute top-4 left-4 z-50 flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
+        className="panel absolute top-4 left-4 z-50 flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-[14px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
       >
         <span aria-hidden>ⓘ</span> <KeyHint>I</KeyHint> info
       </button>
@@ -238,7 +238,7 @@ function InteriorScene({
 
 function KeyHint({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
+    <span className="font-pixel inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
       {children}
     </span>
   );

@@ -19,13 +19,13 @@ export function AddVillageModal({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <p className="font-pixel text-center text-[15px] font-bold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+      <p className="text-center text-[16px] font-bold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
         watch a new village
       </p>
       <WatchForm autoFocus />
       <button
         onClick={onClose}
-        className="font-pixel cursor-pointer text-[12px] text-white/70 transition-colors hover:text-white"
+        className="cursor-pointer text-[14px] font-semibold text-white/70 transition-colors hover:text-white"
       >
         cancel
       </button>

@@ -23,7 +23,7 @@ export function VillageBusy() {
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 px-4">
       <div className="panel pixel pointer-events-auto relative flex max-w-sm flex-col items-center gap-4 rounded-sm p-6 text-center shadow-[8px_10px_0_rgb(0_0_0/0.35)]">
         <PixelSprite art={cottageArt(1, false)} palette={housePalette(...ROOF.pr, true)} scale={5} />
-        <p className="font-pixel text-[18px] text-[#3a2f22] drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
+        <p className="text-[18px] leading-tight font-bold text-[#3a2f22] drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
           the village is resting
         </p>
         <p className="max-w-xs text-[14px] leading-snug text-[#6b5b43]">
@@ -32,7 +32,7 @@ export function VillageBusy() {
         <button
           type="button"
           onClick={() => mutate(villageKey(slug))}
-          className="panel-wood font-pixel mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[13px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
+          className="panel-wood mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[14px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
         >
           try again
         </button>
@@ -53,7 +53,7 @@ export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
       {repoSwitcher}
       {payload.ok ? (
-        <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+        <p className="flex h-6 items-center gap-2 px-1 text-[14px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
           <span
             className={cn('h-2 w-2 rounded-full', live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')}
           />
@@ -84,7 +84,7 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
-            className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
             -
           </button>
@@ -92,7 +92,7 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
-            className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
             +
           </button>
@@ -148,10 +148,12 @@ export function VillageTooltip() {
         bottom: flipY ? vh - tip.y + 16 : undefined,
       }}
     >
-      <p className="font-pixel text-[14px] font-bold">{tip.title}</p>
-      {tip.body ? <p className="mt-0.5 line-clamp-14 text-xs whitespace-pre-line text-[#6b5b43]">{tip.body}</p> : null}
+      <p className="text-[14px] leading-tight font-bold">{tip.title}</p>
+      {tip.body ? (
+        <p className="mt-1 line-clamp-14 text-[13px] leading-snug whitespace-pre-line text-[#6b5b43]">{tip.body}</p>
+      ) : null}
       {tip.when ? (
-        <p className="mt-1 text-[10px] text-[#8a6d2a]">
+        <p className="mt-1 text-[12px] text-[#8a6d2a]">
           <RelativeTime date={tip.when} />
         </p>
       ) : null}

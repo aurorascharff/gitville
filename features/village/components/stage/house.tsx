@@ -1,5 +1,6 @@
 'use client';
 
+import useSWR from 'swr';
 import { AvatarImage } from '@/components/ui/avatar-image';
 import {
   cabinArt,
@@ -17,7 +18,7 @@ import {
 } from '@/features/village/components/shared/pixel-sprite';
 import { Placed } from '@/features/village/components/shared/placed';
 import { travelTo } from '@/features/village/components/stage/player';
-import { preloadRoomSpec } from '@/features/village/hooks/use-village-data';
+import { preloadRoomSpec, roomSpecKey, type RoomSpecPayload } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
 
@@ -41,6 +42,11 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
   const palette = housePalette(roof, roofShade, lit);
   const state = stateLine(cell);
   const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
+  const { data: aiSpec } = useSWR<RoomSpecPayload>(cell.kind === 'pr' ? roomSpecKey(slug, cell.id, true) : null, null, {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+    revalidateOnMount: false,
+  });
 
   return (
     <button
@@ -89,6 +95,7 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         {main && cell.versions?.length ? <TownHallBanners cell={cell} /> : null}
         {cell.kind === 'pr' && cell.stale ? <Moss /> : null}
         {cell.kind === 'pr' && cell.checkState ? <CheckFlag state={cell.checkState} /> : null}
+        {aiSpec?.ok && aiSpec.ai ? <AiExteriorDecor theme={aiSpec.theme} title={aiSpec.title ?? cell.sub} /> : null}
         {cell.kind === 'pr' && cell.prState === 'ready' && (cell.floors ?? 1) === 1 && lit ? <ChimneySmoke /> : null}
 
         {cell.kind === 'inbox' ? (
@@ -137,6 +144,108 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         ) : null}
       </div>
     </button>
+  );
+}
+
+function AiExteriorDecor({ theme, title }: { theme: string; title: string | null }) {
+  const { setTip } = useVillageUi();
+  const text = `${theme} ${title ?? ''}`;
+  const kind = /test|lab|root|detect|debug|trace|verify|check/i.test(text)
+    ? 'lab'
+    : /design|css|ui|style|paint|theme/i.test(text)
+      ? 'studio'
+      : /cache|perf|speed|turbo|build|compile/i.test(text)
+        ? 'machine'
+        : 'garden';
+  const label =
+    kind === 'lab'
+      ? 'detection lab'
+      : kind === 'studio'
+        ? 'design studio'
+        : kind === 'machine'
+          ? 'machine shop'
+          : 'AI garden';
+
+  return (
+    <span
+      title={label}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({
+          x: e.clientX,
+          y: e.clientY,
+          title: label,
+          body: `AI decorated this house from the cached "${theme}" room.`,
+          when: null,
+        });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="absolute -right-11 bottom-13 z-10 flex items-end"
+    >
+      {kind === 'lab' ? (
+        <LabSign />
+      ) : kind === 'studio' ? (
+        <PaintSign />
+      ) : kind === 'machine' ? (
+        <MachineSign />
+      ) : (
+        <GardenSign />
+      )}
+    </span>
+  );
+}
+
+function LabSign() {
+  return (
+    <span className="pixel relative block h-11 w-10">
+      <span className="absolute bottom-0 left-4 h-7 w-1 bg-[#4a3826]" />
+      <span className="absolute top-0 left-0 h-6 w-10 border-2 border-[#2e2418] bg-[#8fd0c0] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+        <span className="absolute top-1 left-1 h-2 w-2 bg-[#f7efdc]" />
+        <span className="absolute top-1 right-1 h-2 w-2 bg-[#e4c05a]" />
+        <span className="absolute bottom-1 left-3 h-1 w-4 bg-[#2e2418]" />
+      </span>
+    </span>
+  );
+}
+
+function PaintSign() {
+  return (
+    <span className="pixel relative block h-10 w-10">
+      <span className="absolute bottom-0 left-5 h-6 w-1 bg-[#4a3826]" />
+      <span className="absolute top-0 left-1 h-6 w-8 border-2 border-[#2e2418] bg-[#f7efdc] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+        <span className="absolute top-1 left-1 h-2 w-2 bg-[#c85b5b]" />
+        <span className="absolute top-1 left-4 h-2 w-2 bg-[#3b6bff]" />
+        <span className="absolute top-3 left-2 h-2 w-4 bg-[#58a55c]" />
+      </span>
+    </span>
+  );
+}
+
+function MachineSign() {
+  return (
+    <span className="pixel relative block h-11 w-11">
+      <span className="absolute bottom-0 left-5 h-5 w-1 bg-[#4a3826]" />
+      <span className="absolute top-1 left-1 h-8 w-9 border-2 border-[#2e2418] bg-[#9aa0a8] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+        <span className="absolute top-1 left-1 h-2 w-5 bg-[#3b6bff]" />
+        <span className="absolute right-1 bottom-1 h-2 w-2 bg-[#e4c05a]" />
+        <span className="absolute bottom-1 left-1 h-1 w-4 bg-[#2e2418]" />
+      </span>
+    </span>
+  );
+}
+
+function GardenSign() {
+  return (
+    <span className="pixel relative block h-11 w-10">
+      <span className="absolute bottom-0 left-5 h-5 w-1 bg-[#4a3826]" />
+      <span className="absolute top-1 left-2 h-7 w-7 border-2 border-[#2e2418] bg-[#58a55c] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+        <span className="absolute top-1 left-2 h-2 w-2 bg-[#f7efdc]" />
+        <span className="absolute right-1 bottom-1 h-2 w-2 bg-[#e4c05a]" />
+      </span>
+    </span>
   );
 }
 

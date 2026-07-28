@@ -82,6 +82,11 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
     function onKeyDown(e: KeyboardEvent) {
       if (isTyping(e.target)) return;
       const k = e.key.toLowerCase();
+      if ((k === '+' || k === '=' || k === '-') && !paused.current) {
+        e.preventDefault();
+        setZoom(z => clampZoom(Math.round((z + (k === '-' ? -0.15 : 0.15)) * 100) / 100));
+        s.follow = true;
+      }
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
         if (paused.current) return;
         e.preventDefault();

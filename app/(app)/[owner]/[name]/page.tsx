@@ -92,7 +92,7 @@ function VillageRepoLink({ repo }: { repo: RepoData }) {
       href={`https://github.com/${repo.slug}`}
       target="_blank"
       rel="noreferrer"
-      className="panel font-pixel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+      className="panel flex h-9 items-center gap-1.5 rounded-sm px-3 text-[14px] font-bold transition-transform hover:-translate-y-0.5"
     >
       <Star size={12} className="fill-[#e4c05a] text-[#8a6d2a]" /> {formatStars(repo.stars)}
     </a>
@@ -127,7 +127,7 @@ function VillageSkeleton() {
         <div className="panel h-9 w-58 rounded-sm px-3 py-2">
           <div className="h-3 w-42 rounded-xs bg-[#6b5b43]/25" />
         </div>
-        <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+        <p className="flex h-6 items-center gap-2 px-1 text-[14px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
           <span className="h-2 w-2 rounded-full bg-[#e4c05a]" />
           syncing village
         </p>
@@ -157,7 +157,7 @@ function VillageSkeleton() {
             </span>
             <PixelSprite art={cottageArt(1, false)} palette={housePalette(...ROOF.pr, true)} scale={6} />
           </div>
-          <p className="font-pixel text-[18px] text-[#3a2f22]">raising the village…</p>
+          <p className="text-[18px] leading-tight font-bold text-[#3a2f22]">raising the village…</p>
           <p className="max-w-xs text-[14px] leading-snug text-[#6b5b43]">
             Loading the repo shape, activity, versions, and stack houses.
           </p>
