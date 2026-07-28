@@ -207,27 +207,28 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
     : kind === 'lab'
       ? 'detection lab'
       : kind === 'studio'
-        ? 'design studio'
+        ? 'workbench'
         : kind === 'machine'
           ? 'machine shop'
-          : 'painted garden';
+          : 'garden bench';
+  const tipTitle = generated ? label : unfinished ? 'carpenter at work' : 'blank sign';
 
   return (
     <span
-      title={generated ? label : unfinished ? 'painting in progress' : 'blank canvas'}
+      title={tipTitle}
       onMouseMove={e => {
         e.stopPropagation();
         setTip({
           x: e.clientX,
           y: e.clientY,
-          title: generated ? label : unfinished ? 'painting in progress' : 'blank canvas',
+          title: tipTitle,
           body: generated
             ? title
-              ? `The carpenter painted this house into ${label}: ${title}.`
-              : `The carpenter painted this house into ${label}.`
+              ? `The carpenter fixed the furniture for this work: ${title}.`
+              : 'The carpenter fixed the furniture for this room.'
             : unfinished
-              ? 'The carpenter is redesigning this room.'
-              : 'Go inside to paint this sign.',
+              ? 'The carpenter is fixing the furniture.'
+              : 'Go inside to furnish the room.',
           when: null,
         });
       }}

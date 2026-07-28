@@ -15,13 +15,13 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working
-    ? 'The carpenter is redesigning this room.'
+    ? 'The carpenter is fixing the furniture.'
     : generated
-      ? `Painted as ${spec?.theme ?? 'a new room'}`
+      ? 'The furniture is ready.'
       : ai
-        ? 'The carpenter has the room plans.'
-        : 'Ask the carpenter to redraw this room.';
-  const title = generated ? 'Room redesigned' : ai ? 'Painting room' : 'Redesign room';
+        ? 'The carpenter has the furniture plans.'
+        : 'Ask the carpenter to furnish this room.';
+  const title = generated ? 'Furniture fixed' : ai ? 'Fixing furniture' : 'Furnish room';
 
   return (
     <aside className="absolute top-3 right-3 z-50 sm:top-4 sm:right-4 sm:w-72">
@@ -34,7 +34,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         role="switch"
         aria-checked={ai}
         aria-keyshortcuts="G"
-        aria-label="Ask the carpenter to redesign this room"
+        aria-label="Ask the carpenter to furnish this room"
         className={cn(
           'panel flex h-11 w-11 cursor-pointer items-center justify-center gap-3 rounded-sm p-2 text-left transition-transform hover:-translate-y-0.5 sm:min-h-20 sm:w-full sm:items-start sm:justify-start sm:p-3',
           ai && 'ring-2 ring-[#e4c05a]',

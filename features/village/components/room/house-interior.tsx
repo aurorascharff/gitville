@@ -209,7 +209,7 @@ function InteriorScene({
         />
         {ai && (spec?.ai || scene.aiPending) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-            {spec?.ai ? spec.theme : 'carpenter painting…'}
+            {spec?.ai ? 'furniture fixed' : 'carpenter fixing…'}
           </span>
         ) : null}
       </div>

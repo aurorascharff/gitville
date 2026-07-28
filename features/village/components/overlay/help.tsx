@@ -119,7 +119,7 @@ export function VillageHelp() {
             </div>
             <div className="flex items-center gap-3">
               <Key>G</Key>
-              <span>Ask the carpenter to redesign a room</span>
+              <span>Ask the carpenter to furnish a room</span>
             </div>
             <div className="flex items-center gap-3">
               <Key>I</Key>
@@ -139,11 +139,11 @@ export function VillageHelp() {
             Inside a stacked house the sign lists every floor. Click one to visit that PR.
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-            <span className="font-bold text-[#3a2f22]">Redesign room</span> gives the carpenter the real commits as
-            building plans.
+            <span className="font-bold text-[#3a2f22]">Furnish room</span> gives the carpenter the real commits as
+            furniture plans.
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-            Blank canvases outside houses fill in when the carpenter paints a room.
+            Blank signs outside houses fill in when the carpenter finishes the furniture.
           </div>
           <div className="mt-auto border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
             Made by{' '}

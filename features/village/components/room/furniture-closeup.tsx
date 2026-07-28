@@ -97,7 +97,7 @@ export function FurnitureCloseup({
             </p>
             {spec?.ai ? (
               <span className="rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[12px] font-bold text-[#3a2f22]">
-                {spec.theme}
+                furniture fixed
               </span>
             ) : null}
           </div>
