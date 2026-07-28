@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { forgetAiRoom, hasAiRoom, rememberAiRoom } from '@/features/village/ai-rooms';
 import { HouseSign } from '@/features/village/components/house-sign';
 import { InteriorPlayer } from '@/features/village/components/interior-player';
 import {
@@ -46,7 +45,6 @@ export function HouseInterior() {
   const { cells } = useWorldModel(payload, slug, asOf);
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTargetRef = useRef<{ x: number; y: number } | null>(null);
-  const enteredRef = useRef<string | null>(null);
   const [viewport, setViewport] = useState({ w: 1400, h: 900 });
 
   useEffect(() => {
@@ -68,18 +66,6 @@ export function HouseInterior() {
   useEffect(() => {
     walkTargetRef.current = null;
   }, [focusId]);
-
-  // On first entry to a house we've generated before, default AI back on so the
-  // cached spec loads (a free re-fetch); fire once per entry, not on every render.
-  useEffect(() => {
-    if (!focusId) {
-      enteredRef.current = null;
-      return;
-    }
-    if (enteredRef.current === focusId) return;
-    enteredRef.current = focusId;
-    if (hasAiRoom(slug, focusId)) setAiOn(true);
-  }, [focusId, slug, setAiOn]);
 
   if (!cell) return null;
 
@@ -128,16 +114,6 @@ function InteriorScene({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  // Remember a house only after a generation lands, so auto-enable re-fetches the cache.
-  useEffect(() => {
-    if (spec?.ai) rememberAiRoom(slug, cell.id);
-  }, [spec?.ai, slug, cell.id]);
-
-  // Turning AI off is an explicit opt-out: forget it so re-entry stays plain.
-  const handleToggle = (on: boolean) => {
-    if (!on) forgetAiRoom(slug, cell.id);
-    setAiOn(on);
-  };
   const [w, h] = roomDims(cell);
   // Fit the room into the space right of the reserved info sidebar: scale it up
   // on small screens so the interior fills the space (never a tiny box lost in
@@ -196,7 +172,7 @@ function InteriorScene({
         ) : null}
       </div>
       <HouseSign cell={cell} ai={ai} />
-      <AiPanel cell={cell} ai={ai} onToggle={handleToggle} />
+      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
     </div>
   );
 }

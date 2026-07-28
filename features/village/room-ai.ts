@@ -44,11 +44,6 @@ const specSchema = z.object({
 
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
-// Bump when the prompt changes: 'use cache' keys on the arguments, not the
-// prompt text, so this version is threaded through as an argument to force a
-// cache miss (regenerate every room) whenever the design brief is revised.
-const PROMPT_VERSION = 'v4';
-
 function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
   const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
     const pieces = (item.pieces ?? [])
@@ -83,7 +78,7 @@ export async function generateRoomSpec(
 ): Promise<RoomSpec | null> {
   if (!aiRoomsEnabled()) return null;
   try {
-    return await generateRoomSpecCached(slug, label, sub, commits, notes, state, PROMPT_VERSION);
+    return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn('[room-ai] generation failed:', error instanceof Error ? error.message : error);
@@ -98,11 +93,10 @@ async function generateRoomSpecCached(
   commits: string[],
   notes: string[],
   state: string | null,
-  version: string,
 ): Promise<RoomSpec> {
   'use cache: remote';
   cacheLife('days');
-  cacheTag(`room-ai-${slug}`, `room-ai-${version}`);
+  cacheTag(`room-ai-${slug}`);
 
   const { generateObject } = await import('ai');
   const { createGateway } = await import('@ai-sdk/gateway');
