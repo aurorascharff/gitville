@@ -211,7 +211,7 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
         : kind === 'machine'
           ? 'machine shop'
           : 'garden bench';
-  const tipTitle = generated ? label : unfinished ? 'carpenter at work' : 'blank sign';
+  const tipTitle = generated ? 'furniture fixed' : unfinished ? 'carpenter at work' : 'blank sign';
 
   return (
     <span
@@ -228,7 +228,7 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
               : 'The carpenter fixed the furniture for this room.'
             : unfinished
               ? 'The carpenter is fixing the furniture.'
-              : 'Go inside to furnish the room.',
+              : 'Go inside to fix the furniture.',
           when: null,
         });
       }}
