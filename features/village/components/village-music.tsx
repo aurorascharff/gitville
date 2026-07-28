@@ -164,8 +164,10 @@ export function VillageMusic() {
     <div
       className={cn(
         'absolute bottom-5 z-50 flex items-center gap-1.5',
-        // Clear the PR sidebar and help button that own the left column indoors.
-        indoors ? 'left-[calc(min(360px,40vw)+4rem)]' : 'left-16',
+        // Clear the PR sidebar and help button that own the left column indoors —
+        // but only on desktop, where the sidebar is a static column. On mobile the
+        // sidebar is a hidden drawer, so sit at the normal left edge.
+        indoors ? 'left-16 sm:left-[calc(min(360px,40vw)+4rem)]' : 'left-16',
       )}
     >
       <button

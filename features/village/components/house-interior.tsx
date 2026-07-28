@@ -56,15 +56,6 @@ export function HouseInterior() {
   }, []);
 
   useEffect(() => {
-    if (!cell) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setFocusId(null);
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [cell, setFocusId]);
-
-  useEffect(() => {
     walkTargetRef.current = null;
   }, [focusId]);
 
@@ -109,6 +100,8 @@ function InteriorScene({
   // inspectIndex indexes scene.builds.
   const [nearIndex, setNearIndex] = useState<number | null>(null);
   const [inspectIndex, setInspectIndex] = useState<number | null>(null);
+  // Mobile-only: the PR sign is a slide-in drawer (desktop keeps it pinned open).
+  const [signOpen, setSignOpen] = useState(false);
   const playerPosRef = useRef({ x: w / 2, y: h - 78 });
   const itemsRef = useRef<{ x: number; y: number; index: number }[]>([]);
   const frozenRef = useRef(false);
@@ -142,6 +135,18 @@ function InteriorScene({
     return () => document.removeEventListener('keydown', onKey);
   }, [inspectIndex]);
 
+  // Escape closes the mobile info drawer first if it's open, otherwise leaves
+  // the room. (The close-up handles its own Escape in the capture phase.)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (signOpen) setSignOpen(false);
+      else setFocusId(null);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [signOpen, setFocusId]);
+
   // The room auto-fits; there is no room zoom. Swallow the trackpad pinch
   // (ctrl+wheel) so it can't fall through to the browser and zoom the whole app.
   useEffect(() => {
@@ -159,7 +164,9 @@ function InteriorScene({
   // the dark) and down when it would overflow, keeping a little breathing room
   // around the edges. The camera centres the room in that remaining region.
   const pad = 32;
-  const sidebar = Math.min(SIDEBAR_W, viewport.w * 0.4);
+  // Below the mobile breakpoint the sidebar is a hidden slide-in drawer, so the
+  // room reclaims the full width (must match interior-player's follow-camera).
+  const sidebar = viewport.w < 640 ? 0 : Math.min(SIDEBAR_W, viewport.w * 0.4);
   const availW = viewport.w - sidebar;
   const scale = Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, MAX_ZOOM));
   const camX = sidebar + (availW - w * scale) / 2;
@@ -214,7 +221,25 @@ function InteriorScene({
           </span>
         ) : null}
       </div>
-      <HouseSign cell={cell} ai={ai} />
+      {/* Mobile-only: reveal the PR sign drawer. Top-left is empty indoors (HUD
+          controls sit top-right, music/help bottom-left). */}
+      <button
+        type="button"
+        onClick={() => setSignOpen(true)}
+        aria-label="Show pull request info"
+        className="panel font-pixel absolute top-4 left-4 z-50 flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
+      >
+        <span aria-hidden>ⓘ</span> info
+      </button>
+      {signOpen ? (
+        <button
+          type="button"
+          aria-label="Close info panel"
+          onClick={() => setSignOpen(false)}
+          className="absolute inset-0 z-55 cursor-default bg-black/50 sm:hidden"
+        />
+      ) : null}
+      <HouseSign cell={cell} ai={ai} open={signOpen} onClose={() => setSignOpen(false)} />
       <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
       {inspectIndex !== null && scene.builds[inspectIndex] ? (
         <FurnitureCloseup

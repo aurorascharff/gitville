@@ -41,8 +41,9 @@ export function VillageHelp() {
         aria-label="What does everything mean?"
         className={cn(
           'panel font-pixel absolute bottom-5 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5',
-          // Clear the PR sidebar that owns the left column indoors.
-          focusId ? 'left-[calc(min(360px,40vw)+1rem)]' : 'left-4',
+          // Clear the PR sidebar that owns the left column indoors — but only on
+          // desktop; on mobile the sidebar is a hidden drawer, so sit at the edge.
+          focusId ? 'left-4 sm:left-[calc(min(360px,40vw)+1rem)]' : 'left-4',
         )}
       >
         ?

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, X } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { BARRIER, PixelSprite } from '@/features/village/components/pixel-sprite';
 import { wallClass } from '@/features/village/room-geometry';
@@ -9,7 +9,19 @@ import { pickedPrs, type Cell } from '@/features/village/village-model';
 import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
-export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
+export function HouseSign({
+  cell,
+  ai,
+  open,
+  onClose,
+}: {
+  cell: Cell;
+  ai: boolean;
+  // On mobile the sign is a slide-in drawer toggled by these; on `sm:` and up it
+  // is pinned open as the static left column and these have no visible effect.
+  open: boolean;
+  onClose: () => void;
+}) {
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { spec } = useRoomSpec(slug, cell.id, ai);
@@ -74,7 +86,8 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
     <aside
       className={cn(
         wallClass(cell),
-        'absolute inset-y-0 left-0 z-50 w-[min(360px,40vw)] overflow-hidden rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)]',
+        'absolute inset-y-0 left-0 z-60 w-[min(340px,88vw)] overflow-hidden rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)] transition-transform sm:z-50 sm:w-[min(360px,40vw)] sm:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
       )}
     >
       {/* A dark scrim over the room's own wall texture: the panel reads as part
@@ -83,6 +96,15 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
           the stack navigator + GitHub link stay pinned; only the commit list
           between them scrolls, so switching floors never shifts the frame. */}
       <div className="flex h-full flex-col bg-[#221a12]/80 text-[#f0e6d2]">
+        {/* Mobile-only dismiss: on desktop the sign is always-open, so hide it. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close info panel"
+          className="font-pixel absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] text-[#3a2f22] transition-transform hover:-translate-y-0.5 sm:hidden"
+        >
+          <X size={16} strokeWidth={3} />
+        </button>
         <div className="shrink-0 px-6 pt-7 pb-4">
           {/* Identity + status on one line: the "#123 / draft / 2-of-3" glance. */}
           <div className="flex flex-wrap items-center gap-2">
@@ -237,7 +259,16 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
                     {here ? (
                       <span className={cn(base, 'border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]')}>{inner}</span>
                     ) : hasHouse ? (
-                      <button type="button" onClick={() => setFocusId(`pr:${pr.number}`)} className={link}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Also dismiss the mobile drawer so the new floor's room
+                          // is visible (no-op on desktop, where it stays pinned).
+                          setFocusId(`pr:${pr.number}`);
+                          onClose();
+                        }}
+                        className={link}
+                      >
                         {inner}
                       </button>
                     ) : (

@@ -1,6 +1,5 @@
 'use client';
 
-import ErrorBoundary from '@/components/ui/error-boundary';
 import { BuzzPanel } from '@/features/village/components/buzz-panel';
 import { HouseInterior } from '@/features/village/components/house-interior';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
@@ -18,33 +17,17 @@ export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[
     <VillageUiProvider repo={repo} pinned={pinned}>
       <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
         <div aria-hidden className="village-vignette absolute inset-0" />
-        <ErrorBoundary title="The village couldn’t be drawn">
-          <VillageStage />
-        </ErrorBoundary>
-        <ErrorBoundary title="The village is unreachable">
-          <VillageBusy />
-        </ErrorBoundary>
-        <ErrorBoundary title="Status sign broke">
-          <VillageStatus />
-        </ErrorBoundary>
-        <ErrorBoundary title="Controls broke">
-          <VillageControls />
-        </ErrorBoundary>
-        <ErrorBoundary title="The noticeboard fell over">
-          <BuzzPanel />
-        </ErrorBoundary>
-        <ErrorBoundary title="This house couldn’t be entered">
-          <HouseInterior />
-        </ErrorBoundary>
-        <ErrorBoundary title="The time machine jammed">
-          <TimeMachine />
-        </ErrorBoundary>
-        <ErrorBoundary title="The field guide is missing">
-          <VillageHelp />
-        </ErrorBoundary>
-        <ErrorBoundary title="The band went home">
-          <VillageMusic />
-        </ErrorBoundary>
+        {/* No per-section boundaries: any failure bubbles to the themed splash
+            (VillageErrorSplash) at the page level instead of a small toast. */}
+        <VillageStage />
+        <VillageBusy />
+        <VillageStatus />
+        <VillageControls />
+        <BuzzPanel />
+        <HouseInterior />
+        <TimeMachine />
+        <VillageHelp />
+        <VillageMusic />
         <VillageTooltip />
       </div>
     </VillageUiProvider>

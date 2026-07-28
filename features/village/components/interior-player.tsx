@@ -88,7 +88,9 @@ export function InteriorPlayer({
         // match InteriorScene so the click → room-coordinate mapping stays
         // calibrated), then follow the player within that region.
         const pad = 32;
-        const sidebar = Math.min(SIDEBAR_W, vw * 0.4);
+        // Match InteriorScene: on mobile the sidebar is a hidden drawer, so the
+        // room uses the full width and the click → room-coord mapping stays true.
+        const sidebar = vw < 640 ? 0 : Math.min(SIDEBAR_W, vw * 0.4);
         const availW = vw - sidebar;
         const scale = Math.max(0.6, Math.min((availW - pad * 2) / width, (vh - pad * 2) / height, MAX_ZOOM));
         const sw = width * scale;
