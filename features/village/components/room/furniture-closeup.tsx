@@ -1,7 +1,8 @@
 'use client';
 
+import { Canvas, useFrame } from '@react-three/fiber';
 import { ArrowUpRight } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
   AI_ART_PALETTE,
@@ -12,6 +13,14 @@ import {
 import type { RoomSpecPayload } from '@/features/village/hooks/use-village-data';
 import { backdropFor, type Build } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
+import type { Group } from 'three';
+
+type VoxelPieceData = {
+  id: string;
+  art: string[];
+  palette: Palette;
+  offset: number;
+};
 
 export function FurnitureCloseup({
   build,
@@ -27,6 +36,14 @@ export function FurnitureCloseup({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
+  const spacing = drawn ? 2.7 : 1.4;
+  const start = -((build.commits.length - 1) * spacing) / 2;
+  const pieces = build.commits.map((commit, i) => ({
+    id: commit.sha,
+    art: drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art,
+    palette: drawn ? AI_ART_PALETTE : fallback.palette,
+    offset: start + i * spacing,
+  }));
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -58,16 +75,18 @@ export function FurnitureCloseup({
           className="flex shrink-0 flex-col items-center gap-3 px-6 pt-10 pb-5"
           style={{ background: `radial-gradient(ellipse 75% 80% at 50% 45%, ${backdropFor(cell)}, transparent 75%)` }}
         >
-          <div className="flex min-h-44 items-end justify-center">
-            {build.commits.map((commit, i) => {
-              const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
-              const palette = drawn ? AI_ART_PALETTE : fallback.palette;
-              return (
-                <span key={commit.sha} style={{ marginLeft: i === 0 ? 0 : drawn ? 12 : -18 }}>
-                  <VoxelSprite art={piece} palette={palette} block={drawn ? 13 : 15} />
-                </span>
-              );
-            })}
+          <div className="h-58 w-full max-w-xl">
+            <Canvas
+              orthographic
+              dpr={[1, 2]}
+              camera={{ position: [8, 6, 9], zoom: 46, near: 0.1, far: 100 }}
+              gl={{ antialias: false, alpha: true }}
+            >
+              <ambientLight intensity={1.7} />
+              <directionalLight position={[5, 8, 6]} intensity={2.4} />
+              <directionalLight position={[-5, 3, -4]} intensity={0.6} color="#d8bb7a" />
+              <VoxelTurntable pieces={pieces} />
+            </Canvas>
           </div>
           <span aria-hidden className="block h-1.5 w-16 rounded-full bg-black/40 blur-[1px]" />
           <div className="flex flex-col items-center gap-1.5">
@@ -114,90 +133,54 @@ export function FurnitureCloseup({
   );
 }
 
-function VoxelSprite({ art, palette, block }: { art: string[]; palette: Palette; block: number }) {
-  const width = Math.max(...art.map(row => row.length));
-  const depth = Math.max(4, Math.round(block * 0.34));
-  const yStep = Math.round(block * 0.72);
-  const pixels = art.flatMap((row, y) =>
+function VoxelTurntable({ pieces }: { pieces: VoxelPieceData[] }) {
+  const ref = useRef<Group>(null);
+
+  useFrame((_, delta) => {
+    if (ref.current) ref.current.rotation.y += delta * 0.55;
+  });
+
+  return (
+    <group rotation={[-0.28, -0.35, 0]}>
+      <group ref={ref}>
+        {pieces.map(piece => (
+          <VoxelPiece key={piece.id} piece={piece} />
+        ))}
+      </group>
+      <mesh position={[0, -1.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[3.2, 24]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.25} />
+      </mesh>
+    </group>
+  );
+}
+
+function VoxelPiece({ piece }: { piece: VoxelPieceData }) {
+  const block = 0.34;
+  const width = Math.max(...piece.art.map(row => row.length));
+  const height = piece.art.length;
+  const voxels = piece.art.flatMap((row, y) =>
     [...row].map((ch, x) => {
-      const color = palette[ch];
+      const color = piece.palette[ch];
       if (!color) return null;
-      return { x, y, color };
+      return {
+        key: `${piece.id}-${x}-${y}`,
+        color,
+        position: [(x - width / 2) * block + piece.offset, (height / 2 - y) * block, 0] as [number, number, number],
+      };
     }),
   );
 
   return (
-    <span
-      aria-hidden
-      className="relative block"
-      style={{
-        width: width * block + art.length * 2 + depth,
-        height: art.length * yStep + block + depth,
-      }}
-    >
-      {pixels.map(pixel => {
-        if (!pixel) return null;
-        const left = pixel.x * block + pixel.y * 2;
-        const top = pixel.y * yStep;
-        return (
-          <span
-            key={`${pixel.x}-${pixel.y}`}
-            className="absolute"
-            style={{ left, top, width: block + depth, height: block + depth }}
-          >
-            <span
-              className="absolute"
-              style={{
-                left: 0,
-                top: depth,
-                width: block,
-                height: block,
-                backgroundColor: pixel.color,
-                boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 0.16)',
-              }}
-            />
-            <span
-              className="absolute"
-              style={{
-                left: depth,
-                top: 0,
-                width: block,
-                height: depth,
-                backgroundColor: shade(pixel.color, 24),
-                transform: 'skewX(-45deg)',
-                transformOrigin: 'bottom left',
-                boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / 0.08)',
-              }}
-            />
-            <span
-              className="absolute"
-              style={{
-                left: block,
-                top: depth,
-                width: depth,
-                height: block,
-                backgroundColor: shade(pixel.color, -28),
-                transform: 'skewY(-45deg)',
-                transformOrigin: 'top left',
-                boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 0.18)',
-              }}
-            />
-          </span>
-        );
-      })}
-    </span>
+    <>
+      {voxels.map(voxel =>
+        voxel ? (
+          <mesh key={voxel.key} position={voxel.position}>
+            <boxGeometry args={[block * 0.92, block * 0.92, block * 0.92]} />
+            <meshStandardMaterial color={voxel.color} roughness={0.85} metalness={0.03} flatShading />
+          </mesh>
+        ) : null,
+      )}
+    </>
   );
-}
-
-function shade(hex: string, amount: number): string {
-  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
-  const n = Number.parseInt(hex.slice(1), 16);
-  const r = clampColor((n >> 16) + amount);
-  const g = clampColor(((n >> 8) & 255) + amount);
-  const b = clampColor((n & 255) + amount);
-  return `rgb(${r} ${g} ${b})`;
-}
-
-function clampColor(value: number): number {
-  return Math.max(0, Math.min(255, value));
 }
