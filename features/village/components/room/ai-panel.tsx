@@ -24,7 +24,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   const title = generated ? 'Furniture fixed' : ai ? 'Fixing furniture' : 'Fix furniture';
 
   return (
-    <aside className="absolute top-3 right-3 z-50 sm:top-4 sm:right-4 sm:w-72">
+    <aside className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 md:top-4 md:right-4 md:w-72">
       <button
         type="button"
         onClick={() => {
@@ -36,12 +36,12 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         aria-keyshortcuts="G"
         aria-label="Ask the carpenter to fix the furniture"
         className={cn(
-          'panel flex h-11 w-11 cursor-pointer items-center justify-center gap-3 rounded-sm p-2 text-left transition-transform hover:-translate-y-0.5 sm:min-h-20 sm:w-full sm:items-start sm:justify-start sm:p-3',
+          'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-20 md:w-full md:items-start md:justify-start md:p-3',
           ai && 'ring-2 ring-[#e4c05a]',
           ai && 'cursor-default hover:translate-y-0',
         )}
       >
-        <span className="pixel relative flex h-7 w-7 shrink-0 items-center justify-center sm:h-8 sm:w-8">
+        <span className="pixel relative flex h-6 w-6 shrink-0 items-center justify-center md:h-8 md:w-8">
           {working ? (
             <span aria-hidden className="absolute -top-1 -right-2">
               {[0, 1].map(i => (
@@ -57,7 +57,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
             <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.3} />
           </span>
         </span>
-        <span className="hidden min-w-0 flex-1 items-start gap-1.5 sm:flex">
+        <span className="hidden min-w-0 flex-1 items-start gap-1.5 md:flex">
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-1.5 text-[16px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
               <WandSparkles size={14} strokeWidth={3} />

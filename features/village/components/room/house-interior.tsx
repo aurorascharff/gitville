@@ -218,7 +218,7 @@ function InteriorScene({
         onClick={() => setSignOpen(true)}
         aria-keyshortcuts="I"
         aria-label="Show pull request info"
-        className="panel absolute top-3 left-3 z-50 flex h-10 w-10 items-center justify-center rounded-sm text-[18px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
+        className="panel absolute top-[max(0.75rem,env(safe-area-inset-top))] left-3 z-50 flex h-9 w-9 items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
       >
         <span aria-hidden>ⓘ</span>
       </button>

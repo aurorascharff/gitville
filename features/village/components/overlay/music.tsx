@@ -163,7 +163,9 @@ export function VillageMusic() {
     <div
       className={cn(
         'absolute z-50 flex items-center gap-1.5',
-        indoors ? 'bottom-16 left-16 sm:bottom-5 sm:left-[calc(min(360px,40vw)+4rem)]' : 'bottom-5 left-16',
+        indoors
+          ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] left-13 sm:bottom-5 sm:left-[calc(min(360px,40vw)+4rem)]'
+          : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-13 sm:bottom-5 sm:left-16',
       )}
     >
       <button
@@ -171,12 +173,12 @@ export function VillageMusic() {
         onClick={() => setPlaying(p => !p)}
         aria-label={playing ? 'Mute the village music' : 'Play the village music'}
         aria-pressed={playing}
-        className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
+        className="panel font-pixel flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-[14px] font-bold transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-[15px]"
       >
         {playing ? '♪' : <span className="opacity-45">♪</span>}
       </button>
       {playing ? (
-        <div className="panel flex h-9 items-center rounded-sm px-2">
+        <div className="panel hidden h-9 items-center rounded-sm px-2 sm:flex">
           <input
             type="range"
             min={0}

@@ -11,8 +11,8 @@ export function TimeMachine() {
   if (!payload.ok) return null;
 
   return (
-    <div className="absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">
-      <div className="panel flex w-full max-w-xl items-center gap-3 rounded-sm py-2 pr-2 pl-3">
+    <div className="absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex justify-center px-3 sm:bottom-5 sm:px-4">
+      <div className="panel flex w-full max-w-xl items-center gap-2 rounded-sm py-1.5 pr-1.5 pl-2.5 sm:gap-3 sm:py-2 sm:pr-2 sm:pl-3">
         <ClockFace t={asOf} />
         <span className="hidden shrink-0 font-mono text-[12px] text-[#8a6d2a] sm:inline">
           {spanLabel(maxT - minT)} ago
@@ -28,14 +28,14 @@ export function TimeMachine() {
         />
         <span className="hidden shrink-0 font-mono text-[12px] text-[#8a6d2a] sm:inline">now</span>
         {live ? (
-          <span className="flex w-28 items-center justify-center gap-1.5 rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] py-1 text-[13px] font-bold text-[#3a2f22]">
+          <span className="flex h-8 w-14 shrink-0 items-center justify-center gap-1 rounded-sm border-2 border-[#4a3826] bg-[#e0d3b8] text-[11px] font-bold text-[#3a2f22] sm:w-28 sm:gap-1.5 sm:py-1 sm:text-[13px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#58a55c]" /> LIVE
           </span>
         ) : (
           <button
             type="button"
             onClick={() => setScrub(SCRUB_MAX)}
-            className="w-32 cursor-pointer rounded-sm border-2 border-[#4a3826] py-1 text-center text-[13px] font-bold text-[#6b5b43] transition-colors hover:bg-[#e0d3b8] hover:text-[#3a2f22]"
+            className="h-8 w-16 shrink-0 cursor-pointer truncate rounded-sm border-2 border-[#4a3826] px-1 text-center text-[11px] font-bold text-[#6b5b43] transition-colors hover:bg-[#e0d3b8] hover:text-[#3a2f22] sm:w-32 sm:text-[13px]"
           >
             {clockLabel(asOf)} ↺
           </button>
@@ -50,7 +50,7 @@ function ClockFace({ t }: { t: number }) {
   const hourDeg = ((d.getHours() % 12) + d.getMinutes() / 60) * 30;
   const minDeg = d.getMinutes() * 6;
   return (
-    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden className="pixel shrink-0">
+    <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden className="pixel shrink-0 sm:h-10 sm:w-10">
       <circle cx="20" cy="20" r="18" fill="#f7efdc" stroke="#4a3826" strokeWidth="3" />
       {[0, 90, 180, 270].map(deg => (
         <rect key={deg} x="19" y="5" width="2" height="4" fill="#8a6d2a" transform={`rotate(${deg} 20 20)`} />

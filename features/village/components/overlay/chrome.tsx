@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, RefreshCw, Users } from 'lucide-react';
+import { AlertTriangle, Minus, Newspaper, Plus, RefreshCw, Users } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
@@ -50,19 +50,22 @@ export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
   if (focusId) return null;
 
   return (
-    <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
+    <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] left-3 z-30 flex max-w-[calc(100vw-6.5rem)] flex-col gap-1.5 sm:top-4 sm:left-4 sm:max-w-none sm:gap-2">
       {repoNav}
       {payload.ok ? (
-        <p className="flex h-6 items-center gap-2 px-1 text-[14px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+        <p className="flex h-5 min-w-0 items-center gap-1.5 px-1 text-[12px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)] sm:h-6 sm:gap-2 sm:text-[14px]">
           <span
-            className={cn('h-2 w-2 rounded-full', live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')}
+            className={cn(
+              'h-2 w-2 shrink-0 rounded-full',
+              live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]',
+            )}
           />
           {stale ? (
-            'rate limited, showing the last sync'
+            <span className="truncate">rate limited</span>
           ) : live ? (
-            <>{actors.length} villagers about</>
+            <span className="truncate">{actors.length} villagers</span>
           ) : (
-            <span className="font-mono">
+            <span className="truncate font-mono">
               viewing {new Date(asOf).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
               {new Date(asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -79,14 +82,14 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
   const { mutate } = useSWRConfig();
   const retrying = stale || !payload.ok;
   return (
-    <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
+    <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-30 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 sm:top-4 sm:right-4 sm:gap-1.5">
       {repoLink}
       <button
         type="button"
         onClick={() => mutate(villageKey(slug))}
         aria-label={retrying ? 'Retry village sync' : 'Refresh village'}
         title={retrying ? 'Retry village sync' : 'Refresh village'}
-        className="panel relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5"
+        className="panel relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-9"
       >
         <RefreshCw size={14} strokeWidth={3} />
         {retrying ? (
@@ -102,18 +105,18 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
             aria-keyshortcuts="Meta+- Control+-"
-            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel hidden h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5 sm:flex"
           >
-            -
+            <Minus size={15} strokeWidth={3} />
           </button>
           <button
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
             aria-keyshortcuts="Meta+= Control+="
-            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel hidden h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5 sm:flex"
           >
-            +
+            <Plus size={15} strokeWidth={3} />
           </button>
           <button
             type="button"
@@ -121,12 +124,14 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
               setBuzzOpen(o => !o);
               setPeopleOpen(() => false);
             }}
+            aria-label="Open noticeboard"
             className={cn(
-              'panel flex h-9 cursor-pointer items-center rounded-sm px-3 text-[14px] font-bold transition-transform hover:-translate-y-0.5',
+              'panel flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-[14px] font-bold transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-auto sm:px-3',
               buzzOpen && 'brightness-90',
             )}
           >
-            noticeboard
+            <Newspaper className="sm:hidden" size={14} strokeWidth={3} />
+            <span className="hidden sm:inline">noticeboard</span>
           </button>
           <button
             type="button"
@@ -134,14 +139,16 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
               setPeopleOpen(o => !o);
               setBuzzOpen(() => false);
             }}
+            aria-label="Open people"
             className={cn(
-              'panel flex h-9 cursor-pointer items-center gap-1.5 rounded-sm px-3 text-[14px] font-bold transition-transform hover:-translate-y-0.5',
+              'panel flex h-8 w-8 cursor-pointer items-center justify-center gap-1.5 rounded-sm text-[14px] font-bold transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-auto sm:px-3',
               peopleOpen && 'brightness-90',
             )}
           >
-            <Users size={14} strokeWidth={3} /> people
+            <Users size={14} strokeWidth={3} />
+            <span className="hidden sm:inline">people</span>
           </button>
-          <div className="panel flex h-9 items-center rounded-sm">
+          <div className="panel hidden h-9 items-center rounded-sm sm:flex">
             <ThemeToggle />
           </div>
         </>
