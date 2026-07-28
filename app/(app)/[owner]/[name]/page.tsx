@@ -5,7 +5,12 @@ import { preload, SWRConfig } from 'swr';
 import { RepoSwitcher, RepoSwitcherSkeleton } from '@/features/repo/components/repo-switcher';
 import { getRepoData } from '@/features/repo/repo-queries';
 import { BuzzPanel } from '@/features/village/components/overlay/buzz-panel';
-import { VillageBusy, VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/overlay/chrome';
+import {
+  VillageBusy,
+  VillageControls,
+  VillageStatus,
+  VillageTooltip,
+} from '@/features/village/components/overlay/chrome';
 import { VillageHelp } from '@/features/village/components/overlay/help';
 import { VillageMusic } from '@/features/village/components/overlay/music';
 import { TimeMachine } from '@/features/village/components/overlay/time-machine';
@@ -44,7 +49,7 @@ async function Village({ slug }: { slug: string }) {
 
   return (
     <SWRConfig value={{ cacheData }}>
-      <VillageUiProvider repo={repo}>
+      <VillageUiProvider slug={repo.slug}>
         <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
           <div aria-hidden className="village-vignette absolute inset-0" />
           <VillageStageSurface

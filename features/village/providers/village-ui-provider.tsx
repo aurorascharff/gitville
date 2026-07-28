@@ -2,13 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import { createContext, useContext, useState } from 'react';
-import type { RepoData } from '@/types/github';
 
 type Tooltip = { x: number; y: number; title: string; body: string | null; when: string | null };
 
 type VillageUi = {
   slug: string;
-  repo: RepoData;
   scrub: number;
   setScrub: (v: number) => void;
   zoom: number;
@@ -31,13 +29,7 @@ export function useVillageUi(): VillageUi {
   return ctx;
 }
 
-export function VillageUiProvider({
-  repo,
-  children,
-}: {
-  repo: RepoData;
-  children: React.ReactNode;
-}) {
+export function VillageUiProvider({ slug, children }: { slug: string; children: React.ReactNode }) {
   const [scrub, setScrub] = useState(1000);
   const [zoom, setZoomState] = useState(1);
   const [buzzOpen, setBuzzOpenState] = useState(true);
@@ -63,8 +55,7 @@ export function VillageUiProvider({
   return (
     <VillageUiContext.Provider
       value={{
-        slug: repo.slug,
-        repo,
+        slug,
         scrub,
         setScrub,
         zoom,
