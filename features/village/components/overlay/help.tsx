@@ -115,8 +115,16 @@ export function VillageHelp() {
               <span>Walk into a door to step inside</span>
             </div>
             <div className="flex items-center gap-3">
+              <Key>G</Key>
+              <span>Toggle Draw with AI inside a room</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Key>I</Key>
+              <span>Open the info sign</span>
+            </div>
+            <div className="flex items-center gap-3">
               <Key wide>Esc</Key>
-              <span>Walk onto the mat to leave</span>
+              <span>Close panels or leave a room</span>
             </div>
           </div>
 

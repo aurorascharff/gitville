@@ -13,6 +13,7 @@ export async function GET(_request: Request, { params }: RouteContext<'/api/vill
       prs: [],
       branches: [],
       events: [],
+      versions: [],
     });
   }
   return Response.json(await getVillagePayload(repo.slug, repo.defaultBranch));

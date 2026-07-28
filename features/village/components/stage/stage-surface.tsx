@@ -10,6 +10,7 @@ import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, WORLD_H, worldModelFor, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
+import type { RepoData } from '@/types/github';
 
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {
   return cells
@@ -17,11 +18,11 @@ function lampSpots(cells: Cell[]): { x: number; y: number }[] {
     .map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
 }
 
-export function VillageStageSurface({ terrain, sky }: { terrain: ReactNode; sky: ReactNode }) {
+export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode; sky: ReactNode; repo: RepoData }) {
   const { slug, scrub, focusId, zoom } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = timeWindowFor(payload, scrub);
-  const { cells, placed, occupied } = worldModelFor(payload, slug, asOf);
+  const { cells, placed, occupied } = worldModelFor(payload, slug, asOf, repo);
   const worldRef = useRef<HTMLDivElement>(null);
 
   const lamps = lampSpots(cells);

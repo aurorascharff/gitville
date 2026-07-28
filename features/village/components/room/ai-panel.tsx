@@ -21,14 +21,15 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
       : 'Redraw this room from its real commits as an invented scene.';
 
   return (
-    <aside className="absolute right-4 bottom-4 z-50 w-44">
+    <aside className="absolute right-4 bottom-4 z-50 w-52">
       <button
         onClick={() => onToggle(!ai)}
         role="switch"
         aria-checked={ai}
+        aria-keyshortcuts="G"
         aria-label="Visualize this room with AI"
         className={cn(
-          'panel pixel flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-sm p-3 transition-transform hover:-translate-y-0.5',
+          'panel pixel flex w-full cursor-pointer flex-col items-center gap-2 rounded-sm p-3 transition-transform hover:-translate-y-0.5',
           ai && 'ring-2 ring-[#e4c05a]',
         )}
       >
@@ -48,8 +49,10 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
             <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={3} />
           </span>
         </span>
-        <span className="font-pixel text-[12px] font-bold text-[#3a2f22]">Draw with AI</span>
-        <span className="flex min-h-9 items-center text-center text-[10px] leading-tight text-[#6b5b43]">{status}</span>
+        <span className="font-pixel flex items-center gap-1 text-[13px] font-bold text-[#3a2f22]">
+          <KeyHint>G</KeyHint> Draw with AI
+        </span>
+        <span className="flex min-h-10 items-center text-center text-[12px] leading-snug text-[#6b5b43]">{status}</span>
         <span
           aria-hidden
           className={cn(
@@ -61,5 +64,13 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         </span>
       </button>
     </aside>
+  );
+}
+
+function KeyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
+      {children}
+    </span>
   );
 }

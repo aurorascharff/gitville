@@ -257,7 +257,7 @@ export function cottageArt(floors: number, draft: boolean): string[] {
     '.kkkWWbWWmmmWWbWWbWWO.',
     'kkkkkOOOOmmmOOOOOOOOO.',
   ];
-  const middles = Math.max(0, Math.min(3, floors - 2));
+  const middles = Math.max(0, Math.min(5, floors - 2));
   const mid = Array.from({ length: middles }, (_, i) => (i % 2 === 0 ? floorA : floorB)).flat();
   if (draft) return [...constructionTop, ...mid, ...(floors > 1 ? floorA : []), ...draftGround];
   if (floors === 1) return [...plainRoof, ...readyGround];
@@ -397,6 +397,16 @@ export const POND = {
     '..OObbbbbbbbbbbbOO..',
     '....OOOOOOOOOOOO....',
   ],
+};
+
+export const LILY_PAD = {
+  palette: { g: '#4e9a4e', d: '#2f7a3c', p: '#f2a6c8' },
+  art: ['..ggg..', '.ggggg.', 'gggdggg', '.gggg..', '..p....'],
+};
+
+export const REEDS = {
+  palette: { g: '#3f7a44', d: '#2f5a35', c: '#b58a4b' },
+  art: ['g.c.g', 'gdcdg', 'gdcdg', '.d.d.'],
 };
 
 export const TUFT = {

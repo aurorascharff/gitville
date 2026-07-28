@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpRight, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { BARRIER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
@@ -23,6 +24,8 @@ export function HouseSign({
   const { slug, setFocusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { spec } = useRoomSpec(slug, cell.id, ai);
+  const stackNavRef = useRef<HTMLUListElement>(null);
+  const keepStackFocusRef = useRef(false);
 
   const { stack, floorNo } = prStackForCell(payload, cell);
   const isPr = cell.kind === 'pr';
@@ -35,6 +38,19 @@ export function HouseSign({
         : cell.prState === 'ready'
           ? 'ready'
           : null;
+
+  useEffect(() => {
+    if (!keepStackFocusRef.current) return;
+    keepStackFocusRef.current = false;
+    stackNavRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
+  }, [cell.id]);
+
+  function moveStackFocus(current: HTMLElement, direction: 1 | -1) {
+    const items = [...(stackNavRef.current?.querySelectorAll<HTMLElement>('[data-stack-item]') ?? [])];
+    const index = items.indexOf(current);
+    const next = items[index + direction];
+    next?.focus();
+  }
 
   return (
     <aside
@@ -78,6 +94,14 @@ export function HouseSign({
                 <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
               </span>
             ) : null}
+            {cell.conflict ? <StatusChip tone="danger">conflict</StatusChip> : null}
+            {cell.checkState ? (
+              <StatusChip tone={checkTone(cell.checkState)}>checks {checkLabel(cell.checkState)}</StatusChip>
+            ) : null}
+            {cell.reviewDecision ? (
+              <StatusChip tone={reviewTone(cell.reviewDecision)}>{reviewLabel(cell.reviewDecision)}</StatusChip>
+            ) : null}
+            {cell.stale ? <StatusChip tone="quiet">stale</StatusChip> : null}
           </div>
 
           {desc ? (
@@ -174,7 +198,7 @@ export function HouseSign({
         {stack.length > 1 ? (
           <div className="max-h-[45%] shrink-0 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
             <p className="font-pixel mb-2.5 text-[11px] tracking-wide text-[#9a8c6d] uppercase">In this stack</p>
-            <ul className="flex flex-col gap-1">
+            <ul ref={stackNavRef} className="flex flex-col gap-1">
               {stack.map(pr => {
                 const here = `pr:${pr.number}` === cell.id;
                 const hasHouse = pickedPrs(payload).some(p => p.number === pr.number);
@@ -194,20 +218,64 @@ export function HouseSign({
                 return (
                   <li key={pr.number}>
                     {here ? (
-                      <span className={cn(base, 'border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]')}>{inner}</span>
+                      <button
+                        type="button"
+                        data-stack-item
+                        aria-current="true"
+                        onKeyDown={e => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, 1);
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, -1);
+                          }
+                        }}
+                        className={cn(base, 'cursor-default border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]')}
+                      >
+                        {inner}
+                      </button>
                     ) : hasHouse ? (
                       <button
                         type="button"
+                        data-stack-item
                         onClick={() => {
+                          keepStackFocusRef.current = true;
                           setFocusId(`pr:${pr.number}`);
-                          onClose();
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, 1);
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, -1);
+                          }
                         }}
                         className={link}
                       >
                         {inner}
                       </button>
                     ) : (
-                      <a href={pr.url} target="_blank" rel="noreferrer" className={link}>
+                      <a
+                        href={pr.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        data-stack-item
+                        onKeyDown={e => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, 1);
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            moveStackFocus(e.currentTarget, -1);
+                          }
+                        }}
+                        className={link}
+                      >
                         {inner}
                       </a>
                     )}
@@ -230,4 +298,48 @@ export function HouseSign({
       </div>
     </aside>
   );
+}
+
+function StatusChip({ tone, children }: { tone: 'good' | 'warn' | 'danger' | 'quiet'; children: React.ReactNode }) {
+  const colors = {
+    good: 'bg-[#58a55c] text-[#0e2410]',
+    warn: 'bg-[#e4c05a] text-[#3a2f22]',
+    danger: 'bg-[#d95c4a] text-[#2e120e]',
+    quiet: 'bg-[#2f6a3b] text-[#d7efcf]',
+  };
+
+  return (
+    <span
+      className={cn(
+        'font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[11px] font-bold',
+        colors[tone],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function checkTone(state: NonNullable<Cell['checkState']>): 'good' | 'warn' | 'danger' {
+  if (state === 'SUCCESS') return 'good';
+  if (state === 'PENDING' || state === 'EXPECTED') return 'warn';
+  return 'danger';
+}
+
+function checkLabel(state: NonNullable<Cell['checkState']>): string {
+  if (state === 'SUCCESS') return 'passed';
+  if (state === 'PENDING' || state === 'EXPECTED') return 'running';
+  return 'failed';
+}
+
+function reviewTone(decision: NonNullable<Cell['reviewDecision']>): 'good' | 'warn' | 'danger' {
+  if (decision === 'APPROVED') return 'good';
+  if (decision === 'CHANGES_REQUESTED') return 'danger';
+  return 'warn';
+}
+
+function reviewLabel(decision: NonNullable<Cell['reviewDecision']>): string {
+  if (decision === 'APPROVED') return 'approved';
+  if (decision === 'CHANGES_REQUESTED') return 'changes requested';
+  return 'review wanted';
 }

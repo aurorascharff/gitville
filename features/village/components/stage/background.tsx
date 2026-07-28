@@ -4,9 +4,11 @@ import {
   FENCE,
   FLOWER,
   FLOWER_BLUE,
+  LILY_PAD,
   MUSHROOM,
   PEBBLES,
   POND,
+  REEDS,
   ROCK,
   Sprite,
   STUMP,
@@ -103,8 +105,12 @@ export function VillageDecor() {
     <>
       <GrassDetail />
       <BorderForest />
-      <Pond x={330} y={270} />
-      <Pond x={1780} y={1190} />
+      <Pond x={330} y={270} variant="reeds" />
+      <Pond x={1780} y={1190} variant="stones" />
+      <Pond x={2940} y={650} variant="lilies" />
+      <PicnicGrove x={760} y={2240} />
+      <FlowerWalk x={2620} y={2260} />
+      <WorkYard x={1180} y={2550} />
       <Greenery />
     </>
   );
@@ -125,10 +131,91 @@ function Greenery() {
   );
 }
 
-function Pond({ x, y }: { x: number; y: number }) {
+function Pond({ x, y, variant }: { x: number; y: number; variant: 'reeds' | 'stones' | 'lilies' }) {
+  const details =
+    variant === 'reeds'
+      ? [
+          { of: REEDS, x: -95, y: -26, scale: 4 },
+          { of: REEDS, x: 82, y: 42, scale: 4 },
+          { of: LILY_PAD, x: 18, y: -8, scale: 3 },
+        ]
+      : variant === 'stones'
+        ? [
+            { of: PEBBLES, x: -78, y: 58, scale: 4 },
+            { of: ROCK, x: 96, y: 20, scale: 3 },
+            { of: LILY_PAD, x: -12, y: -2, scale: 3 },
+          ]
+        : [
+            { of: LILY_PAD, x: -52, y: -6, scale: 4 },
+            { of: LILY_PAD, x: 54, y: 18, scale: 3 },
+            { of: REEDS, x: 96, y: -34, scale: 4 },
+          ];
+
   return (
     <Placed x={x} y={y} className="pixel pointer-events-none">
-      <Sprite of={POND} scale={7} />
+      <span
+        aria-hidden
+        className="absolute -top-10 -left-24 h-6 w-30 bg-[#315c38] opacity-80"
+        style={{ boxShadow: '24px -12px 0 #376842, 84px 0 0 #376842, 144px 18px 0 #315c38' }}
+      />
+      <Sprite of={POND} scale={8} />
+      {details.map((detail, i) => (
+        <span key={i} className="absolute" style={{ left: detail.x, top: detail.y }}>
+          <Sprite of={detail.of} scale={detail.scale} />
+        </span>
+      ))}
+    </Placed>
+  );
+}
+
+function PicnicGrove({ x, y }: { x: number; y: number }) {
+  return (
+    <Placed x={x} y={y} className="pixel pointer-events-none">
+      <span className="absolute -top-20 -left-28">
+        <Sprite of={TREE} scale={6} />
+      </span>
+      <span className="absolute -top-10 left-16">
+        <Sprite of={TREE} scale={5} />
+      </span>
+      <span className="absolute top-32 -left-16">
+        <Sprite of={BUSH} scale={5} />
+      </span>
+      <span className="absolute top-12 left-10 h-12 w-20 border-4 border-[#6b4223] bg-[#b8564f]" />
+      <span className="absolute top-16 left-14 h-4 w-12 bg-[#f0ead8]" />
+    </Placed>
+  );
+}
+
+function FlowerWalk({ x, y }: { x: number; y: number }) {
+  return (
+    <Placed x={x} y={y} className="pixel pointer-events-none">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <span key={i} className="absolute" style={{ left: (i % 6) * 28, top: Math.floor(i / 6) * 34 }}>
+          <Sprite of={i % 2 === 0 ? FLOWER : FLOWER_BLUE} scale={4} />
+        </span>
+      ))}
+      <span className="absolute top-24 left-36">
+        <Sprite of={FENCE} scale={5} />
+      </span>
+    </Placed>
+  );
+}
+
+function WorkYard({ x, y }: { x: number; y: number }) {
+  return (
+    <Placed x={x} y={y} className="pixel pointer-events-none">
+      <span className="absolute -top-12 -left-16">
+        <Sprite of={STUMP} scale={5} />
+      </span>
+      <span className="absolute -top-4 left-28">
+        <Sprite of={ROCK} scale={4} />
+      </span>
+      <span className="absolute top-28 -left-28">
+        <Sprite of={MUSHROOM} scale={4} />
+      </span>
+      <span className="absolute top-20 left-14">
+        <Sprite of={FENCE} scale={5} />
+      </span>
     </Placed>
   );
 }

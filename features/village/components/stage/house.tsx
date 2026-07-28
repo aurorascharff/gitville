@@ -1,5 +1,6 @@
 'use client';
 
+import { AvatarImage } from '@/components/ui/avatar-image';
 import {
   cabinArt,
   cottageArt,
@@ -22,9 +23,13 @@ import type { Cell } from '@/features/village/utils/village-model';
 
 function stateLine(cell: Cell): string | null {
   if (cell.kind !== 'pr') return null;
+  if (cell.conflict) return 'has merge conflicts, roadwork outside';
   if (cell.prState === 'stacked')
     return `a stack of ${cell.floors} PRs${cell.draft ? ', top floor still a draft' : ''}`;
   if (cell.prState === 'draft') return 'a draft, still under construction';
+  if (cell.checkState === 'FAILURE' || cell.checkState === 'ERROR') return 'checks need attention';
+  if (cell.reviewDecision === 'APPROVED') return 'approved and ready';
+  if (cell.stale) return 'quiet for a while, moss is taking over';
   return 'ready for review';
 }
 
@@ -35,10 +40,12 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
   const [roof, roofShade] = ROOF[cell.kind];
   const palette = housePalette(roof, roofShade, lit);
   const state = stateLine(cell);
+  const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
 
   return (
     <button
       type="button"
+      tabIndex={-1}
       onClick={() => {
         if (focusId === cell.id) setFocusId(null);
         else {
@@ -79,12 +86,15 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
           </span>
         ) : null}
 
+        {main && cell.versions?.length ? <TownHallBanners cell={cell} /> : null}
+        {cell.kind === 'pr' && cell.stale ? <Moss /> : null}
+        {cell.kind === 'pr' && cell.checkState ? <CheckFlag state={cell.checkState} /> : null}
         {cell.kind === 'pr' && cell.prState === 'ready' && (cell.floors ?? 1) === 1 && lit ? <ChimneySmoke /> : null}
 
         {cell.kind === 'inbox' ? (
           <DayNightSprite art={WELL.art} palette={WELL.palette} scale={5} lit={lit} />
         ) : main ? (
-          <DayNightSprite art={hallArt()} palette={palette} scale={5} lit={lit} />
+          <DayNightSprite art={hallArt()} palette={palette} scale={cell.scale ?? 5} lit={lit} />
         ) : cell.kind === 'branch' ? (
           <DayNightSprite art={cabinArt()} palette={palette} scale={5} lit={lit} />
         ) : cell.kind === 'issue' ? (
@@ -122,9 +132,173 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
             <span className="text-[11px]">z</span>
           </span>
         )}
+        {cell.kind === 'pr' && peopleToShow.length > 0 ? (
+          <Mailbox reviewers={cell.reviewers ?? []} assignees={cell.assignees ?? []} />
+        ) : null}
       </div>
     </button>
   );
+}
+
+function TownHallBanners({ cell }: { cell: Cell }) {
+  const { setTip } = useVillageUi();
+  const colors = {
+    stable: 'bg-[#58a55c] text-[#0e2410]',
+    preview: 'bg-[#e4c05a] text-[#3a2f22]',
+    canary: 'bg-[#a986bd] text-[#1c1424]',
+  };
+
+  return (
+    <span className="absolute -top-16 left-1/2 flex -translate-x-1/2 gap-1">
+      {cell.versions?.map(version => (
+        <span
+          key={version.channel}
+          title={`${version.channel}: ${version.name}`}
+          onMouseMove={e => {
+            e.stopPropagation();
+            setTip({
+              x: e.clientX,
+              y: e.clientY,
+              title: `${version.channel === 'stable' ? 'current' : version.channel} version`,
+              body: version.name,
+              when: version.at,
+            });
+          }}
+          onMouseLeave={e => {
+            e.stopPropagation();
+            setTip(null);
+          }}
+          className={`font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[9px] font-bold shadow-[2px_2px_0_rgb(0_0_0/0.25)] ${colors[version.channel]}`}
+        >
+          {version.channel === 'stable' ? 'current' : version.channel}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function Moss() {
+  const { setTip } = useVillageUi();
+  return (
+    <span
+      aria-hidden
+      title="quiet for a while"
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({
+          x: e.clientX,
+          y: e.clientY,
+          title: 'stale branch',
+          body: 'This PR has been quiet for more than two weeks, so moss is growing on the house.',
+          when: null,
+        });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="absolute top-8 left-1/2 z-10 flex -translate-x-1/2 gap-1"
+    >
+      <span className="h-2 w-7 bg-[#2f6a3b]" />
+      <span className="mt-1 h-2 w-4 bg-[#3f8150]" />
+      <span className="h-2 w-5 bg-[#265932]" />
+    </span>
+  );
+}
+
+function CheckFlag({ state }: { state: NonNullable<Cell['checkState']> }) {
+  const { setTip } = useVillageUi();
+  const color = state === 'SUCCESS' ? '#58a55c' : state === 'PENDING' || state === 'EXPECTED' ? '#e4c05a' : '#d95c4a';
+  const label = checkLabel(state);
+
+  return (
+    <span
+      aria-hidden
+      title={`checks ${label}`}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({
+          x: e.clientX,
+          y: e.clientY,
+          title: 'CI checks',
+          body: `The latest check status is ${label}.`,
+          when: null,
+        });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="absolute -top-8 right-2 z-10 flex flex-col items-center"
+    >
+      <span className="h-5 w-0.5 bg-[#2e2418]" />
+      <span
+        className="h-3 w-5 border-2 border-[#2e2418]"
+        style={{ backgroundColor: color, transform: 'translate(8px, -18px)' }}
+      />
+    </span>
+  );
+}
+
+function Mailbox({
+  reviewers,
+  assignees,
+}: {
+  reviewers: NonNullable<Cell['reviewers']>;
+  assignees: NonNullable<Cell['assignees']>;
+}) {
+  const { setTip } = useVillageUi();
+  const people = [...reviewers, ...assignees].slice(0, 3);
+  const body = [
+    reviewers.length ? `Review requested: ${reviewers.map(person => person.login).join(', ')}` : null,
+    assignees.length ? `Assigned: ${assignees.map(person => person.login).join(', ')}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return (
+    <span
+      title={body}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({
+          x: e.clientX,
+          y: e.clientY,
+          title: 'mailbox',
+          body,
+          when: null,
+        });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="absolute right-[-34px] bottom-7 z-10 flex flex-col items-center gap-0.5"
+    >
+      <span className="relative h-5 w-6 rounded-t-sm border-2 border-[#2e2418] bg-[#8fd0c0] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
+        <span className="absolute top-1 left-1 h-1 w-3 bg-[#2e2418]" />
+        <span className="absolute top-1 right-0 h-3 w-1 bg-[#d95c4a]" />
+      </span>
+      <span className="flex -space-x-1">
+        {people.map(person => (
+          <AvatarImage
+            key={person.login}
+            src={person.avatar}
+            name={person.login}
+            alt=""
+            size={16}
+            className="rounded-full border border-[#2e2418]"
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+function checkLabel(state: NonNullable<Cell['checkState']>): string {
+  if (state === 'SUCCESS') return 'passing';
+  if (state === 'PENDING' || state === 'EXPECTED') return 'running';
+  return 'failing';
 }
 
 function DayNightSprite({

@@ -1,5 +1,6 @@
 'use client';
 
+import { Users } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
@@ -19,19 +20,19 @@ export function VillageBusy() {
   if (payload.ok) return null;
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-[#24462c] dark:bg-[#0e1f14]">
-      <div aria-hidden className="village-vignette absolute inset-0" />
-      <div className="pixel relative flex flex-col items-center gap-4 px-6 text-center">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 px-4">
+      <div className="panel pixel pointer-events-auto relative flex max-w-sm flex-col items-center gap-4 rounded-sm p-6 text-center shadow-[8px_10px_0_rgb(0_0_0/0.35)]">
         <PixelSprite art={cottageArt(1, false)} palette={housePalette(...ROOF.pr, true)} scale={5} />
-        <p className="font-pixel text-[18px] text-white drop-shadow-[0_2px_2px_rgb(0_0_0/0.6)]">
+        <p className="font-pixel text-[18px] text-[#3a2f22] drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
           the village is resting
         </p>
-        <p className="max-w-xs font-mono text-[13px] text-white/70">
+        <p className="max-w-xs text-[14px] leading-snug text-[#6b5b43]">
           GitHub is rate limiting us right now. Switch villages from the picker, or come back in a minute.
         </p>
         <button
+          type="button"
           onClick={() => mutate(villageKey(slug))}
-          className="panel font-pixel mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+          className="panel-wood font-pixel mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[13px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
         >
           try again
         </button>
@@ -73,13 +74,14 @@ export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
 }
 
 export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
-  const { buzzOpen, setBuzzOpen, focusId, setZoom } = useVillageUi();
+  const { buzzOpen, setBuzzOpen, peopleOpen, setPeopleOpen, focusId, setZoom } = useVillageUi();
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
       {repoLink}
       {!focusId ? (
         <>
           <button
+            type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
             className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
@@ -87,6 +89,7 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             -
           </button>
           <button
+            type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
             className="panel font-pixel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5"
@@ -94,13 +97,30 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             +
           </button>
           <button
-            onClick={() => setBuzzOpen(o => !o)}
+            type="button"
+            onClick={() => {
+              setBuzzOpen(o => !o);
+              setPeopleOpen(() => false);
+            }}
             className={cn(
-              'panel font-pixel flex h-9 items-center rounded-sm px-3 text-[13px] font-bold transition-transform hover:-translate-y-0.5',
+              'panel flex h-9 cursor-pointer items-center rounded-sm px-3 text-[14px] font-bold transition-transform hover:-translate-y-0.5',
               buzzOpen && 'brightness-90',
             )}
           >
             noticeboard
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPeopleOpen(o => !o);
+              setBuzzOpen(() => false);
+            }}
+            className={cn(
+              'panel flex h-9 cursor-pointer items-center gap-1.5 rounded-sm px-3 text-[14px] font-bold transition-transform hover:-translate-y-0.5',
+              peopleOpen && 'brightness-90',
+            )}
+          >
+            <Users size={14} strokeWidth={3} /> people
           </button>
           <div className="panel flex h-9 items-center rounded-sm">
             <ThemeToggle />

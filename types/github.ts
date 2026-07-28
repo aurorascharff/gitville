@@ -13,6 +13,18 @@ export type RepoData = {
   ownerAvatar: string;
 };
 
+export type VillagePerson = {
+  login: string;
+  avatar: string | null;
+};
+
+export type VersionChannel = {
+  channel: 'stable' | 'preview' | 'canary';
+  name: string;
+  url: string | null;
+  at: string | null;
+};
+
 export type VillagePR = {
   number: number;
   title: string;
@@ -24,6 +36,10 @@ export type VillagePR = {
   draft: boolean;
   mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN' | null;
   mergeStateStatus: string | null;
+  checkState: 'EXPECTED' | 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS' | null;
+  reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null;
+  reviewers: VillagePerson[];
+  assignees: VillagePerson[];
   updatedAt: string;
 };
 
@@ -75,6 +91,7 @@ export type VillagePayload = {
   prs: VillagePR[];
   branches: ActiveBranch[];
   events: WireEvent[];
+  versions: VersionChannel[];
 };
 
 export const villageKey = (slug: string) => `/api/village/${slug}`;

@@ -1,5 +1,5 @@
 import { hashString } from '@/lib/utils';
-import type { VillagePayload, WireEvent } from '@/types/github';
+import type { RepoData, VersionChannel, VillagePayload, VillagePerson, WireEvent } from '@/types/github';
 
 export const WORLD_W = 3500;
 export const WORLD_H = 3000;
@@ -8,6 +8,9 @@ const CY = WORLD_H / 2;
 
 const DX = 350;
 const DY = 295;
+const MAX_PR_BUILDINGS = 24;
+const MAX_ACTIVITY_FILLERS = 10;
+const DAY_MS = 1000 * 60 * 60 * 24;
 
 const RING_DIRS: [number, number][] = [
   [-1, 1],
@@ -53,6 +56,12 @@ export type Cell = {
   url: string;
   draft?: boolean;
   conflict?: boolean;
+  stale?: boolean;
+  checkState?: VillagePayload['prs'][number]['checkState'];
+  reviewDecision?: VillagePayload['prs'][number]['reviewDecision'];
+  reviewers?: VillagePerson[];
+  assignees?: VillagePerson[];
+  versions?: VersionChannel[];
   prState?: PrState;
   floors?: number;
   stackedOn?: number;
@@ -60,9 +69,12 @@ export type Cell = {
   ref?: string;
   baseRef?: string;
   hidden?: boolean;
+  scale?: number;
   x: number;
   y: number;
 };
+
+type RepoSignal = Pick<RepoData, 'stars' | 'openIssues' | 'languages'>;
 
 function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, VillagePayload['prs'][number]>): number {
   let depth = 1;
@@ -76,8 +88,112 @@ function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, Villa
   return depth;
 }
 
-export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
-  return payload.prs.slice(0, 14);
+export function pickedPrs(payload: VillagePayload, repo?: RepoSignal): VillagePayload['prs'] {
+  const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
+  const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
+  const tops = payload.prs.filter(pr => !baseRefs.has(pr.branch));
+  const activity = prActivity(payload.events);
+
+  const groups = tops
+    .map(top => {
+      const stack = [top];
+      let current = top;
+      const seen = new Set([top.number]);
+      for (;;) {
+        const parent = byHead.get(current.baseRef);
+        if (!parent || seen.has(parent.number)) break;
+        seen.add(parent.number);
+        stack.push(parent);
+        current = parent;
+      }
+
+      const latest = Math.max(
+        ...stack
+          .flatMap(pr => [new Date(pr.updatedAt).getTime(), activity.get(pr.number)?.latest ?? 0])
+          .filter(Number.isFinite),
+      );
+      const signal = stack.reduce((sum, pr) => {
+        const events = activity.get(pr.number);
+        return (
+          sum +
+          (events?.count ?? 0) * 5 +
+          (pr.reviewers.length + pr.assignees.length) * 3 +
+          (pr.checkState ? 2 : 0) +
+          (pr.reviewDecision ? 2 : 0) +
+          (pr.mergeable === 'CONFLICTING' || pr.mergeStateStatus === 'DIRTY' ? 4 : 0) +
+          (isStalePr(pr.updatedAt) ? -10 : 0)
+        );
+      }, stack.length * 4);
+
+      return {
+        stack,
+        score: latest / DAY_MS + signal,
+      };
+    })
+    .sort((a, b) => b.score - a.score || b.stack.length - a.stack.length);
+
+  return groups.slice(0, prGroupLimit(payload, repo)).flatMap(group => group.stack);
+}
+
+function prGroupLimit(payload: VillagePayload, repo?: RepoSignal): number {
+  if (payload.prs.length <= MAX_PR_BUILDINGS) return payload.prs.length;
+  const size = projectSizeScore(payload, repo);
+  if (size < 18) return Math.min(payload.prs.length, 36);
+  if (size < 36) return Math.min(payload.prs.length, 30);
+  return MAX_PR_BUILDINGS;
+}
+
+function prActivity(events: WireEvent[]): Map<number, { count: number; latest: number }> {
+  const activity = new Map<number, { count: number; latest: number }>();
+  for (const event of events) {
+    if (!event.isPr || event.number == null) continue;
+    const time = new Date(event.at).getTime();
+    const current = activity.get(event.number) ?? { count: 0, latest: 0 };
+    current.count += 1;
+    if (Number.isFinite(time)) current.latest = Math.max(current.latest, time);
+    activity.set(event.number, current);
+  }
+  return activity;
+}
+
+function isStalePr(updatedAt: string): boolean {
+  const t = new Date(updatedAt).getTime();
+  return Number.isFinite(t) && Date.now() - t > 1000 * 60 * 60 * 24 * 14;
+}
+
+function projectContributors(payload: VillagePayload): number {
+  const people = new Set<string>();
+  for (const event of payload.events) {
+    if (!event.actor.endsWith('[bot]')) people.add(event.actor);
+  }
+  for (const pr of payload.prs) {
+    if (!pr.author.endsWith('[bot]')) people.add(pr.author);
+  }
+  return people.size;
+}
+
+function projectSizeScore(payload: VillagePayload, repo?: RepoSignal): number {
+  const stars = repo ? Math.log10(repo.stars + 1) * 9 : 0;
+  const issues = repo ? Math.min(18, repo.openIssues / 60) : 0;
+  const languages = repo ? repo.languages.length * 1.5 : 0;
+  return stars + issues + languages + payload.prs.length * 0.55 + projectContributors(payload) * 0.7;
+}
+
+function mainBranchScale(payload: VillagePayload, repo?: RepoSignal): number {
+  const score = projectSizeScore(payload, repo);
+  if (score >= 48) return 7;
+  if (score >= 28) return 6;
+  return 5;
+}
+
+function mainBranchSub(payload: VillagePayload, repo?: RepoSignal): string {
+  const contributors = projectContributors(payload);
+  const parts = [
+    repo && repo.stars > 0 ? `${repo.stars.toLocaleString()} stars` : null,
+    contributors > 0 ? `${contributors} contributors` : null,
+    payload.prs.length > 0 ? `${payload.prs.length} open PRs` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'default branch';
 }
 
 export const SCRUB_MAX = 1000;
@@ -136,7 +252,12 @@ export function prStackForCell(payload: VillagePayload, cell: Cell): { stack: Vi
   return { stack, floorNo: index >= 0 ? stack.length - index : 1 };
 }
 
-export function buildCells(payload: VillagePayload, slug: string, asOf = Number.POSITIVE_INFINITY): Cell[] {
+export function buildCells(
+  payload: VillagePayload,
+  slug: string,
+  asOf = Number.POSITIVE_INFINITY,
+  repo?: RepoSignal,
+): Cell[] {
   const cells: Cell[] = [];
   let slot = 0;
 
@@ -144,8 +265,10 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     id: 'main',
     kind: 'main',
     label: payload.defaultBranch,
-    sub: 'default branch',
+    sub: mainBranchSub(payload, repo),
     url: `https://github.com/${slug}`,
+    versions: payload.versions,
+    scale: mainBranchScale(payload, repo),
     ...slotPos(slot++),
   });
 
@@ -153,9 +276,9 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
-  const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
-  const picked = pickedPrs(payload);
-  const tops = picked.filter(pr => !baseRefs.has(pr.branch)).sort((a, b) => a.number - b.number);
+  const picked = pickedPrs(payload, repo);
+  const baseRefs = new Set(picked.map(pr => pr.baseRef));
+  const tops = picked.filter(pr => !baseRefs.has(pr.branch));
   const placed = new Set<number>();
 
   for (const pr of tops) {
@@ -171,6 +294,11 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       url: pr.url,
       draft: pr.draft,
       conflict: pr.mergeable === 'CONFLICTING' || pr.mergeStateStatus === 'DIRTY',
+      stale: isStalePr(pr.updatedAt),
+      checkState: pr.checkState,
+      reviewDecision: pr.reviewDecision,
+      reviewers: pr.reviewers,
+      assignees: pr.assignees,
       prState: floors > 1 ? 'stacked' : pr.draft ? 'draft' : 'ready',
       floors,
       stackedOn: under?.number,
@@ -192,6 +320,11 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
         url: parent.url,
         draft: parent.draft,
         conflict: parent.mergeable === 'CONFLICTING' || parent.mergeStateStatus === 'DIRTY',
+        stale: isStalePr(parent.updatedAt),
+        checkState: parent.checkState,
+        reviewDecision: parent.reviewDecision,
+        reviewers: parent.reviewers,
+        assignees: parent.assignees,
         prState: 'stacked',
         floors: stackDepth(parent, byHead),
         stackedOn: byHead.get(parent.baseRef)?.number,
@@ -254,9 +387,9 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   }
   const shown = [...activity.entries()]
     .filter(([number]) => !cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`))
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, Math.max(0, AXIAL.length - slot))
-    .sort((a, b) => a[0] - b[0]);
+    .filter(([, info]) => info.title || info.count > 1)
+    .sort((a, b) => b[1].count - a[1].count || a[0] - b[0])
+    .slice(0, Math.min(MAX_ACTIVITY_FILLERS, Math.max(0, AXIAL.length - slot)));
   for (const [number, info] of shown) {
     cells.push(
       info.isPr
@@ -364,8 +497,8 @@ type WorldModel = {
   occupied: Map<string, number>;
 };
 
-export function worldModelFor(payload: VillagePayload, slug: string, asOf: number): WorldModel {
-  const cells = buildCells(payload, slug, asOf);
+export function worldModelFor(payload: VillagePayload, slug: string, asOf: number, repo?: RepoSignal): WorldModel {
+  const cells = buildCells(payload, slug, asOf, repo);
   const actors = actorsAt(payload, cells, asOf);
 
   const byCell = new Map<string, Actor[]>();

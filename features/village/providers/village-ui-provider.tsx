@@ -13,6 +13,8 @@ type VillageUi = {
   setZoom: (fn: (z: number) => number) => void;
   buzzOpen: boolean;
   setBuzzOpen: (fn: (o: boolean) => boolean) => void;
+  peopleOpen: boolean;
+  setPeopleOpen: (fn: (o: boolean) => boolean) => void;
   focusId: string | null;
   setFocusId: (id: string | null) => void;
   aiOn: boolean;
@@ -32,7 +34,8 @@ export function useVillageUi(): VillageUi {
 export function VillageUiProvider({ slug, children }: { slug: string; children: React.ReactNode }) {
   const [scrub, setScrub] = useState(1000);
   const [zoom, setZoomState] = useState(1);
-  const [buzzOpen, setBuzzOpenState] = useState(true);
+  const [buzzOpen, setBuzzOpenState] = useState(false);
+  const [peopleOpen, setPeopleOpenState] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
 
   const searchParams = useSearchParams();
@@ -62,6 +65,8 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
         setZoom: fn => setZoomState(z => fn(z)),
         buzzOpen,
         setBuzzOpen: fn => setBuzzOpenState(o => fn(o)),
+        peopleOpen,
+        setPeopleOpen: fn => setPeopleOpenState(o => fn(o)),
         focusId,
         setFocusId,
         aiOn,

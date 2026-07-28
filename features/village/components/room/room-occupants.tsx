@@ -34,6 +34,7 @@ export function RoomOccupants({ cell, width, height }: { cell: Cell; width: numb
             href={`https://github.com/${a.login}`}
             target="_blank"
             rel="noreferrer"
+            tabIndex={-1}
             data-stop-walk
             className="absolute flex flex-col items-center transition-transform hover:-translate-y-0.5"
             style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}

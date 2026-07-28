@@ -110,6 +110,23 @@ function InteriorScene({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a')) return;
+      const key = e.key.toLowerCase();
+      if (key === 'i') {
+        e.preventDefault();
+        setSignOpen(open => !open);
+      }
+      if (key === 'g' && (scene.spec?.aiAvailable || scene.aiPending)) {
+        e.preventDefault();
+        setAiOn(!ai);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [ai, scene.aiPending, scene.spec?.aiAvailable, setAiOn]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
       if (e.key === 'Enter' && inspectIndex === null && nearRef.current !== null) {
         e.preventDefault();
         setInspectIndex(nearRef.current);
@@ -191,10 +208,11 @@ function InteriorScene({
       <button
         type="button"
         onClick={() => setSignOpen(true)}
+        aria-keyshortcuts="I"
         aria-label="Show pull request info"
         className="panel font-pixel absolute top-4 left-4 z-50 flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-bold transition-transform hover:-translate-y-0.5 sm:hidden"
       >
-        <span aria-hidden>ⓘ</span> info
+        <span aria-hidden>ⓘ</span> <KeyHint>I</KeyHint> info
       </button>
       {signOpen ? (
         <button
@@ -215,6 +233,14 @@ function InteriorScene({
         />
       ) : null}
     </div>
+  );
+}
+
+function KeyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
+      {children}
+    </span>
   );
 }
 
@@ -419,6 +445,7 @@ function Furniture({
       >
         <button
           type="button"
+          tabIndex={-1}
           data-stop-walk
           onClick={onInspect}
           aria-label={`Look closer at ${name}`}
@@ -439,6 +466,7 @@ function Furniture({
                 href={commit.url}
                 target="_blank"
                 rel="noreferrer"
+                tabIndex={-1}
                 data-stop-walk
                 aria-label={`View commit: ${commit.message.split('\n')[0]}`}
                 className="cursor-pointer"
@@ -480,6 +508,7 @@ function StickyNote({ note, tilt }: { note: RoomNote; tilt: number }) {
       href={note.url ?? undefined}
       target="_blank"
       rel="noreferrer"
+      tabIndex={-1}
       data-stop-walk
       className="sticky-note relative h-28 w-28 shrink-0 p-2 pb-4 text-left transition-transform hover:-translate-y-1"
       style={{ rotate: `${tilt}deg` }}

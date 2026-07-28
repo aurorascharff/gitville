@@ -7,6 +7,7 @@ import type {
   RoomNote,
   VillagePR,
   VillagePayload,
+  VersionChannel,
   RepoData,
   WireEvent,
   WireEventKind,
@@ -100,6 +101,8 @@ type PullResponse = {
   base: { ref: string };
   mergeable?: boolean | null;
   mergeable_state?: string | null;
+  requested_reviewers?: { login: string; avatar_url: string }[];
+  assignees?: { login: string; avatar_url: string }[];
 };
 
 type EventResponse = {
@@ -406,8 +409,91 @@ type GqlPull = {
   baseRefName: string;
   mergeable: VillagePR['mergeable'];
   mergeStateStatus: string | null;
+  reviewDecision: VillagePR['reviewDecision'];
+  assignees: { nodes: { login: string; avatarUrl: string }[] };
+  reviewRequests: {
+    nodes: {
+      requestedReviewer: { login: string; avatarUrl: string } | { name: string } | null;
+    }[];
+  };
+  commits: {
+    nodes: {
+      commit: {
+        statusCheckRollup: { state: VillagePR['checkState'] } | null;
+      };
+    }[];
+  };
   author: { login: string; avatarUrl: string } | null;
 };
+
+type ReleaseResponse = {
+  tag_name: string;
+  name?: string | null;
+  html_url?: string | null;
+  prerelease?: boolean;
+  draft?: boolean;
+  published_at?: string | null;
+  created_at?: string | null;
+};
+
+type TagResponse = {
+  name: string;
+  zipball_url?: string | null;
+};
+
+function mapReviewRequest(
+  node: GqlPull['reviewRequests']['nodes'][number],
+): { login: string; avatar: string | null } | null {
+  const reviewer = node.requestedReviewer;
+  if (!reviewer) return null;
+  if ('login' in reviewer) return { login: reviewer.login, avatar: reviewer.avatarUrl };
+  return { login: reviewer.name, avatar: null };
+}
+
+function channelForVersion(name: string, prerelease = false): VersionChannel['channel'] {
+  if (/(canary|nightly|experimental|dev)/i.test(name)) return 'canary';
+  if (prerelease || /(preview|beta|alpha|rc|next)/i.test(name)) return 'preview';
+  return 'stable';
+}
+
+function pickVersionChannels(items: VersionChannel[]): VersionChannel[] {
+  const byChannel = new Map<VersionChannel['channel'], VersionChannel>();
+  for (const item of items) {
+    if (!byChannel.has(item.channel)) byChannel.set(item.channel, item);
+  }
+  return (['stable', 'preview', 'canary'] as const).flatMap(channel => {
+    const item = byChannel.get(channel);
+    return item ? [item] : [];
+  });
+}
+
+async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
+  const [owner, repo] = splitSlug(slug);
+  const releases = await gh<ReleaseResponse[]>(`/repos/${owner}/${repo}/releases?per_page=30`);
+  const releaseChannels = (releases ?? [])
+    .filter(release => !release.draft)
+    .map(release => {
+      const name = release.name || release.tag_name;
+      return {
+        channel: channelForVersion(name, Boolean(release.prerelease)),
+        name,
+        url: release.html_url ?? null,
+        at: release.published_at ?? release.created_at ?? null,
+      };
+    });
+
+  if (releaseChannels.length > 0) return pickVersionChannels(releaseChannels);
+
+  const tags = await gh<TagResponse[]>(`/repos/${owner}/${repo}/tags?per_page=30`);
+  return pickVersionChannels(
+    (tags ?? []).map(tag => ({
+      channel: channelForVersion(tag.name),
+      name: tag.name,
+      url: tag.zipball_url ?? null,
+      at: null,
+    })),
+  );
+}
 
 async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
   const [owner, repo] = splitSlug(slug);
@@ -415,8 +501,14 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
     repository: { pullRequests: { nodes: GqlPull[] } } | null;
   }>(
     `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
-      pullRequests(first:12,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
-        nodes{ number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus author{ login avatarUrl } }
+      pullRequests(first:64,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
+        nodes{
+          number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus reviewDecision
+          assignees(first:3){ nodes{ login avatarUrl } }
+          reviewRequests(first:3){ nodes{ requestedReviewer{ ... on User { login avatarUrl } ... on Team { name } } } }
+          commits(last:1){ nodes{ commit{ statusCheckRollup{ state } } } }
+          author{ login avatarUrl }
+        }
       } } }`,
     { owner, repo },
   );
@@ -433,12 +525,16 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
       draft: pr.isDraft,
       mergeable: pr.mergeable,
       mergeStateStatus: pr.mergeStateStatus,
+      checkState: pr.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
+      reviewDecision: pr.reviewDecision,
+      reviewers: pr.reviewRequests.nodes.map(mapReviewRequest).filter(r => r !== null),
+      assignees: pr.assignees.nodes.map(person => ({ login: person.login, avatar: person.avatarUrl })),
       updatedAt: pr.updatedAt,
     }));
   }
 
   const pulls = await gh<PullResponse[]>(
-    `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=12`,
+    `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=64`,
   );
   if (!Array.isArray(pulls)) return null;
 
@@ -453,6 +549,10 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
     draft: Boolean(pr.draft),
     mergeable: pr.mergeable === true ? 'MERGEABLE' : pr.mergeable === false ? 'CONFLICTING' : 'UNKNOWN',
     mergeStateStatus: pr.mergeable_state ?? null,
+    checkState: null,
+    reviewDecision: null,
+    reviewers: (pr.requested_reviewers ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
+    assignees: (pr.assignees ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
     updatedAt: pr.updated_at,
   }));
 }
@@ -463,8 +563,9 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
   cacheTag(`gv-live-${slug}`);
 
   const [owner, repo] = splitSlug(slug);
-  const [prs, ...eventPages] = await Promise.all([
+  const [prs, versions, ...eventPages] = await Promise.all([
     getOpenPulls(slug),
+    getVersionChannels(slug),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
     gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
@@ -473,7 +574,15 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
   const events = [...new Map(merged.map(e => [e.id, e])).values()];
 
   if (!Array.isArray(prs) && events.length === 0) {
-    return { ok: false, fetchedAt: new Date().toISOString(), defaultBranch, prs: [], branches: [], events: [] };
+    return {
+      ok: false,
+      fetchedAt: new Date().toISOString(),
+      defaultBranch,
+      prs: [],
+      branches: [],
+      events: [],
+      versions: [],
+    };
   }
 
   const wire = (events ?? [])
@@ -489,5 +598,6 @@ export async function getVillagePayload(slug: string, defaultBranch: string): Pr
     prs: prs ?? [],
     branches: deriveBranches(events ?? [], defaultBranch),
     events: wire,
+    versions,
   };
 }
