@@ -1,4 +1,4 @@
-import type { Cell } from '@/features/village/village-model';
+import type { Cell } from '@/features/village/utils/village-model';
 
 export function NightTint() {
   return (

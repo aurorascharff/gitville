@@ -14,7 +14,7 @@ import {
   TUFT,
 } from '@/features/village/components/shared/pixel-sprite';
 import { Placed } from '@/features/village/components/shared/placed';
-import { WORLD_H, WORLD_W } from '@/features/village/village-model';
+import { WORLD_H, WORLD_W } from '@/features/village/utils/village-model';
 
 const DECOR: { kind: 'tree' | 'bush' | 'rock' | 'crops' | 'fence' | 'mushroom' | 'stump'; x: number; y: number }[] = [
   { kind: 'mushroom', x: 520, y: 330 },

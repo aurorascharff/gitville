@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 
 type TravelDetail = { x: number; y: number; cellId?: string };
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { CARPENTER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
-import { useRoomSpec } from '@/features/village/use-village-data';
-import type { Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useRoomSpec } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import type { Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {

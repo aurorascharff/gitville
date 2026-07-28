@@ -6,9 +6,9 @@ import { VillageHouse, VillageLamp } from '@/features/village/components/stage/h
 import { Player, travelTo } from '@/features/village/components/stage/player';
 import { VillageRoads } from '@/features/village/components/stage/roads';
 import { Villager } from '@/features/village/components/stage/villager';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
-import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 function lampSpots(cells: Cell[]): { x: number; y: number }[] {

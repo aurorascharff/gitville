@@ -17,6 +17,9 @@ import {
   PixelSprite,
   WINDOW,
 } from '@/features/village/components/shared/pixel-sprite';
+import { useViewport, type Viewport } from '@/features/village/hooks/use-viewport';
+import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import {
   backdropFor,
   centerpiece,
@@ -32,11 +35,8 @@ import {
   WALL_H,
   wallClass,
   type Build,
-} from '@/features/village/room-geometry';
-import { useViewport, type Viewport } from '@/features/village/use-viewport';
-import { useRoomSpec, useTimeWindow, useVillageData, useWorldModel } from '@/features/village/use-village-data';
-import { roomFor, type Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+} from '@/features/village/utils/room-geometry';
+import { roomFor, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { RoomNote } from '@/types/github';
 

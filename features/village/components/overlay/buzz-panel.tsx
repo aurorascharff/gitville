@@ -5,9 +5,9 @@ import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
 import { travelTo } from '@/features/village/components/stage/player';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
-import { cellForEvent, type Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { cellForEvent, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerSprite } from '@/features/village/components/stage/player';
-import { followRoomFrame, WALL_H } from '@/features/village/room-geometry';
+import { followRoomFrame, WALL_H } from '@/features/village/utils/room-geometry';
 
 type NearItem = { x: number; y: number; index: number };
 

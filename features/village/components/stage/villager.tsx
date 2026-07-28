@@ -3,8 +3,8 @@
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
 import { travelTo } from '@/features/village/components/stage/player';
-import { hashDelay, type Actor } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { hashDelay, type Actor } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }) {

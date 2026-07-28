@@ -1,4 +1,4 @@
-import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
+import { WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 
 const STEP = 380;
 const FOOT = 46;

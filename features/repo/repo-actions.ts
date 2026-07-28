@@ -2,8 +2,8 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getPinnedRepos, REPOS_COOKIE } from '@/features/repo/repo-cookie';
 import { getRepoData } from '@/features/repo/repo-queries';
+import { getPinnedRepos, REPOS_COOKIE } from '@/features/repo/utils/repo-cookie';
 import { parseRepoSlug } from '@/lib/github';
 import type { Route } from 'next';
 

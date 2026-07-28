@@ -2,10 +2,10 @@
 
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
-import { WALL_H } from '@/features/village/room-geometry';
-import { useTimeWindow, useVillageData, useWorldModel } from '@/features/village/use-village-data';
-import type { Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useTimeWindow, useVillageData, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { WALL_H } from '@/features/village/utils/room-geometry';
+import type { Cell } from '@/features/village/utils/village-model';
 
 export function RoomOccupants({ cell, width, height }: { cell: Cell; width: number; height: number }) {
   const { slug, scrub, setTip } = useVillageUi();

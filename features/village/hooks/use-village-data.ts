@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import { actorsAt, arcOffset, buildCells, type Actor, type Cell } from '@/features/village/village-model';
+import { actorsAt, arcOffset, buildCells, type Actor, type Cell } from '@/features/village/utils/village-model';
 import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
 
 const fetcher = async (url: string): Promise<VillagePayload> => {

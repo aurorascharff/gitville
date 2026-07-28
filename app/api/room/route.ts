@@ -1,6 +1,6 @@
 import { getRepoData } from '@/features/repo/repo-queries';
-import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/room-ai';
-import { buildCells, roomFor } from '@/features/village/village-model';
+import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/utils/room-ai';
+import { buildCells, roomFor } from '@/features/village/utils/village-model';
 import { getVillagePayload } from '@/features/village/village-queries';
 import {
   getBranchCommits,

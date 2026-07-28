@@ -12,7 +12,7 @@ import {
   tentArt,
   WELL,
 } from '@/features/village/components/shared/pixel-sprite';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { cn } from '@/lib/utils';
 
 const PR_ROOF = housePalette(...ROOF.pr, true);

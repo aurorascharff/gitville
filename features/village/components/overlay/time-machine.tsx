@@ -1,7 +1,7 @@
 'use client';
 
-import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/use-village-data';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { SCRUB_MAX, useVillageData, useTimeWindow } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 
 export function TimeMachine() {
   const { slug, scrub, setScrub } = useVillageUi();

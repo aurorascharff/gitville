@@ -3,10 +3,10 @@
 import { ArrowUpRight, X } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { BARRIER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
-import { wallClass } from '@/features/village/room-geometry';
-import { useRoomSpec, useVillageData } from '@/features/village/use-village-data';
-import { pickedPrs, type Cell } from '@/features/village/village-model';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
+import { wallClass } from '@/features/village/utils/room-geometry';
+import { pickedPrs, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 export function HouseSign({

@@ -9,7 +9,6 @@ type Tooltip = { x: number; y: number; title: string; body: string | null; when:
 type VillageUi = {
   slug: string;
   repo: RepoData;
-  pinned: string[];
   scrub: number;
   setScrub: (v: number) => void;
   zoom: number;
@@ -34,11 +33,9 @@ export function useVillageUi(): VillageUi {
 
 export function VillageUiProvider({
   repo,
-  pinned,
   children,
 }: {
   repo: RepoData;
-  pinned: string[];
   children: React.ReactNode;
 }) {
   const [scrub, setScrub] = useState(1000);
@@ -68,7 +65,6 @@ export function VillageUiProvider({
       value={{
         slug: repo.slug,
         repo,
-        pinned,
         scrub,
         setScrub,
         zoom,

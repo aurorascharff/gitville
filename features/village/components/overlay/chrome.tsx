@@ -3,11 +3,10 @@
 import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { RepoSwitcher } from '@/features/repo/components/repo-switcher';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import { clampZoom } from '@/features/village/components/stage/player';
-import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/use-village-data';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageData, useTimeWindow, useWorldModel } from '@/features/village/hooks/use-village-data';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { cn } from '@/lib/utils';
 import { villageKey } from '@/types/github';
 import type { ReactNode } from 'react';
@@ -40,8 +39,8 @@ export function VillageBusy() {
   );
 }
 
-export function VillageStatus() {
-  const { slug, repo, pinned, scrub, focusId } = useVillageUi();
+export function VillageStatus({ repoSwitcher }: { repoSwitcher: ReactNode }) {
+  const { slug, scrub, focusId } = useVillageUi();
   const { payload, stale } = useVillageData(slug);
   const { asOf, live } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
@@ -50,7 +49,7 @@ export function VillageStatus() {
 
   return (
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
-      <RepoSwitcher repo={repo} pinned={pinned} />
+      {repoSwitcher}
       {payload.ok ? (
         <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
           <span

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useVillageUi } from '@/features/village/village-ui-context';
+import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { cn } from '@/lib/utils';
 
 const STEP = 0.42;

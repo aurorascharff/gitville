@@ -1,35 +1,38 @@
 'use client';
 
 import { catchError, type ErrorInfo } from 'next/error';
-import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
+import { createContext, useContext, type ReactNode } from 'react';
 
-function SplashFallback(props: { title?: string }, { retry }: ErrorInfo) {
+const ErrorBoundaryContext = createContext<ErrorInfo | null>(null);
+
+export function useErrorBoundary(): ErrorInfo {
+  const info = useContext(ErrorBoundaryContext);
+  if (!info) throw new Error('useErrorBoundary must be used inside <ErrorBoundary>');
+  return info;
+}
+
+function ErrorFallback({ fallback }: { fallback?: ReactNode }, errorInfo: ErrorInfo) {
   return (
-    <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
-      <div className="pixel flex flex-col items-center gap-4">
-        <div style={{ filter: 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25))' }}>
-          <PixelSprite art={cottageArt(1, true)} palette={housePalette(...ROOF.pr, true)} scale={6} />
-        </div>
-        <p className="font-pixel rounded-sm bg-black/40 px-3 py-1 text-[14px] text-white/95">
-          {props.title ?? 'This village couldn’t load'}
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => retry()}
-            className="font-pixel cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] px-3 py-1 text-[13px] font-bold text-[#3a2f22] transition-transform hover:-translate-y-0.5"
-          >
-            try again
-          </button>
-          <button
-            onClick={() => window.history.back()}
-            className="font-pixel cursor-pointer rounded-sm border-2 border-[#4a3826] bg-[#f0e6d2] px-3 py-1 text-[13px] font-bold text-[#3a2f22] transition-transform hover:-translate-y-0.5"
-          >
-            go back
-          </button>
-        </div>
-      </div>
+    <ErrorBoundaryContext.Provider value={errorInfo}>
+      {fallback ?? <DefaultErrorFallback />}
+    </ErrorBoundaryContext.Provider>
+  );
+}
+
+function DefaultErrorFallback() {
+  const { retry } = useErrorBoundary();
+
+  return (
+    <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
+      <p className="text-sm font-medium">Something went wrong.</p>
+      <button
+        onClick={() => retry()}
+        className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+      >
+        Try again
+      </button>
     </div>
   );
 }
 
-export const VillageErrorSplash = catchError(SplashFallback);
+export const ErrorBoundary = catchError(ErrorFallback);
