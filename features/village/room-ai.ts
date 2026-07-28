@@ -47,7 +47,7 @@ const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 // Bump when the prompt changes: 'use cache' keys on the arguments, not the
 // prompt text, so this version is threaded through as an argument to force a
 // cache miss (regenerate every room) whenever the design brief is revised.
-const PROMPT_VERSION = 'v2';
+const PROMPT_VERSION = 'v3';
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
   const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
@@ -112,30 +112,30 @@ async function generateRoomSpecCached(
     model: gateway('anthropic/claude-sonnet-5'),
     schema: specSchema,
     prompt: [
-      'You are the set designer for one room in a pixel-art village where GitHub work comes alive. Your job is to compose a SINGLE COHESIVE SCENE — a themed workshop with a distinct personality — not a pile of unrelated props. Every object shares one world and clearly belongs beside the others.',
+      'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Furnish the room so it feels like a lived-in room full of FURNITURE and objects that belong INDOORS — but themed so each object playfully stands for a real commit. This is a room (a themed study, workshop, library, or workroom), NOT a factory floor: no free-floating machines, funnels, or chimneys drifting in space.',
       `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
-      state ? `The house is ${state}.` : '',
+      state ? `It is ${state}.` : '',
       'Commits in this room, in order (0-indexed):',
       ...commits.slice(0, 14).map((c, i) => `${i}. ${c}`),
       notes.length > 0 ? 'Discussion in this room:' : '',
       ...notes.slice(0, 6).map(n => `- ${n}`),
       '',
-      'Design the scene:',
-      '- Read what this room actually builds and invent a workshop with a POINT OF VIEW: what is this place, what does it make, what is its mood? The `theme` names it (max 3 words, no emoji).',
-      '- Each item is a DIFFERENT piece of work, so make each one visibly DISTINCT: its own silhouette AND its own dominant colour. A viewer should tell the machines apart at a glance and never mistake two features for the same thing. Do NOT paint everything the same colours.',
-      '- Spread colour across the room: give each item a different dominant hue from the legend (blue, green, red, purple, teal, orange, yellow), like a shelf of different-coloured tools. Never make every item a green screen with gold trim — that is the failure mode to avoid.',
-      '- Cohesion comes from a shared WORLD, not a shared paint job: the same pixel style, the same dark outline (O), and common structural material (wood W / metal m for frames, benches, pipes) tie the varied machines together as one room.',
-      '- The FIRST item is the HERO: the biggest, most detailed centerpiece that embodies the headline feature. The rest are supporting machines that relate to it in FUNCTION (feeding it, reading from it, powered by it) via shared pipes / cables / rails — but each keeps its own shape and colour.',
+      'Decide the room:',
+      '- Read what this work actually does and give the room a character: what kind of workroom is this, what is made here, what is its mood? `theme` names it (max 3 words, no emoji).',
+      '- Furnish it only with things that would believably sit in such a room — desks, shelves, cabinets, workbenches, lamps, rugs, chests, a model or contraption resting ON a table. Every item must read as a piece of FURNITURE or a room object, never an abstract blob floating mid-air.',
       '',
-      'Draw the items:',
-      '- Group commits that belong to the same piece of work into ONE item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item.',
-      '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group, designed to connect side by side (left end, middle segments, right end) into one machine. One commit means one self-contained piece.',
-      '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights so they join cleanly.',
-      '- Build BIG. The hero should be 12-16 wide and 10-12 rows; supporting pieces 8-14 wide. No trinkets.',
-      '- Give every machine its own silhouette AND its own colour — vary shapes with "." aggressively (towers, funnels, wheels, arms, chimneys, tanks, antennae) so no two items look alike.',
-      '- Use connective detail only at the edges (a protruding pipe, a cable stub, a rail) to hint the machines link up; keep each body distinct.',
+      'Map commits to furniture:',
+      '- Each item is ONE piece of furniture that stands for ONE piece of work; a viewer should look at it and loosely associate it with its commit. Name it so the tie to the commit is clear.',
+      '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained piece of furniture.',
+      '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group. When an item has several commits they combine into ONE bigger piece of furniture built from connected segments (sections of a long shelf, a desk plus the rig on it, stacked drawers), designed to join side by side (left end, middle, right end). Keep the segments individually legible — do NOT melt them into one shapeless mass.',
+      '',
+      'Make the room read well:',
+      '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller supporting furniture around it.',
+      '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (legs, drawers, shelves, screens, cushions, pots, lids). Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
+      '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied furniture together.',
+      '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights within an item so segments join cleanly. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
-      `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent anything. Set \`kind\` and \`pieces\` to null when unused.`,
+      `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent a fitting object. Set \`kind\` and \`pieces\` to null when unused.`,
     ]
       .filter(Boolean)
       .join('\n'),
