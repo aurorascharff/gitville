@@ -5,6 +5,7 @@ import { BuzzPanel } from '@/features/village/components/buzz-panel';
 import { HouseInterior } from '@/features/village/components/house-interior';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/pixel-sprite';
 import { TimeMachine } from '@/features/village/components/time-machine';
+import { VillageBusy } from '@/features/village/components/village-busy';
 import { VillageHelp } from '@/features/village/components/village-help';
 import { VillageControls, VillageStatus, VillageTooltip } from '@/features/village/components/village-hud';
 import { VillageMusic } from '@/features/village/components/village-music';
@@ -19,6 +20,9 @@ export function VillageWorld({ repo, pinned }: { repo: RepoData; pinned: string[
         <div aria-hidden className="village-vignette absolute inset-0" />
         <ErrorBoundary title="The village couldn’t be drawn">
           <VillageStage />
+        </ErrorBoundary>
+        <ErrorBoundary title="The village is unreachable">
+          <VillageBusy />
         </ErrorBoundary>
         <ErrorBoundary title="Status sign broke">
           <VillageStatus />

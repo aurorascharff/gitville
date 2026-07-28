@@ -7,6 +7,7 @@ export function TimeMachine() {
   const { slug, scrub, setScrub } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { minT, maxT, asOf, live } = useTimeWindow(payload, scrub);
+  if (!payload.ok) return null;
 
   return (
     <div className="absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">

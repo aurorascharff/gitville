@@ -17,19 +17,23 @@ export function VillageStatus() {
   return (
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
       <RepoSwitcher repo={repo} pinned={pinned} />
-      <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
-        <span className={cn('h-2 w-2 rounded-full', live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')} />
-        {stale ? (
-          'rate limited, showing the last sync'
-        ) : live ? (
-          <>{actors.length} villagers about</>
-        ) : (
-          <span className="font-mono">
-            viewing {new Date(asOf).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
-            {new Date(asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
-      </p>
+      {payload.ok ? (
+        <p className="font-pixel flex h-6 items-center gap-2 px-1 text-[13px] text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)]">
+          <span
+            className={cn('h-2 w-2 rounded-full', live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')}
+          />
+          {stale ? (
+            'rate limited, showing the last sync'
+          ) : live ? (
+            <>{actors.length} villagers about</>
+          ) : (
+            <span className="font-mono">
+              viewing {new Date(asOf).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
+              {new Date(asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </p>
+      ) : null}
     </div>
   );
 }

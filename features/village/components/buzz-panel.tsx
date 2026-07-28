@@ -15,7 +15,7 @@ export function BuzzPanel() {
   const { payload } = useVillageData(slug);
   const { asOf } = useTimeWindow(payload, scrub);
   const { cells } = useWorldModel(payload, slug, asOf);
-  if (!buzzOpen || focusId) return null;
+  if (!buzzOpen || focusId || !payload.ok) return null;
 
   return (
     <aside className="panel absolute top-16 right-4 bottom-24 z-30 hidden w-72 flex-col overflow-hidden rounded-sm sm:flex">
