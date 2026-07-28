@@ -3,20 +3,42 @@
 import useSWR, { preload } from 'swr';
 import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
 
+const lastGoodPayloads = new Map<string, VillagePayload>();
+
+function unavailablePayload(): VillagePayload {
+  return {
+    ok: false,
+    fetchedAt: new Date().toISOString(),
+    defaultBranch: '',
+    prs: [],
+    branches: [],
+    events: [],
+    versions: [],
+  };
+}
+
 const fetcher = async (url: string): Promise<VillagePayload> => {
-  const payload = (await fetch(url).then(r => r.json())) as VillagePayload;
-  if (!payload.ok) throw new Error('github-unavailable');
-  return payload;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return unavailablePayload();
+    return (await res.json()) as VillagePayload;
+  } catch {
+    return unavailablePayload();
+  }
 };
 
 export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean } {
-  const { data, error } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
+  const { data } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
     suspense: true,
     refreshInterval: 15_000,
     revalidateOnFocus: true,
     revalidateOnMount: false,
   });
-  return { payload: data!, stale: Boolean(error) };
+  const payload = data ?? unavailablePayload();
+  if (payload.ok) lastGoodPayloads.set(slug, payload);
+  const previous = lastGoodPayloads.get(slug);
+  if (!payload.ok && previous) return { payload: previous, stale: true };
+  return { payload, stale: false };
 }
 
 export type RoomSpecItem = {

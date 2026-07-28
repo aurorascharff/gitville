@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { PixelPerson } from '@/features/village/components/shared/pixel-person';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { TOWN_EXIT, WORLD_H, WORLD_W, type Cell } from '@/features/village/utils/village-model';
 
@@ -203,13 +204,13 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
           s.ty = s.y;
         }
         if (dx !== 0) s.dir = dx > 0 ? 1 : -1;
-        inner.current?.classList.add('sprite-bob');
+        inner.current?.classList.add('player-walk');
         if (!s.leavingTown && s.x <= TOWN_EXIT.x + 20 && Math.abs(s.y - TOWN_EXIT.y) < 76) {
           s.leavingTown = true;
           router.push('/');
         }
       } else {
-        inner.current?.classList.remove('sprite-bob');
+        inner.current?.classList.remove('player-walk');
       }
       if (ref.current) ref.current.style.transform = `translate(${s.x - 16}px, ${s.y - 34}px)`;
       if (inner.current) inner.current.style.transform = `scaleX(${s.dir})`;
@@ -243,7 +244,7 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
           <PlayerSprite />
         </div>
         <span aria-hidden className="mt-0.5 h-1.5 w-6 rounded-full bg-black/50 blur-[2px]" />
-        <span className="font-pixel mt-0.5 rounded-sm bg-[#3b6bff] px-1 text-[11px] leading-4 font-bold text-white">
+        <span className="font-pixel mt-0.5 rounded-sm border border-[#2e2418] bg-[#7aa05f] px-1 text-[11px] leading-4 font-bold text-[#f7efdc]">
           you
         </span>
       </div>
@@ -252,20 +253,5 @@ export function Player({ cells, worldRef }: { cells: Cell[]; worldRef: React.Ref
 }
 
 export function PlayerSprite() {
-  return (
-    <svg width="26" height="34" viewBox="0 0 13 17" shapeRendering="crispEdges" aria-label="Your villager">
-      <rect x="3" y="0" width="7" height="2" fill="#6b4223" />
-      <rect x="2" y="1" width="9" height="2" fill="#6b4223" />
-      <rect x="3" y="3" width="7" height="4" fill="#e8b98a" />
-      <rect x="4" y="4" width="1" height="1" fill="#1c1c1c" />
-      <rect x="8" y="4" width="1" height="1" fill="#1c1c1c" />
-      <rect x="3" y="7" width="7" height="5" fill="#3b6bff" />
-      <rect x="2" y="8" width="1" height="3" fill="#3b6bff" />
-      <rect x="10" y="8" width="1" height="3" fill="#3b6bff" />
-      <rect x="4" y="12" width="2" height="4" fill="#2a2d36" />
-      <rect x="7" y="12" width="2" height="4" fill="#2a2d36" />
-      <rect x="4" y="16" width="2" height="1" fill="#0f1115" />
-      <rect x="7" y="16" width="2" height="1" fill="#0f1115" />
-    </svg>
-  );
+  return <PixelPerson name="you" shirt="#7aa05f" scale={2} />;
 }

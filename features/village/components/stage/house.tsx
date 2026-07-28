@@ -21,6 +21,7 @@ import { travelTo } from '@/features/village/components/stage/player';
 import { preloadRoomSpec, roomSpecKey, type RoomSpecPayload } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
+import type { RepoData } from '@/types/github';
 
 function stateLine(cell: Cell): string | null {
   if (cell.kind !== 'pr') return null;
@@ -34,7 +35,7 @@ function stateLine(cell: Cell): string | null {
   return 'ready for review';
 }
 
-export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
+export function VillageHouse({ cell, people, repo }: { cell: Cell; people: number; repo?: RepoData }) {
   const { slug, focusId, nearCellId, aiCellIds, aiRoomDecor, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
   const near = nearCellId === cell.id;
@@ -100,6 +101,7 @@ export function VillageHouse({ cell, people }: { cell: Cell; people: number }) {
         ) : null}
 
         {main && cell.versions?.length ? <TownHallBanners cell={cell} /> : null}
+        {main && repo ? <RepoCrest repo={repo} /> : null}
         {cell.kind === 'pr' && cell.stale ? <Moss /> : null}
         {cell.kind === 'pr' && cell.checkState ? <CheckFlag state={cell.checkState} /> : null}
         {canDecorate ? (
@@ -160,6 +162,27 @@ function EnterHint() {
   return (
     <span className="absolute -top-11 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-2 py-1 text-[14px] leading-3 font-bold whitespace-nowrap text-[#3a2f22] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
       ⏎
+    </span>
+  );
+}
+
+function RepoCrest({ repo }: { repo: RepoData }) {
+  const { setTip } = useVillageUi();
+
+  return (
+    <span
+      title={repo.slug}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({ x: e.clientX, y: e.clientY, title: repo.name, body: repo.slug, when: null });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="absolute -top-2 -left-6 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] p-0.5 shadow-[2px_2px_0_rgb(0_0_0/0.25)]"
+    >
+      <AvatarImage src={repo.ownerAvatar} name={repo.owner} size={22} className="rounded-[2px]" />
     </span>
   );
 }
@@ -305,29 +328,33 @@ function TownHallBanners({ cell }: { cell: Cell }) {
 
   return (
     <span className="absolute -top-16 left-1/2 flex -translate-x-1/2 gap-1">
-      {cell.versions?.map(version => (
-        <span
-          key={version.channel}
-          title={`${version.channel}: ${version.name}`}
-          onMouseMove={e => {
-            e.stopPropagation();
-            setTip({
-              x: e.clientX,
-              y: e.clientY,
-              title: `${version.channel === 'stable' ? 'current' : version.channel} version`,
-              body: version.name,
-              when: version.at,
-            });
-          }}
-          onMouseLeave={e => {
-            e.stopPropagation();
-            setTip(null);
-          }}
-          className={`font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[9px] font-bold shadow-[2px_2px_0_rgb(0_0_0/0.25)] ${colors[version.channel]}`}
-        >
-          {version.channel === 'stable' ? 'current' : version.channel}
-        </span>
-      ))}
+      {cell.versions?.map(version => {
+        const label =
+          version.channel === 'stable' ? 'current' : version.channel === 'preview' ? 'prerelease' : version.channel;
+        return (
+          <span
+            key={version.channel}
+            title={`${label}: ${version.name}`}
+            onMouseMove={e => {
+              e.stopPropagation();
+              setTip({
+                x: e.clientX,
+                y: e.clientY,
+                title: `${label} version`,
+                body: version.name,
+                when: version.at,
+              });
+            }}
+            onMouseLeave={e => {
+              e.stopPropagation();
+              setTip(null);
+            }}
+            className={`font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[9px] font-bold shadow-[2px_2px_0_rgb(0_0_0/0.25)] ${colors[version.channel]}`}
+          >
+            {label}
+          </span>
+        );
+      })}
     </span>
   );
 }

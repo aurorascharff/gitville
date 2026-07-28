@@ -1,5 +1,8 @@
 import { Star } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { RepoAvatar } from '@/components/ui/repo-avatar';
+import { RoadScrollViewport } from '@/features/repo/components/road-scroll-viewport';
 import { getRepoData } from '@/features/repo/repo-queries';
 import { getPinnedRepos } from '@/features/repo/utils/repo-cookie';
 import {
@@ -19,41 +22,69 @@ import type { Route } from 'next';
 type VillageStopData = {
   repo: RepoData;
   payload: VillagePayload | null;
+  limited: boolean;
 };
+
+type VillageStopLoad =
+  { kind: 'ready'; slug: string; index: number; stop: VillageStopData } | { kind: 'plot'; slug: string; index: number };
+
+const PLOT_CHUNK_SIZE = 4;
 
 export async function PinnedVillages() {
   const slugs = await getPinnedRepos();
-  const repos = await Promise.all(slugs.map(slug => getRepoData(slug)));
-  const stops = await Promise.all(
-    repos.map(async repo => {
-      if (!repo) return null;
-      const payload = await getVillagePayload(repo.slug, repo.defaultBranch).catch(() => null);
-      return { repo, payload };
-    }),
-  );
-
-  if (stops.every(stop => stop === null)) return <EmptyRoad />;
+  if (slugs.length === 0) return <EmptyRoad />;
+  const chunks = chunkSlugs(slugs, PLOT_CHUNK_SIZE);
 
   return (
-    <div className="relative w-full overflow-x-auto px-2 py-4">
-      <div className="relative mx-auto h-78 max-w-5xl min-w-[720px]">
+    <RoadScrollViewport>
+      <div className="relative mx-auto h-78 max-w-5xl" style={{ minWidth: chunks.length * 720 }}>
         <Road />
-        <ul className="relative z-10 grid h-full grid-cols-4 gap-x-8">
-          {stops.map((stop, i) =>
-            stop ? (
-              <VillageStop key={stop.repo.slug} stop={stop} index={i} />
-            ) : (
-              <Unavailable key={slugs[i]} slug={slugs[i]} />
-            ),
-          )}
+        <ul
+          className="relative z-10 grid h-full gap-x-8"
+          style={{ gridTemplateColumns: `repeat(${slugs.length}, 1fr)` }}
+        >
+          {chunks.map((chunk, chunkIndex) => (
+            <Suspense
+              key={chunk.join(':')}
+              fallback={<ChunkSkeleton count={chunk.length} startIndex={chunkIndex * PLOT_CHUNK_SIZE} />}
+            >
+              <PinnedVillageChunk slugs={chunk} startIndex={chunkIndex * PLOT_CHUNK_SIZE} />
+            </Suspense>
+          ))}
         </ul>
       </div>
-    </div>
+    </RoadScrollViewport>
   );
 }
 
+function chunkSlugs(slugs: string[], size: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < slugs.length; i += size) chunks.push(slugs.slice(i, i + size));
+  return chunks;
+}
+
+async function PinnedVillageChunk({ slugs, startIndex }: { slugs: string[]; startIndex: number }) {
+  const stops = await Promise.all(slugs.map((slug, i) => loadVillageStop(slug, startIndex + i)));
+  return stops.map(stop =>
+    stop.kind === 'ready' ? (
+      <VillageStop key={stop.slug} stop={stop.stop} index={stop.index} />
+    ) : (
+      <Unavailable key={stop.slug} slug={stop.slug} index={stop.index} />
+    ),
+  );
+}
+
+async function loadVillageStop(slug: string, index: number): Promise<VillageStopLoad> {
+  const repo = await getRepoData(slug);
+  if (!repo) return { kind: 'plot', slug, index };
+
+  const payload = await getVillagePayload(repo.slug, repo.defaultBranch).catch(() => null);
+  const livePayload = payload?.ok ? payload : null;
+  return { kind: 'ready', slug, index, stop: { repo, payload: livePayload, limited: !livePayload } };
+}
+
 function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) {
-  const { repo, payload } = stop;
+  const { repo, payload, limited } = stop;
   const top = index % 2 === 0;
   const prCount = payload?.prs.length ?? 0;
   const issueCount = Math.max(0, repo.openIssues - prCount);
@@ -67,7 +98,14 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
         className="group flex h-36 flex-col items-center justify-end text-center transition-transform hover:-translate-y-1"
       >
         <span className="pixel relative flex min-h-20 items-end justify-center">
+          <RepoAvatar
+            src={repo.ownerAvatar}
+            name={repo.owner}
+            size={24}
+            className="absolute -top-3 -left-3 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] shadow-[2px_2px_0_rgb(0_0_0/0.25)]"
+          />
           <PixelSprite art={art} palette={palette} scale={scale} />
+          {limited ? <SyncRestingMarker /> : null}
         </span>
         <span className="mt-1.5 max-w-44 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] px-2 py-1 shadow-[2px_2px_0_rgb(0_0_0/0.3)]">
           <span className="block truncate text-[14px] leading-5 font-bold text-[#3a2f22]">{repo.name}</span>
@@ -76,11 +114,28 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
               <Star size={11} className="fill-[#c9a227] text-[#8a6d2a]" />
               {formatStars(repo.stars)}
             </span>
-            {prCount > 0 ? <span>{prCount} PRs</span> : issueCount > 0 ? <span>{issueCount} issues</span> : null}
+            {limited ? (
+              <span>sync resting</span>
+            ) : prCount > 0 ? (
+              <span>{prCount} PRs</span>
+            ) : issueCount > 0 ? (
+              <span>{issueCount} issues</span>
+            ) : null}
           </span>
         </span>
       </Link>
     </li>
+  );
+}
+
+function SyncRestingMarker() {
+  return (
+    <span
+      aria-hidden
+      className="absolute top-3 -right-2 flex h-6 w-6 items-center justify-center rounded-sm border-2 border-[#2e2418] bg-[#e4c05a] text-[13px] font-black text-[#3a2f22] shadow-[2px_2px_0_rgb(0_0_0/0.3)]"
+    >
+      !
+    </span>
   );
 }
 
@@ -94,11 +149,19 @@ function villageSprite(repo: RepoData, payload: VillagePayload | null): [string[
   return [cottageArt(1, false), housePalette(...ROOF.pr, true), 3.7];
 }
 
-function Unavailable({ slug }: { slug: string }) {
+function Unavailable({ slug, index }: { slug: string; index: number }) {
+  const top = index % 2 === 0;
   return (
-    <li className="self-end">
-      <div className="rounded-sm border-2 border-dashed border-[#4a3826]/60 bg-black/25 px-3 py-2 text-center text-[12px] font-semibold text-white/70">
-        {slug}
+    <li className={top ? 'self-start' : 'self-end'}>
+      <div className="flex h-36 flex-col items-center justify-end text-center">
+        <span className="pixel relative flex min-h-20 items-end justify-center">
+          <span className="h-14 w-24 rounded-sm border-2 border-dashed border-[#f0e6d2]/60 bg-black/25" />
+          <SyncRestingMarker />
+        </span>
+        <span className="mt-1.5 max-w-44 rounded-sm border-2 border-dashed border-[#4a3826]/60 bg-[#f0e6d2]/75 px-2 py-1 text-[12px] font-semibold text-[#6b5b43] shadow-[2px_2px_0_rgb(0_0_0/0.18)]">
+          <span className="block truncate font-bold text-[#3a2f22]">{slug}</span>
+          <span>plot saved</span>
+        </span>
       </div>
     </li>
   );
@@ -118,8 +181,8 @@ function EmptyRoad() {
 function Road() {
   return (
     <div aria-hidden className="pixel pointer-events-none absolute inset-x-0 top-1/2 z-0 h-16 -translate-y-1/2">
-      <span className="absolute inset-x-0 top-5 h-8 rotate-[-1deg] border-y-4 border-[#6b4f2f] bg-[#a5814e] shadow-[0_8px_0_rgb(0_0_0/0.18)]" />
-      <span className="absolute inset-x-8 top-8 flex justify-between">
+      <span className="absolute inset-x-10 top-5 h-9 rounded-sm border-4 border-[#6b4f2f] bg-[#a5814e] shadow-[0_8px_0_rgb(0_0_0/0.18)]" />
+      <span className="absolute inset-x-28 top-9 flex justify-between">
         {Array.from({ length: 18 }).map((_, i) => (
           <span key={i} className="h-2 w-6 rounded-sm bg-[#d8bb7a]/70" />
         ))}
@@ -144,6 +207,10 @@ export function PinnedVillagesSkeleton() {
       </div>
     </div>
   );
+}
+
+function ChunkSkeleton({ count, startIndex }: { count: number; startIndex: number }) {
+  return Array.from({ length: count }).map((_, i) => <SkeletonStop key={i} index={startIndex + i} />);
 }
 
 function SkeletonStop({ index }: { index: number }) {

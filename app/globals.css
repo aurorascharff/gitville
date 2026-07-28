@@ -383,6 +383,24 @@
     transform: translateY(-3px);
   }
 }
+.player-walk .pixel-person-left-leg,
+.player-walk .pixel-person-right-foot {
+  animation: planted-step-a 520ms steps(2, end) infinite;
+}
+.player-walk .pixel-person-right-leg,
+.player-walk .pixel-person-left-foot {
+  animation: planted-step-b 520ms steps(2, end) infinite;
+}
+@keyframes planted-step-a {
+  50% {
+    transform: translateX(-1px);
+  }
+}
+@keyframes planted-step-b {
+  50% {
+    transform: translateX(1px);
+  }
+}
 .pop-in {
   animation: pop-in 320ms ease-out backwards;
 }
@@ -396,9 +414,12 @@
     transform: scale(1) translateY(0);
   }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .sprite-bob,
+  .player-walk .pixel-person-left-leg,
+  .player-walk .pixel-person-right-leg,
+  .player-walk .pixel-person-left-foot,
+  .player-walk .pixel-person-right-foot,
   .pop-in,
   .smoke-puff,
   .stars,

@@ -410,19 +410,23 @@ type GqlPull = {
   mergeable: VillagePR['mergeable'];
   mergeStateStatus: string | null;
   reviewDecision: VillagePR['reviewDecision'];
-  assignees: { nodes: { login: string; avatarUrl: string }[] };
+  assignees: { nodes: ({ login: string; avatarUrl: string } | null)[] | null } | null;
   reviewRequests: {
-    nodes: {
-      requestedReviewer: { login: string; avatarUrl: string } | { name: string } | null;
-    }[];
-  };
+    nodes:
+      | ({
+          requestedReviewer: { login: string; avatarUrl: string } | { name: string } | null;
+        } | null)[]
+      | null;
+  } | null;
   commits: {
-    nodes: {
-      commit: {
-        statusCheckRollup: { state: VillagePR['checkState'] } | null;
-      };
-    }[];
-  };
+    nodes:
+      | ({
+          commit: {
+            statusCheckRollup: { state: VillagePR['checkState'] } | null;
+          };
+        } | null)[]
+      | null;
+  } | null;
   author: { login: string; avatarUrl: string } | null;
 };
 
@@ -441,10 +445,10 @@ type TagResponse = {
   zipball_url?: string | null;
 };
 
-function mapReviewRequest(
-  node: GqlPull['reviewRequests']['nodes'][number],
-): { login: string; avatar: string | null } | null {
-  const reviewer = node.requestedReviewer;
+type GqlReviewRequest = NonNullable<NonNullable<GqlPull['reviewRequests']>['nodes']>[number];
+
+function mapReviewRequest(node: GqlReviewRequest): { login: string; avatar: string | null } | null {
+  const reviewer = node?.requestedReviewer;
   if (!reviewer) return null;
   if ('login' in reviewer) return { login: reviewer.login, avatar: reviewer.avatarUrl };
   return { login: reviewer.name, avatar: null };
@@ -498,7 +502,7 @@ async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
 async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
   const [owner, repo] = splitSlug(slug);
   const data = await ghGraphQL<{
-    repository: { pullRequests: { nodes: GqlPull[] } } | null;
+    repository: { pullRequests: { nodes: (GqlPull | null)[] | null } | null } | null;
   }>(
     `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
       pullRequests(first:64,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
@@ -512,25 +516,29 @@ async function getOpenPulls(slug: string): Promise<VillagePR[] | null> {
       } } }`,
     { owner, repo },
   );
-  const nodes = data?.repository?.pullRequests.nodes;
+  const nodes = data?.repository?.pullRequests?.nodes;
   if (nodes) {
-    return nodes.map(pr => ({
-      number: pr.number,
-      title: pr.title,
-      url: pr.url,
-      author: pr.author?.login ?? UNKNOWN_ACTOR,
-      authorAvatar: pr.author?.avatarUrl ?? null,
-      branch: pr.headRefName,
-      baseRef: pr.baseRefName,
-      draft: pr.isDraft,
-      mergeable: pr.mergeable,
-      mergeStateStatus: pr.mergeStateStatus,
-      checkState: pr.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
-      reviewDecision: pr.reviewDecision,
-      reviewers: pr.reviewRequests.nodes.map(mapReviewRequest).filter(r => r !== null),
-      assignees: pr.assignees.nodes.map(person => ({ login: person.login, avatar: person.avatarUrl })),
-      updatedAt: pr.updatedAt,
-    }));
+    return nodes
+      .filter((pr): pr is GqlPull => pr !== null)
+      .map(pr => ({
+        number: pr.number,
+        title: pr.title,
+        url: pr.url,
+        author: pr.author?.login ?? UNKNOWN_ACTOR,
+        authorAvatar: pr.author?.avatarUrl ?? null,
+        branch: pr.headRefName,
+        baseRef: pr.baseRefName,
+        draft: pr.isDraft,
+        mergeable: pr.mergeable,
+        mergeStateStatus: pr.mergeStateStatus,
+        checkState: pr.commits?.nodes?.[0]?.commit.statusCheckRollup?.state ?? null,
+        reviewDecision: pr.reviewDecision,
+        reviewers: (pr.reviewRequests?.nodes ?? []).map(mapReviewRequest).filter(r => r !== null),
+        assignees: (pr.assignees?.nodes ?? [])
+          .filter(person => person !== null)
+          .map(person => ({ login: person.login, avatar: person.avatarUrl })),
+        updatedAt: pr.updatedAt,
+      }));
   }
 
   const pulls = await gh<PullResponse[]>(

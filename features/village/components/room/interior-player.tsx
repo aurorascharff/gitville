@@ -119,13 +119,13 @@ export function InteriorPlayer({
         s.x = Math.max(36, Math.min(width - 36, s.x + (dx / len) * SPEED));
         s.y = Math.max(WALL_H + 26, Math.min(height - 22, s.y + (dy / len) * SPEED));
         if (dx !== 0) s.dir = dx > 0 ? 1 : -1;
-        inner.current?.classList.add('sprite-bob');
+        inner.current?.classList.add('player-walk');
         if (!s.left && Math.hypot(s.x - matX, s.y - matY) < 30) {
           s.left = true;
           exitRef.current();
         }
       } else {
-        inner.current?.classList.remove('sprite-bob');
+        inner.current?.classList.remove('player-walk');
       }
       if (ref.current) {
         ref.current.style.transform = `translate(${s.x - 13}px, ${s.y - 30}px)`;

@@ -66,7 +66,12 @@ export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode
         {cells
           .filter(c => !c.hidden)
           .map(cell => (
-            <VillageHouse key={cell.id} cell={cell} people={occupied.get(cell.id) ?? 0} />
+            <VillageHouse
+              key={cell.id}
+              cell={cell}
+              people={occupied.get(cell.id) ?? 0}
+              repo={cell.kind === 'main' ? repo : undefined}
+            />
           ))}
         {placed.map(({ actor, x, y }) => (
           <Villager key={actor.login} actor={actor} x={x} y={y} />

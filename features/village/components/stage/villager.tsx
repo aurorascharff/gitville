@@ -1,6 +1,6 @@
 'use client';
 
-import { AvatarImage } from '@/components/ui/avatar-image';
+import { PixelPerson } from '@/features/village/components/shared/pixel-person';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
 import { travelTo } from '@/features/village/components/stage/player';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
@@ -33,24 +33,7 @@ export function Villager({ actor, x, y }: { actor: Actor; x: number; y: number }
     >
       <div className="pop-in flex flex-col items-center">
         <div className="sprite-bob relative flex flex-col items-center" style={{ animationDelay: `${delay}ms` }}>
-          <AvatarImage
-            src={actor.avatar ? `${actor.avatar}?size=64` : null}
-            name={actor.login}
-            size={26}
-            className="relative z-10 rounded-full border border-black/50 shadow-md"
-            fallbackClassName="relative z-10 rounded-sm border-2 border-[#2e2418]"
-          >
-            {null}
-          </AvatarImage>
-          <svg width="22" height="16" viewBox="0 0 11 8" className="-mt-1 [image-rendering:pixelated]" aria-hidden>
-            <rect x="2" y="0" width="7" height="4" fill={shirt} />
-            <rect x="1" y="1" width="1" height="3" fill={shirt} />
-            <rect x="9" y="1" width="1" height="3" fill={shirt} />
-            <rect x="3" y="4" width="2" height="3" fill="#2a2d36" />
-            <rect x="6" y="4" width="2" height="3" fill="#2a2d36" />
-            <rect x="3" y="7" width="2" height="1" fill="#0f1115" />
-            <rect x="6" y="7" width="2" height="1" fill="#0f1115" />
-          </svg>
+          <PixelPerson name={actor.login} avatar={actor.avatar} shirt={shirt} scale={2.15} />
           <span
             className={cn(
               'absolute -top-3 -right-4 flex h-5 min-w-5 items-center justify-center drop-shadow',

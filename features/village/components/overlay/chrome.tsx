@@ -1,6 +1,6 @@
 'use client';
 
-import { Users } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Users } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
@@ -27,7 +27,7 @@ export function VillageBusy() {
           the village is resting
         </p>
         <p className="max-w-xs text-[14px] leading-snug text-[#6b5b43]">
-          GitHub is rate limiting us right now. Head back to the road, or come back in a minute.
+          GitHub is rate limiting this village. Try again in a minute.
         </p>
         <button
           type="button"
@@ -74,10 +74,27 @@ export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
 }
 
 export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
-  const { buzzOpen, setBuzzOpen, peopleOpen, setPeopleOpen, focusId, setZoom } = useVillageUi();
+  const { slug, buzzOpen, setBuzzOpen, peopleOpen, setPeopleOpen, focusId, setZoom } = useVillageUi();
+  const { payload, stale } = useVillageData(slug);
+  const { mutate } = useSWRConfig();
+  const retrying = stale || !payload.ok;
   return (
     <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
       {repoLink}
+      <button
+        type="button"
+        onClick={() => mutate(villageKey(slug))}
+        aria-label={retrying ? 'Retry village sync' : 'Refresh village'}
+        title={retrying ? 'Retry village sync' : 'Refresh village'}
+        className="panel relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5"
+      >
+        <RefreshCw size={14} strokeWidth={3} />
+        {retrying ? (
+          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-sm border border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]">
+            <AlertTriangle size={10} strokeWidth={3} />
+          </span>
+        ) : null}
+      </button>
       {!focusId ? (
         <>
           <button
@@ -85,22 +102,18 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
             onClick={() => setZoom(z => clampZoom(Math.round((z - 0.15) * 100) / 100))}
             aria-label="Zoom out to see more of the village"
             aria-keyshortcuts="Meta+- Control+-"
-            title="Zoom out (⌘−)"
-            className="panel flex h-9 w-12 cursor-pointer items-center justify-center gap-1 rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
-            <span aria-hidden>-</span>
-            <KeyPin>⌘−</KeyPin>
+            -
           </button>
           <button
             type="button"
             onClick={() => setZoom(z => clampZoom(Math.round((z + 0.15) * 100) / 100))}
             aria-label="Zoom in"
             aria-keyshortcuts="Meta+= Control+="
-            title="Zoom in (⌘+)"
-            className="panel flex h-9 w-12 cursor-pointer items-center justify-center gap-1 rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+            className="panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
           >
-            <span aria-hidden>+</span>
-            <KeyPin>⌘+</KeyPin>
+            +
           </button>
           <button
             type="button"
@@ -134,14 +147,6 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
         </>
       ) : null}
     </div>
-  );
-}
-
-function KeyPin({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-pixel rounded-[2px] border border-[#4a3826] bg-[#f7efdc] px-0.5 text-[8px] leading-3 text-[#3a2f22]">
-      {children}
-    </span>
   );
 }
 
