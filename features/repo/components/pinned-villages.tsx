@@ -192,7 +192,7 @@ function Road() {
 
 export function PinnedVillagesSkeleton() {
   return (
-    <div className="relative w-full overflow-hidden px-2 py-4">
+    <RoadScrollViewport>
       <div className="relative mx-auto h-78 max-w-5xl min-w-[720px]">
         <Road />
         <p className="panel absolute top-1/2 left-1/2 z-20 -translate-1/2 rounded-sm px-4 py-2 text-[14px] font-bold text-[#3a2f22] shadow-[3px_3px_0_rgb(0_0_0/0.25)]">
@@ -204,7 +204,7 @@ export function PinnedVillagesSkeleton() {
           ))}
         </ul>
       </div>
-    </div>
+    </RoadScrollViewport>
   );
 }
 

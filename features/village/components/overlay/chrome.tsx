@@ -78,7 +78,7 @@ export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
 
 export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
   const { slug, buzzOpen, setBuzzOpen, peopleOpen, setPeopleOpen, focusId, setZoom } = useVillageUi();
-  const { payload, stale } = useVillageData(slug);
+  const { payload, stale, validating } = useVillageData(slug);
   const { mutate } = useSWRConfig();
   const retrying = stale || !payload.ok;
   return (
@@ -87,11 +87,12 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
       <button
         type="button"
         onClick={() => mutate(villageKey(slug))}
-        aria-label={retrying ? 'Retry village sync' : 'Refresh village'}
-        title={retrying ? 'Retry village sync' : 'Refresh village'}
-        className="panel relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-9"
+        disabled={validating}
+        aria-label={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
+        title={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
+        className="panel relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-80 disabled:hover:translate-y-0 sm:h-9 sm:w-9"
       >
-        <RefreshCw size={14} strokeWidth={3} />
+        <RefreshCw className={cn(validating && 'animate-spin')} size={14} strokeWidth={3} />
         {retrying ? (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-sm border border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]">
             <AlertTriangle size={10} strokeWidth={3} />

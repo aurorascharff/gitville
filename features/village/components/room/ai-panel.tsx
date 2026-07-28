@@ -24,7 +24,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   const title = generated ? 'Furniture fixed' : ai ? 'Fixing furniture' : 'Fix furniture';
 
   return (
-    <aside className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 md:top-4 md:right-4 md:w-72">
+    <aside className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 md:top-8 md:right-4 md:w-72">
       <button
         type="button"
         onClick={() => {

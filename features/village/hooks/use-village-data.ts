@@ -27,8 +27,8 @@ const fetcher = async (url: string): Promise<VillagePayload> => {
   }
 };
 
-export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean } {
-  const { data } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
+export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean; validating: boolean } {
+  const { data, isValidating } = useSWR<VillagePayload>(villageKey(slug), fetcher, {
     suspense: true,
     refreshInterval: 15_000,
     revalidateOnFocus: true,
@@ -37,8 +37,8 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
   const payload = data ?? unavailablePayload();
   if (payload.ok) lastGoodPayloads.set(slug, payload);
   const previous = lastGoodPayloads.get(slug);
-  if (!payload.ok && previous) return { payload: previous, stale: true };
-  return { payload, stale: false };
+  if (!payload.ok && previous) return { payload: previous, stale: true, validating: isValidating };
+  return { payload, stale: false, validating: isValidating };
 }
 
 export type RoomSpecItem = {

@@ -77,18 +77,6 @@ export type Cell = {
 
 type RepoSignal = Pick<RepoData, 'stars' | 'openIssues' | 'languages'>;
 
-function stackDepth(pr: VillagePayload['prs'][number], byHead: Map<string, VillagePayload['prs'][number]>): number {
-  let depth = 1;
-  const seen = new Set<number>([pr.number]);
-  let parent = byHead.get(pr.baseRef);
-  while (parent && !seen.has(parent.number)) {
-    depth += 1;
-    seen.add(parent.number);
-    parent = byHead.get(parent.baseRef);
-  }
-  return depth;
-}
-
 export function pickedPrs(payload: VillagePayload, repo?: RepoSignal): VillagePayload['prs'] {
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
   const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
@@ -213,10 +201,7 @@ export function timeWindowFor(payload: VillagePayload, scrub: number): TimeWindo
   return { minT, maxT, live, asOf: live ? maxT : times[idx] };
 }
 
-export function prStackForCell(payload: VillagePayload, cell: Cell): { stack: VillagePayload['prs']; floorNo: number } {
-  const me = cell.kind === 'pr' ? payload.prs.find(p => `pr:${p.number}` === cell.id) : undefined;
-  if (!me) return { stack: [], floorNo: 1 };
-
+function prStack(payload: VillagePayload, me: VillagePayload['prs'][number]): VillagePayload['prs'] {
   const linked = (pr: VillagePayload['prs'][number]) =>
     payload.prs.filter(
       other =>
@@ -248,7 +233,14 @@ export function prStackForCell(payload: VillagePayload, cell: Cell): { stack: Vi
     }
     return value;
   };
-  const stack = component.slice().sort((a, b) => depth(b) - depth(a) || b.number - a.number);
+  return component.slice().sort((a, b) => depth(b) - depth(a) || b.number - a.number);
+}
+
+export function prStackForCell(payload: VillagePayload, cell: Cell): { stack: VillagePayload['prs']; floorNo: number } {
+  const me = cell.kind === 'pr' ? payload.prs.find(p => `pr:${p.number}` === cell.id) : undefined;
+  if (!me) return { stack: [], floorNo: 1 };
+
+  const stack = prStack(payload, me);
   const index = stack.findIndex(pr => `pr:${pr.number}` === cell.id);
   return { stack, floorNo: index >= 0 ? stack.length - index : 1 };
 }
@@ -283,7 +275,7 @@ export function buildCells(
   const placed = new Set<number>();
 
   for (const pr of tops) {
-    const floors = stackDepth(pr, byHead);
+    const floors = prStack(payload, pr).length;
     const under = byHead.get(pr.baseRef);
     const pos = slotPos(slot++);
     placed.add(pr.number);
@@ -327,7 +319,7 @@ export function buildCells(
         reviewers: parent.reviewers,
         assignees: parent.assignees,
         prState: 'stacked',
-        floors: stackDepth(parent, byHead),
+        floors: prStack(payload, parent).length,
         stackedOn: byHead.get(parent.baseRef)?.number,
         author: parent.author,
         ref: parent.branch,

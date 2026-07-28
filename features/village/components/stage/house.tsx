@@ -445,6 +445,7 @@ function Moss() {
 function CheckFlag({ state }: { state: NonNullable<Cell['checkState']> }) {
   const { setTip } = useVillageUi();
   const color = state === 'SUCCESS' ? '#58a55c' : state === 'PENDING' || state === 'EXPECTED' ? '#e4c05a' : '#d95c4a';
+  const shade = state === 'SUCCESS' ? '#2f6a3b' : state === 'PENDING' || state === 'EXPECTED' ? '#8a6d2a' : '#8a2f2b';
   const label = checkLabel(state);
 
   return (
@@ -465,13 +466,12 @@ function CheckFlag({ state }: { state: NonNullable<Cell['checkState']> }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute -top-8 right-2 z-10 flex flex-col items-center"
+      className="absolute -top-10 right-1 z-30 block h-10 w-10"
     >
-      <span className="h-5 w-0.5 bg-[#2e2418]" />
-      <span
-        className="h-3 w-5 border-2 border-[#2e2418]"
-        style={{ backgroundColor: color, transform: 'translate(8px, -18px)' }}
-      />
+      <span className="absolute top-1 left-3 h-8 w-1 bg-[#2e2418]" />
+      <span className="absolute top-0 left-4 h-5 w-7 border-2 border-[#2e2418]" style={{ backgroundColor: color }}>
+        <span className="absolute right-0 bottom-0 h-1.5 w-3" style={{ backgroundColor: shade }} />
+      </span>
     </span>
   );
 }

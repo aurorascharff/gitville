@@ -31,6 +31,20 @@ type VillageUi = {
 
 const VillageUiContext = createContext<VillageUi | null>(null);
 
+function aiStorageKey(slug: string) {
+  return `gitville:ai-rooms:${slug}`;
+}
+
+function storedAiCellIds(slug: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const ids = JSON.parse(window.localStorage.getItem(aiStorageKey(slug)) ?? '[]');
+    return new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
 export function useVillageUi(): VillageUi {
   const ctx = useContext(VillageUiContext);
   if (!ctx) throw new Error('useVillageUi must be used inside <VillageUiProvider>');
@@ -49,9 +63,15 @@ export function VillageUiProvider({ slug, children }: { slug: string; children: 
   const [focusId, setFocusIdState] = useState(() => searchParams.get('house'));
   const [aiCellIds, setAiCellIds] = useState<Set<string>>(() => {
     const house = searchParams.get('house');
-    return searchParams.get('ai') === '1' && house ? new Set([house]) : new Set();
+    const stored = storedAiCellIds(slug);
+    if (searchParams.get('ai') === '1' && house) stored.add(house);
+    return stored;
   });
   const aiOn = Boolean(focusId && aiCellIds.has(focusId));
+
+  useEffect(() => {
+    window.localStorage.setItem(aiStorageKey(slug), JSON.stringify([...aiCellIds]));
+  }, [aiCellIds, slug]);
 
   useEffect(() => {
     const syncUrlState = () => {
