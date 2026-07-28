@@ -17,16 +17,9 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
   const me = cell.kind === 'pr' ? prs.find(p => `pr:${p.number}` === cell.id) : undefined;
   let stack: typeof prs = [];
   if (me) {
-    // Collect the whole connected stack (its parent/child component), not a
-    // single greedy path: a branch can have more than one PR based on it, and a
-    // one-link-at-a-time walk picks a different fork depending on which floor
-    // you start from — so clicking a member would grow or shrink the stack.
-    // The component is symmetric, so every floor sees the same set.
-    //
-    // Two PRs are stack-adjacent when one's base is the other's head branch, but
-    // NEVER through the default branch: a backport/release PR whose head IS the
-    // trunk would otherwise turn the trunk into a hub that pulls in every PR
-    // based on it (which is how nine unrelated PRs landed in one "stack").
+    // The stack is the whole connected component (every floor sees the same
+    // set), linked by base==head branch but never through the default branch,
+    // which would otherwise hub every PR based on it into one giant stack.
     const trunk = payload.defaultBranch;
     const linked = (p: (typeof prs)[number]) =>
       prs.filter(
@@ -44,8 +37,7 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
         }
       }
     }
-    // Depth = how many members sit below this one (climbing baseRef → branch).
-    // Order top floor first to match the display + floorNo maths below.
+    // Depth = members below this one; sorted top-floor-first for the display.
     const depth = (p: (typeof prs)[number]) => {
       let d = 0;
       let cur = p;
@@ -170,9 +162,8 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
                     ) : null}
                   </>
                 );
-                // The floor you are on is a marker, not a link. Every other floor
-                // is clickable: walk to its house if it has one, otherwise open the
-                // PR on GitHub so no row is a dead end.
+                // Current floor is a marker; others walk to their house, or open
+                // the PR on GitHub when it has no house, so no row is a dead end.
                 const link = cn(base, 'cursor-pointer border-transparent text-[#e4d7ba] hover:border-[#f0e6d2]/40');
                 return (
                   <li key={pr.number}>

@@ -82,36 +82,6 @@ export function VillageMusic() {
   const { focusId } = useVillageUi();
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.3);
-
-  // Each repo is its own route, so switching repos remounts this component and
-  // would otherwise forget the music was on. Remember the preference (and
-  // volume) so it carries across repos; the setPlaying re-arms playback.
-  useEffect(() => {
-    try {
-      if (localStorage.getItem('gitville-music') === 'on') setPlaying(true);
-      const stored = localStorage.getItem('gitville-music-volume');
-      if (stored !== null) {
-        const v = Number(stored);
-        if (v >= 0 && v <= 1) setVolume(v);
-      }
-    } catch {
-      // localStorage can throw in private mode; the default (off) is fine.
-    }
-  }, []);
-  useEffect(() => {
-    try {
-      localStorage.setItem('gitville-music', playing ? 'on' : 'off');
-    } catch {
-      /* ignore */
-    }
-  }, [playing]);
-  useEffect(() => {
-    try {
-      localStorage.setItem('gitville-music-volume', String(volume));
-    } catch {
-      /* ignore */
-    }
-  }, [volume]);
   const ctxRef = useRef<AudioContext | null>(null);
   const chainRef = useRef<Chain | null>(null);
   const synthOutRef = useRef<GainNode | null>(null);
@@ -184,7 +154,8 @@ export function VillageMusic() {
   useEffect(
     () => () => {
       synthCleanupRef.current?.();
-      void ctxRef.current?.close();
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state !== 'closed') void ctx.close();
     },
     [],
   );
@@ -193,7 +164,7 @@ export function VillageMusic() {
     <div
       className={cn(
         'absolute bottom-5 z-50 flex items-center gap-1.5',
-        // Indoors the PR sidebar owns the left column; sit right of the help button.
+        // Clear the PR sidebar and help button that own the left column indoors.
         indoors ? 'left-[calc(min(360px,40vw)+4rem)]' : 'left-16',
       )}
     >

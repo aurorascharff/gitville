@@ -41,7 +41,7 @@ export function VillageHelp() {
         aria-label="What does everything mean?"
         className={cn(
           'panel font-pixel absolute bottom-5 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5',
-          // Indoors the PR sidebar owns the left column; sit just right of it.
+          // Clear the PR sidebar that owns the left column indoors.
           focusId ? 'left-[calc(min(360px,40vw)+1rem)]' : 'left-4',
         )}
       >
@@ -52,7 +52,7 @@ export function VillageHelp() {
           className="absolute inset-0 z-60 flex items-center justify-center bg-black/50 p-4"
           onClick={e => e.target === e.currentTarget && setOpen(false)}
         >
-          <aside className="panel flex max-h-[86dvh] w-140 max-w-[92vw] flex-col overflow-hidden rounded-sm">
+          <aside className="panel flex max-h-[86dvh] w-216 max-w-[94vw] flex-col overflow-hidden rounded-sm">
             <header className="panel-wood flex shrink-0 items-center justify-between border-x-0 border-t-0 px-5 py-2.5">
               <p className="font-pixel text-[18px] font-bold">How to read the village</p>
               <button
@@ -63,76 +63,83 @@ export function VillageHelp() {
                 ✕
               </button>
             </header>
-            <ul className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
-              <LegendRow
-                art={hallArt()}
-                palette={MAIN_ROOF}
-                scale={2.5}
-                title="Town hall"
-                text="The default branch. Releases and merges land here."
-              />
-              <LegendRow
-                art={cottageArt(1, false)}
-                palette={PR_ROOF}
-                scale={2.5}
-                title="Finished cottage"
-                text="An open PR that's ready for review."
-              />
-              <LegendRow
-                art={cottageArt(1, true)}
-                palette={PR_ROOF}
-                scale={2.5}
-                title="Under construction"
-                text="A draft PR — still tarp and scaffolding."
-              />
-              <LegendRow
-                art={cottageArt(3, false)}
-                palette={PR_ROOF}
-                scale={2.5}
-                title="Multi-storey house"
-                text="A stack of PRs. Every floor is a PR built on the one below, and the attic is the top of the stack."
-              />
-              <LegendRow
-                art={cabinArt()}
-                palette={BRANCH_ROOF}
-                scale={3}
-                title="Cabin"
-                text="An active branch that has no PR yet."
-              />
-              <LegendRow
-                art={tentArt()}
-                palette={ISSUE_ROOF}
-                scale={2.5}
-                title="Tent"
-                text="A busy issue — people talk here instead of building."
-              />
-              <LegendRow
-                art={WELL.art}
-                palette={WELL.palette}
-                scale={3}
-                title="The well"
-                text="The town square. People end up here when their latest work points somewhere else."
-              />
-              <LegendRow
-                art={FURNITURE[1].art}
-                palette={FURNITURE[1].palette}
-                scale={3.5}
-                title="Furniture"
-                text="Real commits build the room inside each house. Bigger work becomes a bigger piece."
-              />
-              <li className="flex items-center gap-4 py-2.5">
-                <span className="flex w-20 shrink-0 justify-center">
-                  <span className="sticky-note block h-10 w-10" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-pixel text-[15px] font-bold text-[#3a2f22]">Wall notes</p>
-                  <p className="text-[13px] leading-snug text-[#6b5b43]">Reviews and comments pinned inside.</p>
-                </div>
-              </li>
+            <div className="grid min-h-0 flex-1 gap-x-8 overflow-y-auto px-5 py-3 sm:grid-cols-2">
+              <div>
+                <p className="font-pixel pb-1 text-[12px] tracking-wide text-[#8a6d2a] uppercase">Places</p>
+                <ul>
+                  <LegendRow
+                    art={hallArt()}
+                    palette={MAIN_ROOF}
+                    scale={2.5}
+                    title="Town hall"
+                    text="The default branch. Releases and merges land here."
+                  />
+                  <LegendRow
+                    art={cottageArt(1, false)}
+                    palette={PR_ROOF}
+                    scale={2.5}
+                    title="Finished cottage"
+                    text="An open PR that's ready for review."
+                  />
+                  <LegendRow
+                    art={cottageArt(1, true)}
+                    palette={PR_ROOF}
+                    scale={2.5}
+                    title="Under construction"
+                    text="A draft PR, still tarp and scaffolding."
+                  />
+                  <LegendRow
+                    art={cottageArt(3, false)}
+                    palette={PR_ROOF}
+                    scale={2.5}
+                    title="Multi-storey house"
+                    text="A stack of PRs. Every floor is built on the one below, and the attic is the top."
+                  />
+                  <LegendRow
+                    art={cabinArt()}
+                    palette={BRANCH_ROOF}
+                    scale={3}
+                    title="Cabin"
+                    text="An active branch that has no PR yet."
+                  />
+                  <LegendRow
+                    art={tentArt()}
+                    palette={ISSUE_ROOF}
+                    scale={2.5}
+                    title="Tent"
+                    text="A busy issue where people talk instead of building."
+                  />
+                  <LegendRow
+                    art={WELL.art}
+                    palette={WELL.palette}
+                    scale={3}
+                    title="The well"
+                    text="The town square. People end up here when their latest work points somewhere else."
+                  />
+                  <LegendRow
+                    art={FURNITURE[1].art}
+                    palette={FURNITURE[1].palette}
+                    scale={3.5}
+                    title="Furniture"
+                    text="Real commits build the room inside each house. Bigger work becomes a bigger piece."
+                  />
+                  <li className="flex items-center gap-4 py-2.5">
+                    <span className="flex w-20 shrink-0 justify-center">
+                      <span className="sticky-note block h-10 w-10" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-pixel text-[15px] font-bold text-[#3a2f22]">Wall notes</p>
+                      <p className="text-[13px] leading-snug text-[#6b5b43]">Reviews and comments pinned inside.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
 
-              <li className="border-t-2 border-[#4a3826]/30 py-3">
-                <p className="font-pixel mb-3 text-[15px] font-bold text-[#3a2f22]">Controls</p>
-                <div className="flex flex-col gap-3 text-[13px] text-[#6b5b43]">
+              <div className="flex flex-col">
+                <p className="font-pixel pt-4 pb-1 text-[12px] tracking-wide text-[#8a6d2a] uppercase sm:pt-0">
+                  Getting around
+                </p>
+                <div className="flex flex-col gap-3 py-2 text-[13px] text-[#6b5b43]">
                   <div className="flex items-center gap-3">
                     <span className="flex gap-1">
                       <Key>W</Key>
@@ -148,43 +155,43 @@ export function VillageHelp() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Key wide>Enter</Key>
-                    <span>…or walk into a door to step inside</span>
+                    <span>Walk into a door to step inside</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Key wide>Esc</Key>
-                    <span>…or walk onto the mat to leave</span>
+                    <span>Walk onto the mat to leave</span>
                   </div>
                 </div>
-              </li>
 
-              <li className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-                Inside a stacked house the sign lists every floor — click one to visit that PR.
-              </li>
-              <li className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-                <span className="font-bold text-[#3a2f22]">Draw with AI</span> rebuilds a room from its real commits —
-                one invented machine per piece of work. Drawn rooms are cached and shared.
-              </li>
-              <li className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-                Made by{' '}
-                <a
-                  href="https://github.com/aurorascharff"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-[#8a4a2b] hover:underline"
-                >
-                  aurorascharff
-                </a>{' '}
-                ·{' '}
-                <a
-                  href="https://github.com/aurorascharff/gitville"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-[#8a4a2b] hover:underline"
-                >
-                  View the source
-                </a>
-              </li>
-            </ul>
+                <div className="mt-3 border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
+                  Inside a stacked house the sign lists every floor. Click one to visit that PR.
+                </div>
+                <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
+                  <span className="font-bold text-[#3a2f22]">Draw with AI</span> rebuilds a room from its real commits,
+                  one invented machine per piece of work. Drawn rooms are cached and shared.
+                </div>
+                <div className="mt-auto border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
+                  Made by{' '}
+                  <a
+                    href="https://github.com/aurorascharff"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-[#8a4a2b] hover:underline"
+                  >
+                    aurorascharff
+                  </a>
+                  .{' '}
+                  <a
+                    href="https://github.com/aurorascharff/gitville"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-[#8a4a2b] hover:underline"
+                  >
+                    View the source
+                  </a>
+                </div>
+              </div>
+            </div>
           </aside>
         </div>
       ) : null}
