@@ -103,10 +103,10 @@ async function generateRoomSpecCached(
   const gateway = createGateway({ apiKey: gatewayKey() });
 
   const { object } = await generateObject({
-    model: gateway('openai/gpt-5-nano'),
+    model: gateway('anthropic/claude-sonnet-5'),
     schema: specSchema,
     prompt: [
-      'You are a mad inventor furnishing one room in a pixel-art village where GitHub work is life. You build original contraptions that physically embody the feature being built. Think workshop machines, a time machine, a loom, a printing press, a telescope. Never settle for a plain crate or bookshelf when the work deserves an invention.',
+      'You are the set designer for one room in a pixel-art village where GitHub work comes alive. Your job is to compose a SINGLE COHESIVE SCENE — a themed workshop with a distinct personality — not a pile of unrelated props. Every object shares one world and clearly belongs beside the others.',
       `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
       state ? `The house is ${state}.` : '',
       'Commits in this room, in order (0-indexed):',
@@ -114,15 +114,20 @@ async function generateRoomSpecCached(
       notes.length > 0 ? 'Discussion in this room:' : '',
       ...notes.slice(0, 6).map(n => `- ${n}`),
       '',
-      'Rules:',
+      'Design the scene:',
+      '- Read what this room actually builds and invent a workshop with a POINT OF VIEW: what is this place, what does it make, what is its mood? The `theme` names it (max 3 words, no emoji).',
+      '- Pick ONE shared visual language for the whole room: a dominant palette of 2-3 legend colors plus one accent, and a recurring structural motif (e.g. brass pipes, riveted panels, glowing screens, woven cables). EVERY item must use this palette and motif so the room reads as one set.',
+      '- The FIRST item is the HERO: the biggest, most detailed centerpiece contraption that embodies the feature. Every item after it is a supporting machine or prop that visibly RELATES to the hero — feeding it, reading from it, powered by it — and repeats the shared motif. Nothing floats on its own.',
+      '',
+      'Draw the items:',
       '- Group commits that belong to the same piece of work into ONE item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item.',
       '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group, designed to connect side by side (left end, middle segments, right end) into one machine. One commit means one self-contained piece.',
       '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights so they join cleanly.',
-      '- Build BIG. Pieces should be 10-16 wide and 8-12 rows so the finished machine furnishes the room. No trinkets.',
-      '- Every machine must have its own silhouette. Vary shapes with "." aggressively: towers, funnels, wheels, arms, chimneys, tanks. Vary the dominant color per machine. Never a plain filled rectangle.',
+      '- Build BIG. The hero should be 12-16 wide and 10-12 rows; supporting pieces 8-14 wide. No trinkets.',
+      '- Give every machine its own silhouette — vary shapes with "." aggressively: towers, funnels, wheels, arms, chimneys, tanks, antennae. But keep the shared palette + motif so variety never breaks the cohesion.',
+      '- Add connective detail at the edges of pieces (a protruding pipe, a cable stub, a rail) hinting that items link together into the workshop.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
       `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent anything. Set \`kind\` and \`pieces\` to null when unused.`,
-      '- Theme name max 3 words. No emoji.',
     ]
       .filter(Boolean)
       .join('\n'),

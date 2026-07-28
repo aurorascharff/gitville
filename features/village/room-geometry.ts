@@ -6,6 +6,11 @@ import type { BranchCommit } from '@/types/github';
 
 export const WALL_H = 150;
 
+// The interior reserves a fixed left column for the PR info panel; the room fits
+// into the space that remains (shared by the scene layout and the camera so the
+// click → room-coordinate mapping stays calibrated).
+export const SIDEBAR_W = 360;
+
 export type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
 export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][] };
 
@@ -85,6 +90,61 @@ export function buildWidth(build: Build): number {
     return build.pieces.reduce((sum, piece) => sum + Math.max(...piece.map(r => r.length)) * scale, 0);
   }
   return build.commits.reduce((sum, c) => sum + 8 * sizeScale(c), 0);
+}
+
+// AI rooms compose a staged diorama: the hero contraption sits front-centre,
+// supporting machines fan out on shelves behind and beside it so the floor
+// reads as one scene with depth (zIndex keys off y, so front overlaps back)
+// instead of props floating in a row.
+export function heroIndex(builds: Build[]): number {
+  let best = 0;
+  let bestW = -1;
+  builds.forEach((b, i) => {
+    const bw = buildWidth(b);
+    if (bw > bestW) {
+      bestW = bw;
+      best = i;
+    }
+  });
+  return best;
+}
+
+export function composeScene(builds: Build[], w: number, floorH: number, hero: number): { x: number; y: number }[] {
+  const pad = 70;
+  const gap = 46;
+  const pos: { x: number; y: number }[] = new Array(builds.length);
+  const heroW = Math.min(buildWidth(builds[hero]), w - pad * 2);
+  pos[hero] = { x: w / 2, y: floorH * 0.6 };
+  const half = heroW / 2 + 70;
+
+  // Shelves filled in order: back row spans full width (behind the hero), then
+  // the front flanks, then the mid flanks. y = depth, higher = nearer.
+  const shelves = [
+    { y: floorH * 0.3, x: pad, xMax: w - pad },
+    { y: floorH * 0.77, x: pad, xMax: w / 2 - half },
+    { y: floorH * 0.77, x: w / 2 + half, xMax: w - pad },
+    { y: floorH * 0.47, x: pad, xMax: w / 2 - half - 30 },
+    { y: floorH * 0.47, x: w / 2 + half + 30, xMax: w - pad },
+  ];
+  let si = 0;
+  let cx = shelves[0].x;
+  for (let i = 0; i < builds.length; i++) {
+    if (i === hero) continue;
+    const bw = Math.min(buildWidth(builds[i]), w - pad * 2);
+    while (si < shelves.length && cx + bw > shelves[si].xMax) {
+      si += 1;
+      cx = shelves[si]?.x ?? pad;
+    }
+    if (si >= shelves.length) {
+      // More items than shelves: wrap back onto the rear row, nudged down.
+      si = 0;
+      cx = shelves[0].x;
+      shelves[0].y = Math.min(floorH - 90, shelves[0].y + 120);
+    }
+    pos[i] = { x: Math.min(cx + bw / 2, w - pad), y: shelves[si].y };
+    cx += bw + gap;
+  }
+  return pos;
 }
 
 export function layoutBuilds(builds: Build[], w: number, floorH: number): { x: number; y: number }[] {

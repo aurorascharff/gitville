@@ -19,10 +19,13 @@ import {
 import {
   backdropFor,
   centerpiece,
+  composeScene,
   floorClass,
+  heroIndex,
   layoutBuilds,
   pieceScale,
   roomDims,
+  SIDEBAR_W,
   sizeScale,
   toBuilds,
   WALL_H,
@@ -122,9 +125,16 @@ function InteriorScene({
     setAiOn(on);
   };
   const [w, h] = roomDims(cell);
-  const camX = w <= viewport.w ? (viewport.w - w) / 2 : Math.min(0, Math.max(viewport.w - w, viewport.w / 2 - w / 2));
-  const camY =
-    h <= viewport.h ? (viewport.h - h) / 2 : Math.min(0, Math.max(viewport.h - h, viewport.h / 2 - (h - 78)));
+  // Fit the room into the space right of the reserved info sidebar: scale it up
+  // on small screens so the interior fills the space (never a tiny box lost in
+  // the dark) and down when it would overflow, keeping a little breathing room
+  // around the edges. The camera centres the room in that remaining region.
+  const pad = 32;
+  const sidebar = Math.min(SIDEBAR_W, viewport.w * 0.4);
+  const availW = viewport.w - sidebar;
+  const scale = Math.max(0.6, Math.min((availW - pad * 2) / w, (viewport.h - pad * 2) / h, 1.8));
+  const camX = sidebar + (availW - w * scale) / 2;
+  const camY = (viewport.h - h * scale) / 2;
 
   return (
     <div
@@ -138,11 +148,19 @@ function InteriorScene({
           'pixel absolute top-0 left-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)] will-change-transform',
           ai && 'ring-4 ring-[#e4c05a]',
         )}
-        style={{ width: w, height: h, transform: `translate3d(${camX}px, ${camY}px, 0)` }}
+        style={{
+          width: w,
+          height: h,
+          transform: `translate3d(${camX}px, ${camY}px, 0) scale(${scale})`,
+          transformOrigin: '0 0',
+        }}
         onClick={e => {
           if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
           const rect = e.currentTarget.getBoundingClientRect();
-          walkTargetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          // rect is the post-scale border box; divide out the applied scale and
+          // drop the 4px border so the click maps to room-local coordinates.
+          const s = rect.width / e.currentTarget.offsetWidth;
+          walkTargetRef.current = { x: (e.clientX - rect.left) / s - 4, y: (e.clientY - rect.top) / s - 4 };
         }}
       >
         <WallNotes cell={cell} ai={ai} />
@@ -169,34 +187,31 @@ function InteriorScene({
 }
 
 function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
-  const { slug, setTip } = useVillageUi();
+  const { slug } = useVillageUi();
   const { spec, loading } = useRoomSpec(slug, cell.id, ai);
   const working = ai && loading;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const label = working ? 'at work…' : ai ? 'AI room' : 'visualize with AI';
+  // The explanation stays visible in every state (off / building / on) and the
+  // panel keeps a fixed width so toggling never resizes or empties it out.
+  const status = working
+    ? 'Building this room from its commits…'
+    : ai
+      ? spec?.ai
+        ? `Showing “${spec.theme}”`
+        : 'Showing the AI-built scene'
+      : 'Redraw this room from its real commits as an invented scene.';
 
   return (
-    <aside className="absolute top-4 right-4 z-50">
+    <aside className="absolute top-4 right-4 z-50 w-44">
       <button
         onClick={() => onToggle(!ai)}
         role="switch"
         aria-checked={ai}
         aria-label="Visualize this room with AI"
-        onMouseMove={e =>
-          setTip({
-            x: e.clientX,
-            y: e.clientY,
-            title: label,
-            body: !working && spec?.ai ? spec.theme : null,
-            when: null,
-          })
-        }
-        onMouseLeave={() => setTip(null)}
         className={cn(
-          'panel pixel flex cursor-pointer flex-col items-center rounded-sm p-2 transition-transform hover:-translate-y-0.5',
+          'panel pixel flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-sm p-3 transition-transform hover:-translate-y-0.5',
           ai && 'ring-2 ring-[#e4c05a]',
-          !ai && !working && 'opacity-80',
         )}
       >
         <span className="relative">
@@ -215,10 +230,12 @@ function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (o
             <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={3} />
           </span>
         </span>
+        <span className="font-pixel text-[12px] font-bold text-[#3a2f22]">Draw with AI</span>
+        <span className="flex min-h-9 items-center text-center text-[10px] leading-tight text-[#6b5b43]">{status}</span>
         <span
           aria-hidden
           className={cn(
-            'mt-1.5 flex h-4 w-8 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
+            'flex h-4 w-8 items-center rounded-sm border-2 border-[#4a3826] px-0.5 transition-colors',
             ai ? 'justify-end bg-[#e4c05a]' : 'justify-start bg-[#b5a687]',
           )}
         >
@@ -298,12 +315,16 @@ function Floor({ cell, width, height, ai }: { cell: Cell; width: number; height:
 
   if (loading && !spec) return <FloorSkeleton />;
 
-  const anchor = campsite ? null : centerpiece(cell);
   const floorH = height - WALL_H;
   // keepPreviousData holds the prior furniture on screen while a regen loads, so
   // the room never blanks; the "AI at work…" badge signals the swap in progress.
   const builds = toBuilds(commits, spec?.items);
-  const slots = layoutBuilds(builds, width, floorH);
+  // An AI scene draws its own hero contraption as the centrepiece, composed as a
+  // diorama; plain rooms keep the generic anchor + scattered furniture.
+  const aiScene = builds.some(b => Boolean(b.pieces?.length));
+  const hero = aiScene ? heroIndex(builds) : -1;
+  const anchor = campsite || aiScene ? null : centerpiece(cell);
+  const slots = aiScene ? composeScene(builds, width, floorH, hero) : layoutBuilds(builds, width, floorH);
 
   return (
     <div className={cn('absolute inset-x-0 bottom-0', floorClass(cell))} style={{ top: WALL_H }}>
@@ -358,7 +379,7 @@ function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: num
 
   return (
     <div
-      className="absolute flex flex-col items-center"
+      className="absolute flex flex-col items-center transition-[translate] duration-150 will-change-transform hover:-translate-y-1.5"
       style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}
     >
       <div className="pop-in flex flex-col items-center" style={{ animationDelay: `${delay}ms` }}>
@@ -372,7 +393,6 @@ function Furniture({ build, x, y, delay = 0 }: { build: Build; x: number; y: num
                 href={commit.url}
                 target="_blank"
                 rel="noreferrer"
-                className="transition-transform hover:-translate-y-1"
                 style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
                 onMouseMove={e =>
                   setTip({
@@ -471,8 +491,10 @@ function DoorMat({ width, height }: { width: number; height: number }) {
       className="pointer-events-none absolute flex flex-col items-center"
       style={{ left: width / 2, top: height - 4, transform: 'translate(-50%, -100%)', zIndex: 5 }}
     >
-      <span className="h-7 w-20 rounded-t-sm border-2 border-b-0 border-[#4a3826] bg-[#8a5a33] shadow-[inset_0_3px_0_rgb(255_255_255/0.15)]" />
-      <span className="font-pixel -mt-6 mb-1 text-[10px] text-[#f0e6d2]/90">walk out</span>
+      <span className="h-14 w-40 rounded-t-md border-4 border-b-0 border-[#4a3826] bg-[#8a5a33] shadow-[inset_0_4px_0_rgb(255_255_255/0.18)]" />
+      <span className="font-pixel -mt-11 mb-2 flex items-center gap-1 text-base font-bold text-[#f0e6d2] drop-shadow-[0_1px_0_rgb(0_0_0/0.5)]">
+        walk out ↓
+      </span>
     </div>
   );
 }

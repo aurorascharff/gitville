@@ -10,10 +10,14 @@ import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn, formatStars } from '@/lib/utils';
 
 export function VillageStatus() {
-  const { slug, repo, pinned, scrub } = useVillageUi();
+  const { slug, repo, pinned, scrub, focusId } = useVillageUi();
   const { payload, stale } = useVillageData(slug);
   const { asOf, live } = useTimeWindow(payload, scrub);
   const { actors } = useWorldModel(payload, slug, asOf);
+
+  // Inside a house the PR sidebar owns the top-left; hide the map HUD so the
+  // repo switcher badge doesn't collide with the sidebar title.
+  if (focusId) return null;
 
   return (
     <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
@@ -88,12 +92,21 @@ export function VillageControls() {
 export function VillageTooltip() {
   const { tip } = useVillageUi();
   if (!tip) return null;
+  // Anchor to whichever corner of the cursor keeps the card on-screen: flip to
+  // the left when near the right edge, and above when near the bottom, so it's
+  // never clipped by the viewport regardless of how big the card grows.
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  const flipX = tip.x > vw * 0.62;
+  const flipY = tip.y > vh * 0.6;
   return (
     <div
       className="panel pointer-events-none fixed z-50 max-w-96 rounded-sm px-3 py-2 [@media(hover:none)]:hidden"
       style={{
-        left: Math.min(tip.x + 16, typeof window !== 'undefined' ? window.innerWidth - 300 : tip.x),
-        top: tip.y + 16,
+        left: flipX ? undefined : tip.x + 16,
+        right: flipX ? vw - tip.x + 16 : undefined,
+        top: flipY ? undefined : tip.y + 16,
+        bottom: flipY ? vh - tip.y + 16 : undefined,
       }}
     >
       <p className="font-pixel text-[14px] font-bold">{tip.title}</p>

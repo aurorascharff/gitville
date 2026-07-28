@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerSprite } from '@/features/village/components/player';
-import { WALL_H } from '@/features/village/room-geometry';
+import { SIDEBAR_W, WALL_H } from '@/features/village/room-geometry';
 
 export function InteriorPlayer({
   width,
@@ -60,8 +60,20 @@ export function InteriorPlayer({
       if (roomRef.current) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const targetX = width <= vw ? (vw - width) / 2 : Math.min(0, Math.max(vw - width, vw / 2 - s.x));
-        const targetY = height <= vh ? (vh - height) / 2 : Math.min(0, Math.max(vh - height, vh / 2 - s.y));
+        // Fit the room into the space right of the reserved info sidebar (must
+        // match InteriorScene so the click → room-coordinate mapping stays
+        // calibrated), then follow the player within that region.
+        const pad = 32;
+        const sidebar = Math.min(SIDEBAR_W, vw * 0.4);
+        const availW = vw - sidebar;
+        const scale = Math.max(0.6, Math.min((availW - pad * 2) / width, (vh - pad * 2) / height, 1.8));
+        const sw = width * scale;
+        const sh = height * scale;
+        const targetX =
+          sw <= availW
+            ? sidebar + (availW - sw) / 2
+            : Math.min(sidebar, Math.max(sidebar + availW - sw, sidebar + availW / 2 - s.x * scale));
+        const targetY = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, vh / 2 - s.y * scale));
         if (Number.isNaN(s.camX)) {
           s.camX = targetX;
           s.camY = targetY;
@@ -69,7 +81,7 @@ export function InteriorPlayer({
           s.camX += (targetX - s.camX) * 0.12;
           s.camY += (targetY - s.camY) * 0.12;
         }
-        roomRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0)`;
+        roomRef.current.style.transform = `translate3d(${s.camX}px, ${s.camY}px, 0) scale(${scale})`;
       }
 
       let dx = 0;

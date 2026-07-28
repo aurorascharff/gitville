@@ -2,77 +2,42 @@
 
 import { WORLD_H, WORLD_W, type Cell } from '@/features/village/village-model';
 
+// Streets connect each house to its immediate neighbours (one hex step away),
+// forming a lane network you can actually navigate — no spokes radiating from
+// the centre, no single dominant road, just short local streets between
+// adjacent houses that read like a real town grown block by block.
+const STEP = 380; // a hex step is ~350; anything under this is an immediate neighbour
+const FOOT = 46; // roads meet houses at their foot, so buildings sit just above the lane
+
 export function VillageRoads({ cells }: { cells: Cell[] }) {
-  const main = cells.find(c => c.kind === 'main');
-  if (!main) return null;
+  const nodes = cells.filter(c => !c.hidden).map(c => ({ x: c.x, y: c.y + FOOT }));
+  if (nodes.length < 2) return null;
 
-  const others = cells.filter(c => c.id !== main.id);
-  const inner = others.filter(c => Math.hypot(c.x - main.x, c.y - main.y) < 480);
-  const outer = others.filter(c => Math.hypot(c.x - main.x, c.y - main.y) >= 480);
-  const byAngle = [...inner].sort(
-    (a, b) => Math.atan2(a.y - main.y, a.x - main.x) - Math.atan2(b.y - main.y, b.x - main.x),
-  );
+  const edges: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      if (dx * dx + dy * dy <= STEP * STEP) {
+        edges.push({ x1: nodes[i].x, y1: nodes[i].y, x2: nodes[j].x, y2: nodes[j].y });
+      }
+    }
+  }
 
-  const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
-  for (let i = 0; i < byAngle.length; i++) {
-    const a = byAngle[i];
-    const b = byAngle[(i + 1) % byAngle.length];
-    if (byAngle.length < 2 || (byAngle.length === 2 && i === 1)) break;
-    segments.push({ x1: a.x, y1: a.y + 30, x2: b.x, y2: b.y + 30 });
-  }
-  for (const c of outer) {
-    const nearest = [...inner, main].sort(
-      (a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y),
-    )[0];
-    if (nearest) segments.push({ x1: c.x, y1: c.y + 30, x2: nearest.x, y2: nearest.y + 30 });
-  }
-  for (const n of byAngle
-    .slice()
-    .sort((a, b) => Math.hypot(a.x - main.x, a.y - main.y) - Math.hypot(b.x - main.x, b.y - main.y))
-    .slice(0, 2)) {
-    segments.push({ x1: main.x, y1: main.y + 44, x2: n.x, y2: n.y + 30 });
-  }
+  const layers = [
+    { stroke: '#6e5638', width: 22, opacity: 0.25, dash: undefined },
+    { stroke: '#8f7448', width: 16, opacity: 0.85, dash: undefined },
+    { stroke: '#a98d5c', width: 5, opacity: 1, dash: '3 15' },
+  ];
 
   return (
     <svg aria-hidden className="pointer-events-none absolute inset-0" style={{ width: WORLD_W, height: WORLD_H }}>
-      {segments.map((s, i) => (
-        <line
-          key={`edge-${i}`}
-          x1={s.x1}
-          y1={s.y1}
-          x2={s.x2}
-          y2={s.y2}
-          stroke="#6e5638"
-          strokeWidth="20"
-          strokeLinecap="round"
-          opacity="0.25"
-        />
-      ))}
-      {segments.map((s, i) => (
-        <line
-          key={`bed-${i}`}
-          x1={s.x1}
-          y1={s.y1}
-          x2={s.x2}
-          y2={s.y2}
-          stroke="#8f7448"
-          strokeWidth="16"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-      ))}
-      {segments.map((s, i) => (
-        <line
-          key={`stone-${i}`}
-          x1={s.x1}
-          y1={s.y1}
-          x2={s.x2}
-          y2={s.y2}
-          stroke="#a98d5c"
-          strokeWidth="5"
-          strokeDasharray="3 15"
-          strokeLinecap="round"
-        />
+      {layers.map((l, li) => (
+        <g key={li} stroke={l.stroke} strokeWidth={l.width} strokeLinecap="round" opacity={l.opacity}>
+          {edges.map((e, i) => (
+            <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} strokeDasharray={l.dash} />
+          ))}
+        </g>
       ))}
     </svg>
   );

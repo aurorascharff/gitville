@@ -5,9 +5,16 @@ export const WORLD_W = 3500;
 export const WORLD_H = 3000;
 const CX = WORLD_W / 2;
 const CY = WORLD_H / 2;
-const DX = 350;
-const DY = 295;
 
+// Houses spread over a hex grid so the town fans out in every direction rather
+// than lining one road. Slots fill from the centre outward (a spiral over the
+// rings), so a small repo stays compact near the plaza and a busy one grows a
+// dense neighbourhood. Positions are fully deterministic (order = fill priority,
+// geometry = the ring) so houses never teleport when the feed reshuffles.
+const DX = 350; // horizontal spacing between hex columns
+const DY = 295; // vertical spacing between hex rows
+
+// Walk each ring of the hex spiral: start at a corner and follow the six edges.
 const RING_DIRS: [number, number][] = [
   [-1, 1],
   [-1, 0],
@@ -33,6 +40,8 @@ function hexSpiral(rings: number): [number, number][] {
   return out;
 }
 
+// Rings 0-4 → 61 plots; center-out fill keeps the occupied set contiguous so the
+// neighbour-road network is always connected (no orphan houses).
 const AXIAL = hexSpiral(4);
 
 function slotPos(i: number): { x: number; y: number } {
@@ -91,6 +100,11 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     url: `https://github.com/${slug}`,
     ...slotPos(slot++),
   });
+
+  // Reserve the first ring slot right beside canary for the town square, so the
+  // plaza (canary + square) sits together at the heart of the town. Houses fill
+  // the rest of the rings outward from slot 2.
+  const squarePos = slotPos(slot++);
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
@@ -156,7 +170,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
       if (!past.has(e.number)) past.set(e.number, e);
     }
     for (const [number, e] of [...past].sort((a, b) => a[0] - b[0])) {
-      if (slot >= AXIAL.length - 2) break;
+      if (slot >= AXIAL.length) break;
       cells.push({
         id: `pr:${number}`,
         kind: 'pr',
@@ -175,7 +189,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   // Select the most recent branches, but seat them by name so the set stays put.
   const branches = payload.branches.filter(b => !prRefs.has(b.ref)).slice(0, 5);
   for (const b of branches.sort((x, y) => x.ref.localeCompare(y.ref))) {
-    if (slot >= AXIAL.length - 1) break;
+    if (slot >= AXIAL.length) break;
     cells.push({
       id: `branch:${b.ref}`,
       kind: 'branch',
@@ -203,7 +217,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
   const shown = [...activity.entries()]
     .filter(([number]) => !cells.some(c => c.id === `pr:${number}` || c.id === `issue:${number}`))
     .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, Math.max(0, AXIAL.length - 1 - slot))
+    .slice(0, Math.max(0, AXIAL.length - slot))
     .sort((a, b) => a[0] - b[0]);
   for (const [number, info] of shown) {
     cells.push(
@@ -235,7 +249,7 @@ export function buildCells(payload: VillagePayload, slug: string, asOf = Number.
     label: 'town square',
     sub: 'passing through',
     url: `https://github.com/${slug}/issues`,
-    ...slotPos(slot++),
+    ...squarePos,
   });
 
   return cells;

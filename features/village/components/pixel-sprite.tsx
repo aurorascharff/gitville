@@ -122,7 +122,7 @@ export const AI_ART_PALETTE: Palette = {
   O: '#2e2418',
   W: WOOD,
   w: WOOD_D,
-  m: '#22262e',
+  m: '#8b95a3', // steel — was near-black (#22262e), which made metal machines read as black blocks
   s: '#6ee7a0',
   b: '#5b8bff',
   r: '#c85b5b',
