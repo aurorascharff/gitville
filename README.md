@@ -16,7 +16,7 @@ Gitville turns any GitHub repo into a small pixel village you can walk around in
 
 - The **town hall** is the default branch, where releases and merges land.
 - A **finished cottage** is an open PR ready for review; one **under construction** with tarp and scaffolding is a draft.
-- A **multi-storey house** is a stack of PRs — each floor built on the one below, the attic at the top.
+- A **multi-storey house** is a stack of PRs, each floor built on the one below, the attic at the top.
 - A **cabin** is an active branch with no PR yet, a **tent** is a busy issue, and the **well** marks the town square.
 - **Villagers** are real contributors, standing at the house where they last worked. The world updates live.
 - Step inside and the room is furnished from the PR's real commits, with review comments pinned to the wall as notes. Toggle **Draw with AI** and a model redraws the room as an invented workshop built from those same commits.
@@ -33,12 +33,12 @@ Open [http://localhost:3000](http://localhost:3000) and paste any public repo UR
 
 Two optional keys in `.env.local`:
 
-- `GITHUB_TOKEN` — raises the GitHub API limit from 60 to 5000 requests/hour (strongly recommended).
-- `VERCEL_AI_GATEWAY_KEY` — turns on the AI interior designer. Without it, a deterministic designer furnishes rooms instead.
+- `GITHUB_TOKEN` raises the GitHub API limit from 60 to 5000 requests/hour (strongly recommended).
+- `VERCEL_AI_GATEWAY_KEY` turns on the AI interior designer. Without it, a deterministic designer furnishes rooms instead.
 
 ## Built with
 
-[Next.js 16](https://nextjs.org/), [React 19](https://react.dev/), the [SWR](https://swr.vercel.app) server layer, the [AI SDK](https://ai-sdk.dev) with Vercel AI Gateway, and [Tailwind CSS v4](https://tailwindcss.com/). All pixel art is hand-drawn as SVG — no image assets.
+[Next.js 16](https://nextjs.org/), [React 19](https://react.dev/), the [SWR](https://swr.vercel.app) server layer, the [AI SDK](https://ai-sdk.dev) with Vercel AI Gateway, and [Tailwind CSS v4](https://tailwindcss.com/). All pixel art is hand-drawn SVG.
 
 ## Credits
 
