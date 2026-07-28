@@ -14,7 +14,7 @@ export default function RepoVillageLayout({ children }: LayoutProps<'/[owner]/[n
 
 function VillageErrorFallback({ retry, title }: ErrorInfo & { title?: string }) {
   return (
-    <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#1f3d27] dark:bg-[#0c1912]">
+    <div className="fixed inset-0 flex h-[100dvh] w-full items-center justify-center overflow-hidden overscroll-none bg-[#1f3d27] dark:bg-[#0c1912]">
       <div className="pixel flex flex-col items-center gap-4">
         <div style={{ filter: 'drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25))' }}>
           <PixelSprite art={cottageArt(1, true)} palette={housePalette(...ROOF.pr, true)} scale={6} />

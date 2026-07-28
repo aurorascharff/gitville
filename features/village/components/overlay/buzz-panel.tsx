@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, X } from 'lucide-react';
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { KindBadge } from '@/features/village/components/shared/pixel-sprite';
@@ -12,15 +12,15 @@ import { cn } from '@/lib/utils';
 import type { WireEvent } from '@/types/github';
 
 export function BuzzPanel() {
-  const { slug, scrub, buzzOpen, focusId } = useVillageUi();
+  const { slug, scrub, buzzOpen, setBuzzOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = timeWindowFor(payload, scrub);
   const { cells } = worldModelFor(payload, slug, asOf);
   if (!buzzOpen || focusId || !payload.ok) return null;
 
   return (
-    <aside className="panel absolute top-16 right-4 bottom-24 z-30 hidden w-80 flex-col overflow-hidden rounded-sm sm:flex">
-      <p className="panel-wood shrink-0 border-x-0 border-t-0 px-4 py-2 text-[15px] font-bold">noticeboard</p>
+    <aside className="panel absolute top-16 right-3 bottom-[max(5rem,env(safe-area-inset-bottom)+5rem)] left-3 z-40 flex flex-col overflow-hidden rounded-sm sm:right-4 sm:bottom-24 sm:left-auto sm:z-30 sm:w-80">
+      <PanelHeader title="noticeboard" onClose={() => setBuzzOpen(() => false)} />
       <ul className="min-h-0 flex-1 overflow-y-auto py-1">
         {payload.events.slice(0, 40).map(e => (
           <BuzzRow
@@ -36,15 +36,15 @@ export function BuzzPanel() {
 }
 
 export function PeoplePanel() {
-  const { slug, scrub, peopleOpen, focusId } = useVillageUi();
+  const { slug, scrub, peopleOpen, setPeopleOpen, focusId } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { asOf } = timeWindowFor(payload, scrub);
   const { actors, cells } = worldModelFor(payload, slug, asOf);
   if (!peopleOpen || focusId || !payload.ok) return null;
 
   return (
-    <aside className="panel absolute top-16 right-4 bottom-24 z-30 hidden w-80 flex-col overflow-hidden rounded-sm sm:flex">
-      <p className="panel-wood shrink-0 border-x-0 border-t-0 px-4 py-2 text-[15px] font-bold">people</p>
+    <aside className="panel absolute top-16 right-3 bottom-[max(5rem,env(safe-area-inset-bottom)+5rem)] left-3 z-40 flex flex-col overflow-hidden rounded-sm sm:right-4 sm:bottom-24 sm:left-auto sm:z-30 sm:w-80">
+      <PanelHeader title="people" onClose={() => setPeopleOpen(() => false)} />
       <ul className="min-h-0 flex-1 overflow-y-auto py-1">
         {actors.map(actor => {
           const cell = visibleCell(cells, actor.cellId);
@@ -52,6 +52,22 @@ export function PeoplePanel() {
         })}
       </ul>
     </aside>
+  );
+}
+
+function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div className="panel-wood flex shrink-0 items-center justify-between border-x-0 border-t-0 px-4 py-2">
+      <p className="text-[15px] font-bold">{title}</p>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={`Close ${title}`}
+        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm text-[#e0d3b8] transition-colors hover:text-white sm:hidden"
+      >
+        <X size={15} strokeWidth={3} />
+      </button>
+    </div>
   );
 }
 

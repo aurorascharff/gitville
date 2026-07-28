@@ -51,7 +51,7 @@ async function Village({ slug }: { slug: string }) {
   return (
     <SWRConfig value={{ cacheData }}>
       <VillageUiProvider slug={repo.slug}>
-        <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
+        <div className="fixed inset-0 h-[100dvh] w-full overflow-hidden overscroll-none bg-[#24462c] dark:bg-[#0e1f14]">
           <div aria-hidden className="village-vignette absolute inset-0" />
           <VillageStageSurface
             repo={repo}
@@ -112,7 +112,7 @@ function VillageRepoLink({ repo }: { repo: RepoData }) {
 
 function VillageSkeleton() {
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[#24462c] dark:bg-[#0e1f14]">
+    <div className="fixed inset-0 h-[100dvh] w-full overflow-hidden overscroll-none bg-[#24462c] dark:bg-[#0e1f14]">
       <div aria-hidden className="village-vignette absolute inset-0" />
       <div className="absolute inset-0 overflow-hidden">
         <div

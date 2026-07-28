@@ -27,7 +27,7 @@ export function VillageHelpShell({ children }: { children: ReactNode }) {
           'panel font-pixel absolute z-50 flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-[15px] font-bold transition-transform hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-[16px]',
           focusId
             ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] left-3 sm:bottom-5 sm:left-[calc(min(360px,40vw)+1rem)]'
-            : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 sm:bottom-5 sm:left-4',
+            : 'bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] left-3 sm:bottom-5 sm:left-4',
         )}
       >
         ?

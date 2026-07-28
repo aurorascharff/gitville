@@ -56,7 +56,7 @@ export function HouseSign({
     <aside
       className={cn(
         wallClass(cell),
-        'absolute inset-y-0 left-0 z-60 w-[min(340px,88vw)] overflow-hidden rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)] transition-transform sm:z-50 sm:w-[min(360px,40vw)] sm:translate-x-0',
+        'absolute inset-y-0 left-0 z-60 w-[min(340px,88vw)] overflow-hidden overscroll-contain rounded-none border-r-4 border-[#2e2418] shadow-[6px_0_18px_rgb(0_0_0/0.45)] transition-transform sm:z-50 sm:w-[min(360px,40vw)] sm:translate-x-0',
         open ? 'translate-x-0' : '-translate-x-full',
       )}
     >
@@ -163,7 +163,7 @@ export function HouseSign({
         </div>
 
         {spec?.commits?.length ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
             <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">Recent commits</p>
             <ul className="flex flex-col gap-1">
               {spec.commits.map(c => (
@@ -198,7 +198,7 @@ export function HouseSign({
         )}
 
         {stack.length > 1 ? (
-          <div className="max-h-[45%] shrink-0 overflow-y-auto border-t-2 border-[#f0e6d2]/15 px-6 py-4">
+          <div className="max-h-[45%] shrink-0 overflow-y-auto overscroll-contain border-t-2 border-[#f0e6d2]/15 px-6 py-4">
             <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">In this stack</p>
             <ul ref={stackNavRef} className="flex flex-col gap-1">
               {stack.map(pr => {

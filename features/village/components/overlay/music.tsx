@@ -165,7 +165,7 @@ export function VillageMusic() {
         'absolute z-50 flex items-center gap-1.5',
         indoors
           ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] left-13 sm:bottom-5 sm:left-[calc(min(360px,40vw)+4rem)]'
-          : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-13 sm:bottom-5 sm:left-16',
+          : 'bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] left-13 sm:bottom-5 sm:left-16',
       )}
     >
       <button
