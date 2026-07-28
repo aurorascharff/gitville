@@ -173,8 +173,8 @@ function InteriorScene({
           ai && 'ring-4 ring-[#e4c05a]',
         )}
         style={{
-          width: w,
-          height: h,
+          width: `${w}px`,
+          height: `${h}px`,
           transform: `translate3d(${frame.x}px, ${frame.y}px, 0) scale(${frame.scale})`,
           transformOrigin: '0 0',
         }}

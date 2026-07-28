@@ -80,7 +80,9 @@ export function FurnitureCloseup({
               orthographic
               dpr={[1, 2]}
               camera={{ position: [8, 6, 9], zoom: 46, near: 0.1, far: 100 }}
+              style={{ background: 'transparent' }}
               gl={{ antialias: false, alpha: true }}
+              onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
             >
               <ambientLight intensity={1.7} />
               <directionalLight position={[5, 8, 6]} intensity={2.4} />
@@ -142,12 +144,16 @@ function VoxelTurntable({ pieces }: { pieces: VoxelPieceData[] }) {
 
   return (
     <group rotation={[-0.28, -0.35, 0]}>
+      <mesh position={[0, -1.62, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <boxGeometry args={[7, 4.5, 0.08]} />
+        <meshStandardMaterial color="#5a3b24" roughness={1} />
+      </mesh>
       <group ref={ref}>
         {pieces.map(piece => (
           <VoxelPiece key={piece.id} piece={piece} />
         ))}
       </group>
-      <mesh position={[0, -1.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, -1.56, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[3.2, 24]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.25} />
       </mesh>
