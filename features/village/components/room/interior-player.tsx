@@ -51,7 +51,8 @@ export function InteriorPlayer({
       camY: Number.NaN,
       near: -1,
     };
-    const SPEED = 4;
+    const mobile = window.innerWidth < 640;
+    const SPEED = mobile ? 6.2 : 4;
     const NEAR_RANGE = 90;
     const matX = width / 2;
     const matY = height - 16;

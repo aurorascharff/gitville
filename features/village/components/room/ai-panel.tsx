@@ -24,7 +24,7 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
   const title = generated ? 'Room redesigned' : ai ? 'Painting room' : 'Redesign room';
 
   return (
-    <aside className="absolute top-4 right-4 z-50 w-72">
+    <aside className="absolute top-3 right-3 z-50 sm:top-4 sm:right-4 sm:w-72">
       <button
         type="button"
         onClick={() => {
@@ -36,12 +36,12 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
         aria-keyshortcuts="G"
         aria-label="Ask the carpenter to redesign this room"
         className={cn(
-          'panel flex min-h-20 w-full cursor-pointer items-start gap-3 rounded-sm p-3 text-left transition-transform hover:-translate-y-0.5',
+          'panel flex h-11 w-11 cursor-pointer items-center justify-center gap-3 rounded-sm p-2 text-left transition-transform hover:-translate-y-0.5 sm:min-h-20 sm:w-full sm:items-start sm:justify-start sm:p-3',
           ai && 'ring-2 ring-[#e4c05a]',
           ai && 'cursor-default hover:translate-y-0',
         )}
       >
-        <span className="pixel relative flex h-8 w-8 shrink-0 items-center justify-center">
+        <span className="pixel relative flex h-7 w-7 shrink-0 items-center justify-center sm:h-8 sm:w-8">
           {working ? (
             <span aria-hidden className="absolute -top-1 -right-2">
               {[0, 1].map(i => (
@@ -54,10 +54,10 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
             </span>
           ) : null}
           <span className={cn('block', working && 'sprite-bob')}>
-            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.8} />
+            <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.3} />
           </span>
         </span>
-        <span className="flex min-w-0 flex-1 items-start gap-1.5">
+        <span className="hidden min-w-0 flex-1 items-start gap-1.5 sm:flex">
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-1.5 text-[16px] leading-5 font-bold whitespace-nowrap text-[#3a2f22]">
               <WandSparkles size={14} strokeWidth={3} />

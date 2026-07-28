@@ -162,8 +162,8 @@ export function VillageMusic() {
   return (
     <div
       className={cn(
-        'absolute bottom-5 z-50 flex items-center gap-1.5',
-        indoors ? 'left-16 sm:left-[calc(min(360px,40vw)+4rem)]' : 'left-16',
+        'absolute z-50 flex items-center gap-1.5',
+        indoors ? 'bottom-16 left-16 sm:bottom-5 sm:left-[calc(min(360px,40vw)+4rem)]' : 'bottom-5 left-16',
       )}
     >
       <button

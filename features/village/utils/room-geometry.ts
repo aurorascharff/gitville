@@ -40,7 +40,7 @@ export function roomDims(cell: Cell): [number, number] {
 export function roomFrame(viewportW: number, viewportH: number, roomW: number, roomH: number): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
   const availW = viewportW - sidebar;
-  const scale = 1;
+  const scale = viewportW < 640 ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH)) : 1;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
@@ -60,7 +60,7 @@ export function followRoomFrame(
 ): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
   const availW = viewportW - sidebar;
-  const scale = 1;
+  const scale = viewportW < 640 ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH)) : 1;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
