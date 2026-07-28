@@ -50,6 +50,7 @@ export type RoomSpecItem = {
 
 export type RoomSpecPayload = {
   ok: boolean;
+  cellId: string;
   theme: string;
   title: string | null;
   items: RoomSpecItem[];
@@ -64,6 +65,7 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
     .then(r => r.json() as Promise<RoomSpecPayload>)
     .catch(() => ({
       ok: false,
+      cellId: '',
       theme: '',
       title: null,
       items: [],
@@ -74,7 +76,7 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
     }));
 
 export const roomSpecKey = (slug: string, cellId: string, ai: boolean) =>
-  `/api/room?slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
+  `/api/room?v=2&slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
 
 export function preloadRoomSpec(slug: string, cellId: string): void {
   void preload(roomSpecKey(slug, cellId, false), specFetcher);
@@ -87,14 +89,12 @@ export function useRoomSpec(
 ): { spec: RoomSpecPayload | null; loading: boolean; aiPending: boolean } {
   const base = useSWR<RoomSpecPayload>(roomSpecKey(slug, cellId, false), specFetcher, {
     revalidateOnFocus: false,
-    keepPreviousData: true,
   });
   const aiRes = useSWR<RoomSpecPayload>(ai ? roomSpecKey(slug, cellId, true) : null, specFetcher, {
     revalidateOnFocus: false,
-    keepPreviousData: true,
   });
-  const aiSpec = aiRes.data?.ok ? aiRes.data : null;
-  const baseSpec = base.data?.ok ? base.data : null;
+  const aiSpec = aiRes.data?.ok && aiRes.data.cellId === cellId ? aiRes.data : null;
+  const baseSpec = base.data?.ok && base.data.cellId === cellId ? base.data : null;
   const spec = aiSpec ?? baseSpec;
   return {
     spec,

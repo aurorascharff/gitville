@@ -91,7 +91,7 @@ function VillageStop({ stop, index }: { stop: VillageStopData; index: number }) 
   const [art, palette, scale] = villageSprite(repo, payload);
 
   return (
-    <li className={top ? 'self-start' : 'self-end'}>
+    <li className={stopLaneClass(top)}>
       <Link
         href={`/${repo.slug}` as Route}
         className="group flex h-36 flex-col items-center justify-end text-center transition-transform hover:-translate-y-1"
@@ -151,7 +151,7 @@ function villageSprite(repo: RepoData, payload: VillagePayload | null): [string[
 function Unavailable({ slug, index }: { slug: string; index: number }) {
   const top = index % 2 === 0;
   return (
-    <li className={top ? 'self-start' : 'self-end'}>
+    <li className={stopLaneClass(top)}>
       <div className="flex h-36 flex-col items-center justify-end text-center">
         <span className="pixel relative flex min-h-20 items-end justify-center">
           <span className="h-14 w-24 rounded-sm border-2 border-dashed border-[#f0e6d2]/60 bg-black/25" />
@@ -216,11 +216,15 @@ function SkeletonStop({ index }: { index: number }) {
   const top = index % 2 === 0;
 
   return (
-    <li className={top ? 'self-start' : 'self-end'}>
+    <li className={stopLaneClass(top)}>
       <div className="flex h-36 flex-col items-center justify-end">
         <span className="h-18 w-24 rounded-sm border-2 border-dashed border-[#f0e6d2]/45 bg-black/20" />
         <span className="mt-2 h-12 w-36 rounded-sm border-2 border-[#2e2418]/45 bg-[#f0e6d2]/45 shadow-[2px_2px_0_rgb(0_0_0/0.18)]" />
       </div>
     </li>
   );
+}
+
+function stopLaneClass(top: boolean) {
+  return top ? 'self-start -translate-y-3' : 'self-end -translate-y-6';
 }

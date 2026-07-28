@@ -192,6 +192,7 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
   const generated = Boolean(theme);
   const unfinished = pending && !generated;
   const text = `${theme} ${title ?? ''}`;
+  const seed = signSeed(text);
   const release = /canary|preview|stable|release|version|tag|ship/i.test(text);
   const kind = release
     ? 'studio'
@@ -239,36 +240,57 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
       className="absolute -right-11 bottom-13 z-10 flex items-end"
     >
       {unfinished ? (
-        <PaintSign pending />
+        <WorkSign pending seed={seed} />
       ) : !generated ? (
-        <PaintSign blank />
+        <WorkSign blank seed={seed} />
       ) : kind === 'lab' ? (
-        <LabSign />
+        <LabSign seed={seed} />
       ) : kind === 'studio' ? (
-        <PaintSign />
+        <WorkSign seed={seed} />
       ) : kind === 'machine' ? (
-        <MachineSign />
+        <MachineSign seed={seed} />
       ) : (
-        <GardenSign />
+        <GardenSign seed={seed} />
       )}
     </span>
   );
 }
 
-function LabSign() {
+const SIGN_COLORS = ['#c85b5b', '#3b6bff', '#58a55c', '#e4c05a', '#8fd0c0', '#a986bd', '#f08a4b'];
+
+function signSeed(text: string) {
+  let seed = 17;
+  for (let i = 0; i < text.length; i++) seed = (seed * 31 + text.charCodeAt(i)) % 9973;
+  return seed;
+}
+
+function signColor(seed: number, offset: number) {
+  return SIGN_COLORS[(seed + offset) % SIGN_COLORS.length];
+}
+
+function LabSign({ seed }: { seed: number }) {
+  const primary = signColor(seed, 1);
+  const secondary = signColor(seed, 4);
+
   return (
     <span className="pixel relative block h-11 w-10">
       <span className="absolute bottom-0 left-4 h-7 w-1 bg-[#4a3826]" />
       <span className="absolute top-0 left-0 h-6 w-10 border-2 border-[#2e2418] bg-[#8fd0c0] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
         <span className="absolute top-1 left-1 h-2 w-2 bg-[#f7efdc]" />
-        <span className="absolute top-1 right-1 h-2 w-2 bg-[#e4c05a]" />
+        <span className="absolute top-1 right-1 h-2 w-2" style={{ backgroundColor: primary }} />
+        <span className="absolute top-3 left-4 h-1 w-1" style={{ backgroundColor: secondary }} />
         <span className="absolute bottom-1 left-3 h-1 w-4 bg-[#2e2418]" />
       </span>
     </span>
   );
 }
 
-function PaintSign({ blank = false, pending = false }: { blank?: boolean; pending?: boolean }) {
+function WorkSign({ seed, blank = false, pending = false }: { seed: number; blank?: boolean; pending?: boolean }) {
+  const primary = signColor(seed, 0);
+  const secondary = signColor(seed, 2);
+  const accent = signColor(seed, 5);
+  const variant = seed % 4;
+
   return (
     <span className="pixel relative block h-10 w-10">
       <span className="absolute bottom-0 left-5 h-6 w-1 bg-[#4a3826]" />
@@ -284,9 +306,31 @@ function PaintSign({ blank = false, pending = false }: { blank?: boolean; pendin
           <span className="absolute inset-1 border border-[#d8c9a8] bg-[#fff8e8]" />
         ) : (
           <>
-            <span className="absolute top-1 left-1 h-2 w-2 bg-[#c85b5b]" />
-            <span className="absolute top-1 left-4 h-2 w-2 bg-[#3b6bff]" />
-            <span className="absolute top-3 left-2 h-2 w-4 bg-[#58a55c]" />
+            {variant === 0 ? (
+              <>
+                <span className="absolute top-1 left-1 h-2 w-2" style={{ backgroundColor: primary }} />
+                <span className="absolute top-1 left-4 h-2 w-2" style={{ backgroundColor: secondary }} />
+                <span className="absolute top-3 left-2 h-2 w-4" style={{ backgroundColor: accent }} />
+              </>
+            ) : variant === 1 ? (
+              <>
+                <span className="absolute top-1 left-1 h-4 w-2" style={{ backgroundColor: primary }} />
+                <span className="absolute top-2 left-4 h-1 w-3" style={{ backgroundColor: secondary }} />
+                <span className="absolute right-1 bottom-1 h-2 w-2" style={{ backgroundColor: accent }} />
+              </>
+            ) : variant === 2 ? (
+              <>
+                <span className="absolute top-1 left-1 h-1 w-5" style={{ backgroundColor: primary }} />
+                <span className="absolute top-3 left-1 h-1 w-3" style={{ backgroundColor: secondary }} />
+                <span className="absolute top-2 right-1 h-3 w-2" style={{ backgroundColor: accent }} />
+              </>
+            ) : (
+              <>
+                <span className="absolute top-1 left-2 h-3 w-3" style={{ backgroundColor: primary }} />
+                <span className="absolute top-3 left-1 h-2 w-2" style={{ backgroundColor: secondary }} />
+                <span className="absolute top-2 right-1 h-2 w-2" style={{ backgroundColor: accent }} />
+              </>
+            )}
           </>
         )}
       </span>
@@ -294,26 +338,35 @@ function PaintSign({ blank = false, pending = false }: { blank?: boolean; pendin
   );
 }
 
-function MachineSign() {
+function MachineSign({ seed }: { seed: number }) {
+  const primary = signColor(seed, 3);
+  const secondary = signColor(seed, 6);
+
   return (
     <span className="pixel relative block h-11 w-11">
       <span className="absolute bottom-0 left-5 h-5 w-1 bg-[#4a3826]" />
       <span className="absolute top-1 left-1 h-8 w-9 border-2 border-[#2e2418] bg-[#9aa0a8] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
-        <span className="absolute top-1 left-1 h-2 w-5 bg-[#3b6bff]" />
-        <span className="absolute right-1 bottom-1 h-2 w-2 bg-[#e4c05a]" />
+        <span className="absolute top-1 left-1 h-2 w-5" style={{ backgroundColor: primary }} />
+        <span className="absolute top-4 left-2 h-1 w-4" style={{ backgroundColor: secondary }} />
+        <span className="absolute right-1 bottom-1 h-2 w-2" style={{ backgroundColor: signColor(seed, 0) }} />
         <span className="absolute bottom-1 left-1 h-1 w-4 bg-[#2e2418]" />
       </span>
     </span>
   );
 }
 
-function GardenSign() {
+function GardenSign({ seed }: { seed: number }) {
+  const flower = signColor(seed, 4);
+  const fruit = signColor(seed, 1);
+
   return (
     <span className="pixel relative block h-11 w-10">
       <span className="absolute bottom-0 left-5 h-5 w-1 bg-[#4a3826]" />
       <span className="absolute top-1 left-2 h-7 w-7 border-2 border-[#2e2418] bg-[#58a55c] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
         <span className="absolute top-1 left-2 h-2 w-2 bg-[#f7efdc]" />
-        <span className="absolute right-1 bottom-1 h-2 w-2 bg-[#e4c05a]" />
+        <span className="absolute top-3 left-1 h-1 w-4 bg-[#2f6a3b]" />
+        <span className="absolute right-1 bottom-1 h-2 w-2" style={{ backgroundColor: flower }} />
+        <span className="absolute bottom-1 left-1 h-1 w-1" style={{ backgroundColor: fruit }} />
       </span>
     </span>
   );

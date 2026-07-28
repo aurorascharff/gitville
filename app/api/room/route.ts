@@ -2,12 +2,7 @@ import { getRepoData } from '@/features/repo/repo-queries';
 import { aiRoomsEnabled, fallbackSpec, generateRoomSpec } from '@/features/village/utils/room-ai';
 import { buildCells, roomFor } from '@/features/village/utils/village-model';
 import { getVillagePayload } from '@/features/village/village-queries';
-import {
-  getBranchCommits,
-  getIssueTitle,
-  getPrCommits,
-  getThreadNotes,
-} from '@/lib/github';
+import { getBranchCommits, getIssueTitle, getPrCommits, getThreadNotes } from '@/lib/github';
 import type { BranchCommit, RoomNote } from '@/types/github';
 
 export async function GET(request: Request): Promise<Response> {
@@ -74,5 +69,14 @@ export async function GET(request: Request): Promise<Response> {
       commits.map(c => ({ id: c.sha, actor: c.author })),
     );
 
-  return Response.json({ ok: true, ...spec, title, commits, notes, ai: Boolean(ai), aiAvailable: aiRoomsEnabled() });
+  return Response.json({
+    ok: true,
+    cellId,
+    ...spec,
+    title,
+    commits,
+    notes,
+    ai: Boolean(ai),
+    aiAvailable: aiRoomsEnabled(),
+  });
 }
