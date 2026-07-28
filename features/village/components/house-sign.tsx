@@ -22,8 +22,18 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
     // one-link-at-a-time walk picks a different fork depending on which floor
     // you start from — so clicking a member would grow or shrink the stack.
     // The component is symmetric, so every floor sees the same set.
+    //
+    // Two PRs are stack-adjacent when one's base is the other's head branch, but
+    // NEVER through the default branch: a backport/release PR whose head IS the
+    // trunk would otherwise turn the trunk into a hub that pulls in every PR
+    // based on it (which is how nine unrelated PRs landed in one "stack").
+    const trunk = payload.defaultBranch;
     const linked = (p: (typeof prs)[number]) =>
-      prs.filter(q => q.number !== p.number && (q.branch === p.baseRef || q.baseRef === p.branch));
+      prs.filter(
+        q =>
+          q.number !== p.number &&
+          ((p.baseRef !== trunk && q.branch === p.baseRef) || (q.baseRef !== trunk && q.baseRef === p.branch)),
+      );
     const seen = new Set([me.number]);
     const comp = [me];
     for (let i = 0; i < comp.length; i++) {
@@ -148,28 +158,35 @@ export function HouseSign({ cell, ai }: { cell: Cell; ai: boolean }) {
               {stack.map(pr => {
                 const here = `pr:${pr.number}` === cell.id;
                 const hasHouse = pickedPrs(payload).some(p => p.number === pr.number);
+                const base = 'flex w-full min-w-0 items-baseline gap-2 rounded-xs border-2 px-2 py-1.5 text-left';
+                const inner = (
+                  <>
+                    <span className="font-pixel shrink-0 text-[15px] font-bold">#{pr.number}</span>
+                    <span className="truncate text-[14px] opacity-90">{pr.title}</span>
+                    {pr.draft ? (
+                      <span className="pixel shrink-0 self-center" title="draft">
+                        <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
+                      </span>
+                    ) : null}
+                  </>
+                );
+                // The floor you are on is a marker, not a link. Every other floor
+                // is clickable: walk to its house if it has one, otherwise open the
+                // PR on GitHub so no row is a dead end.
+                const link = cn(base, 'cursor-pointer border-transparent text-[#e4d7ba] hover:border-[#f0e6d2]/40');
                 return (
                   <li key={pr.number}>
-                    <button
-                      type="button"
-                      disabled={!hasHouse || here}
-                      onClick={() => setFocusId(`pr:${pr.number}`)}
-                      className={cn(
-                        'flex w-full min-w-0 items-baseline gap-2 rounded-xs border-2 px-2 py-1.5 text-left',
-                        here
-                          ? 'border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]'
-                          : 'border-transparent text-[#e4d7ba] hover:border-[#f0e6d2]/40',
-                        hasHouse && !here && 'cursor-pointer',
-                      )}
-                    >
-                      <span className="font-pixel shrink-0 text-[15px] font-bold">#{pr.number}</span>
-                      <span className="truncate text-[14px] opacity-90">{pr.title}</span>
-                      {pr.draft ? (
-                        <span className="pixel shrink-0 self-center" title="draft">
-                          <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
-                        </span>
-                      ) : null}
-                    </button>
+                    {here ? (
+                      <span className={cn(base, 'border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]')}>{inner}</span>
+                    ) : hasHouse ? (
+                      <button type="button" onClick={() => setFocusId(`pr:${pr.number}`)} className={link}>
+                        {inner}
+                      </button>
+                    ) : (
+                      <a href={pr.url} target="_blank" rel="noreferrer" className={link}>
+                        {inner}
+                      </a>
+                    )}
                   </li>
                 );
               })}

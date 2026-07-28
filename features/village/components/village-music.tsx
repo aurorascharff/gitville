@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useVillageUi } from '@/features/village/village-ui-context';
+import { cn } from '@/lib/utils';
 
 // One looped song (public/music.mp3), lowpass-muffled indoors, with a synth-melody fallback.
 const STEP = 0.42;
@@ -81,6 +82,36 @@ export function VillageMusic() {
   const { focusId } = useVillageUi();
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.3);
+
+  // Each repo is its own route, so switching repos remounts this component and
+  // would otherwise forget the music was on. Remember the preference (and
+  // volume) so it carries across repos; the setPlaying re-arms playback.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('gitville-music') === 'on') setPlaying(true);
+      const stored = localStorage.getItem('gitville-music-volume');
+      if (stored !== null) {
+        const v = Number(stored);
+        if (v >= 0 && v <= 1) setVolume(v);
+      }
+    } catch {
+      // localStorage can throw in private mode; the default (off) is fine.
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem('gitville-music', playing ? 'on' : 'off');
+    } catch {
+      /* ignore */
+    }
+  }, [playing]);
+  useEffect(() => {
+    try {
+      localStorage.setItem('gitville-music-volume', String(volume));
+    } catch {
+      /* ignore */
+    }
+  }, [volume]);
   const ctxRef = useRef<AudioContext | null>(null);
   const chainRef = useRef<Chain | null>(null);
   const synthOutRef = useRef<GainNode | null>(null);
@@ -159,7 +190,13 @@ export function VillageMusic() {
   );
 
   return (
-    <div className="absolute bottom-5 left-16 z-50 flex items-center gap-1.5">
+    <div
+      className={cn(
+        'absolute bottom-5 z-50 flex items-center gap-1.5',
+        // Indoors the PR sidebar owns the left column; sit right of the help button.
+        indoors ? 'left-[calc(min(360px,40vw)+4rem)]' : 'left-16',
+      )}
+    >
       <button
         type="button"
         onClick={() => setPlaying(p => !p)}

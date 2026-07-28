@@ -12,6 +12,7 @@ import {
   tentArt,
   WELL,
 } from '@/features/village/components/pixel-sprite';
+import { useVillageUi } from '@/features/village/village-ui-context';
 import { cn } from '@/lib/utils';
 
 const PR_ROOF = housePalette(...ROOF.pr, true);
@@ -20,6 +21,7 @@ const BRANCH_ROOF = housePalette(...ROOF.branch, false);
 const ISSUE_ROOF = housePalette(...ROOF.issue, false);
 
 export function VillageHelp() {
+  const { focusId } = useVillageUi();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,11 @@ export function VillageHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="What does everything mean?"
-        className="panel font-pixel absolute bottom-5 left-4 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5"
+        className={cn(
+          'panel font-pixel absolute bottom-5 z-50 flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-[16px] font-bold transition-transform hover:-translate-y-0.5',
+          // Indoors the PR sidebar owns the left column; sit just right of it.
+          focusId ? 'left-[calc(min(360px,40vw)+1rem)]' : 'left-4',
+        )}
       >
         ?
       </button>
