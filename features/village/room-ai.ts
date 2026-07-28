@@ -44,6 +44,11 @@ const specSchema = z.object({
 
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
+// Bump when the prompt changes: 'use cache' keys on the arguments, not the
+// prompt text, so this version is threaded through as an argument to force a
+// cache miss (regenerate every room) whenever the design brief is revised.
+const PROMPT_VERSION = 'v2';
+
 function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
   const items: RoomItem[] = raw.items.slice(0, 10).map(item => {
     const pieces = (item.pieces ?? [])
@@ -78,7 +83,7 @@ export async function generateRoomSpec(
 ): Promise<RoomSpec | null> {
   if (!aiRoomsEnabled()) return null;
   try {
-    return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
+    return await generateRoomSpecCached(slug, label, sub, commits, notes, state, PROMPT_VERSION);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn('[room-ai] generation failed:', error instanceof Error ? error.message : error);
@@ -93,10 +98,11 @@ async function generateRoomSpecCached(
   commits: string[],
   notes: string[],
   state: string | null,
+  version: string,
 ): Promise<RoomSpec> {
   'use cache: remote';
   cacheLife('days');
-  cacheTag(`room-ai-${slug}`);
+  cacheTag(`room-ai-${slug}`, `room-ai-${version}`);
 
   const { generateObject } = await import('ai');
   const { createGateway } = await import('@ai-sdk/gateway');
@@ -116,16 +122,18 @@ async function generateRoomSpecCached(
       '',
       'Design the scene:',
       '- Read what this room actually builds and invent a workshop with a POINT OF VIEW: what is this place, what does it make, what is its mood? The `theme` names it (max 3 words, no emoji).',
-      '- Pick ONE shared visual language for the whole room: a dominant palette of 2-3 legend colors plus one accent, and a recurring structural motif (e.g. brass pipes, riveted panels, glowing screens, woven cables). EVERY item must use this palette and motif so the room reads as one set.',
-      '- The FIRST item is the HERO: the biggest, most detailed centerpiece contraption that embodies the feature. Every item after it is a supporting machine or prop that visibly RELATES to the hero — feeding it, reading from it, powered by it — and repeats the shared motif. Nothing floats on its own.',
+      '- Each item is a DIFFERENT piece of work, so make each one visibly DISTINCT: its own silhouette AND its own dominant colour. A viewer should tell the machines apart at a glance and never mistake two features for the same thing. Do NOT paint everything the same colours.',
+      '- Spread colour across the room: give each item a different dominant hue from the legend (blue, green, red, purple, teal, orange, yellow), like a shelf of different-coloured tools. Never make every item a green screen with gold trim — that is the failure mode to avoid.',
+      '- Cohesion comes from a shared WORLD, not a shared paint job: the same pixel style, the same dark outline (O), and common structural material (wood W / metal m for frames, benches, pipes) tie the varied machines together as one room.',
+      '- The FIRST item is the HERO: the biggest, most detailed centerpiece that embodies the headline feature. The rest are supporting machines that relate to it in FUNCTION (feeding it, reading from it, powered by it) via shared pipes / cables / rails — but each keeps its own shape and colour.',
       '',
       'Draw the items:',
       '- Group commits that belong to the same piece of work into ONE item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item.',
       '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group, designed to connect side by side (left end, middle segments, right end) into one machine. One commit means one self-contained piece.',
       '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights so they join cleanly.',
       '- Build BIG. The hero should be 12-16 wide and 10-12 rows; supporting pieces 8-14 wide. No trinkets.',
-      '- Give every machine its own silhouette — vary shapes with "." aggressively: towers, funnels, wheels, arms, chimneys, tanks, antennae. But keep the shared palette + motif so variety never breaks the cohesion.',
-      '- Add connective detail at the edges of pieces (a protruding pipe, a cable stub, a rail) hinting that items link together into the workshop.',
+      '- Give every machine its own silhouette AND its own colour — vary shapes with "." aggressively (towers, funnels, wheels, arms, chimneys, tanks, antennae) so no two items look alike.',
+      '- Use connective detail only at the edges (a protruding pipe, a cable stub, a rail) to hint the machines link up; keep each body distinct.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
       `- Only fall back to a catalog \`kind\` [${ITEM_KINDS.join(', ')}] when you truly cannot invent anything. Set \`kind\` and \`pieces\` to null when unused.`,
     ]
