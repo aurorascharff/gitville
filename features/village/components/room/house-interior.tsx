@@ -434,8 +434,8 @@ function Furniture({
   const drawn = Boolean(build.pieces?.length);
   const tipBody =
     build.commits.length === 1
-      ? build.commits[0].message
-      : build.commits.map(c => `• ${c.message.split('\n')[0]}`).join('\n');
+      ? `${build.commits[0].message}\nby ${build.commits[0].author}`
+      : build.commits.map(c => `• ${c.message.split('\n')[0]} — ${c.author}`).join('\n');
 
   return (
     <div
@@ -481,7 +481,6 @@ function Furniture({
                 style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
               >
                 <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
-                <CommitAuthor author={commit.author} />
               </a>
             );
           })}
@@ -492,18 +491,6 @@ function Furniture({
         </span>
       </div>
     </div>
-  );
-}
-
-function CommitAuthor({ author }: { author: string }) {
-  const initial = author.trim().charAt(0).toUpperCase() || '?';
-  return (
-    <span className="mt-1 flex max-w-28 items-center gap-1 rounded-sm bg-black/55 px-1.5 py-0.5 text-[12px] leading-4 font-bold text-white/95 shadow-[1px_1px_0_rgb(0_0_0/0.25)]">
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] bg-[#d8c9a8] text-[10px] leading-none text-[#3a2f22]">
-        {initial}
-      </span>
-      <span className="min-w-0 truncate">{author}</span>
-    </span>
   );
 }
 

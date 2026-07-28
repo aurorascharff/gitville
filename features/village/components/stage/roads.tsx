@@ -5,7 +5,19 @@ const JUNCTION_MIN = 120;
 const JUNCTION_MAX = 260;
 const MAIN_LANE_COUNT = 4;
 
-type Point = {
+function fixed(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function svg(n: number): string {
+  return fixed(n).toString();
+}
+
+function fixedPoint(point: Point): Point {
+  return { x: fixed(point.x), y: fixed(point.y) };
+}
+
+export type Point = {
   x: number;
   y: number;
 };
@@ -24,11 +36,16 @@ type RoadPath = {
   construction: boolean;
 };
 
-type RoadPark = {
+export type RoadPark = {
   id: string;
   x: number;
   y: number;
   size: number;
+};
+
+export type RoadLayout = {
+  paths: RoadPath[];
+  parks: RoadPark[];
 };
 
 function foot(cell: Cell): RoadNode {
@@ -49,11 +66,13 @@ function curve(from: Point, to: Point): string {
   const dy = to.y - from.y;
   const bend = Math.min(90, Math.hypot(dx, dy) * 0.22);
   const sway = dx === 0 ? 0 : Math.sign(dx) * bend;
-  return `M ${from.x} ${from.y} C ${from.x + sway} ${from.y + dy * 0.42}, ${to.x - sway} ${to.y - dy * 0.42}, ${to.x} ${to.y}`;
+  return `M ${svg(from.x)} ${svg(from.y)} C ${svg(from.x + sway)} ${svg(from.y + dy * 0.42)}, ${svg(to.x - sway)} ${svg(to.y - dy * 0.42)}, ${svg(to.x)} ${svg(to.y)}`;
 }
 
 function roadPath(id: string, from: Point, to: Point, weight: number, construction = false): RoadPath {
-  return { id, from, to, weight, construction, d: curve(from, to) };
+  const stableFrom = fixedPoint(from);
+  const stableTo = fixedPoint(to);
+  return { id, from: stableFrom, to: stableTo, weight, construction, d: curve(stableFrom, stableTo) };
 }
 
 function junctionFor(target: Point, children: RoadNode[]): Point {
@@ -66,10 +85,10 @@ function junctionFor(target: Point, children: RoadNode[]): Point {
   const distance = Math.hypot(dx, dy) || 1;
   const offset = Math.min(JUNCTION_MAX, Math.max(JUNCTION_MIN, distance * 0.42));
 
-  return {
+  return fixedPoint({
     x: target.x + (dx / distance) * offset,
     y: target.y + (dy / distance) * offset,
-  };
+  });
 }
 
 function mainLaneFor(child: RoadNode, main: RoadNode): number {
@@ -114,7 +133,7 @@ function segmentIntersection(a: RoadPath, b: RoadPath): Point | null {
   const u = (cx * ay - cy * ax) / cross;
   if (t <= 0.12 || t >= 0.88 || u <= 0.12 || u >= 0.88) return null;
 
-  return { x: a.from.x + ax * t, y: a.from.y + ay * t };
+  return fixedPoint({ x: a.from.x + ax * t, y: a.from.y + ay * t });
 }
 
 function closestPointOnSegment(point: Point, path: RoadPath): Point {
@@ -123,7 +142,7 @@ function closestPointOnSegment(point: Point, path: RoadPath): Point {
   const len = dx * dx + dy * dy;
   if (len === 0) return path.from;
   const t = Math.max(0.14, Math.min(0.86, ((point.x - path.from.x) * dx + (point.y - path.from.y) * dy) / len));
-  return { x: path.from.x + dx * t, y: path.from.y + dy * t };
+  return fixedPoint({ x: path.from.x + dx * t, y: path.from.y + dy * t });
 }
 
 function segmentNearPoint(a: RoadPath, b: RoadPath): Point | null {
@@ -134,7 +153,7 @@ function segmentNearPoint(a: RoadPath, b: RoadPath): Point | null {
     [closestPointOnSegment(b.to, a), b.to],
   ] as [Point, Point][];
   const hit = pairs.find(([p, q]) => distance(p, q) < 46);
-  return hit ? { x: (hit[0].x + hit[1].x) / 2, y: (hit[0].y + hit[1].y) / 2 } : null;
+  return hit ? fixedPoint({ x: (hit[0].x + hit[1].x) / 2, y: (hit[0].y + hit[1].y) / 2 }) : null;
 }
 
 function overlapParks(paths: RoadPath[]): RoadPark[] {
@@ -159,31 +178,62 @@ function mergeParks(parks: RoadPark[]): RoadPark[] {
     }
 
     const total = existing.size + park.size;
-    existing.x = (existing.x * existing.size + park.x * park.size) / total;
-    existing.y = (existing.y * existing.size + park.y * park.size) / total;
-    existing.size = Math.min(126, Math.max(existing.size, park.size) + Math.min(18, park.size * 0.28));
+    existing.x = fixed((existing.x * existing.size + park.x * park.size) / total);
+    existing.y = fixed((existing.y * existing.size + park.y * park.size) / total);
+    existing.size = fixed(Math.min(126, Math.max(existing.size, park.size) + Math.min(18, park.size * 0.28)));
   }
   return merged;
 }
 
-function Park({ park, index }: { park: RoadPark; index: number }) {
-  const tile = Math.max(12, Math.round(park.size / 5));
-  const w = tile * 7;
-  const h = tile * 5;
-  const x = park.x - w / 2;
-  const y = park.y - h / 2;
+function octagonPoints(cx: number, cy: number, r: number): string {
+  const inset = r * 0.42;
+  return [
+    [cx - inset, cy - r],
+    [cx + inset, cy - r],
+    [cx + r, cy - inset],
+    [cx + r, cy + inset],
+    [cx + inset, cy + r],
+    [cx - inset, cy + r],
+    [cx - r, cy + inset],
+    [cx - r, cy - inset],
+  ]
+    .map(([x, y]) => `${svg(x)},${svg(y)}`)
+    .join(' ');
+}
+
+function JunctionRoundabout({ park, index }: { park: RoadPark; index: number }) {
+  const outer = fixed(Math.max(28, Math.min(48, park.size * 0.42)));
+  const road = fixed(outer * 0.76);
+  const green = fixed(outer * 0.42);
+  const flowerX = park.x + (index % 2 === 0 ? -green * 0.25 : green * 0.18);
+  const flowerY = park.y + (index % 3 === 0 ? -green * 0.12 : green * 0.2);
 
   return (
     <g>
-      <rect x={x + tile} y={y} width={tile * 5} height={tile} fill="#2f6a3b" />
-      <rect x={x} y={y + tile} width={tile * 7} height={tile * 3} fill="#2f6a3b" />
-      <rect x={x + tile} y={y + tile * 4} width={tile * 5} height={tile} fill="#2f6a3b" />
-      <rect x={x + tile * 2} y={y + tile} width={tile * 3} height={tile * 3} fill="#3f8150" />
-      <rect x={x + tile} y={y + tile * 2} width={tile} height={tile} fill="#224d2d" />
-      <rect x={x + tile * 5} y={y + tile * 2} width={tile} height={tile} fill="#244f30" />
-      <rect x={x + tile * 3} y={y + tile * 3} width={tile} height={tile} fill="#265932" />
-      <rect x={x + tile * (2 + (index % 2))} y={y + tile * 2} width={tile / 2} height={tile / 2} fill="#e4c05a" />
-      <rect x={x + tile * 4.5} y={y + tile * (1.5 + (index % 2))} width={tile / 2} height={tile / 2} fill="#f0e6d2" />
+      <polygon points={octagonPoints(park.x, park.y, outer)} fill="#6e5638" opacity="0.9" />
+      <polygon points={octagonPoints(park.x, park.y, road)} fill="#a5814e" />
+      <polygon points={octagonPoints(park.x, park.y, green)} fill="#2f6a3b" />
+      <rect
+        x={svg(park.x - green * 0.22)}
+        y={svg(park.y - green * 0.18)}
+        width={svg(green * 0.44)}
+        height={svg(green * 0.36)}
+        fill="#3f8150"
+      />
+      <rect
+        x={svg(flowerX)}
+        y={svg(flowerY)}
+        width={svg(Math.max(3, green * 0.14))}
+        height={svg(Math.max(3, green * 0.14))}
+        fill="#e4c05a"
+      />
+      <rect
+        x={svg(park.x + green * 0.22)}
+        y={svg(park.y - green * 0.08)}
+        width={svg(Math.max(3, green * 0.12))}
+        height={svg(Math.max(3, green * 0.12))}
+        fill="#f0e6d2"
+      />
     </g>
   );
 }
@@ -196,7 +246,7 @@ function Roadwork({ path, index }: { path: RoadPath; index: number }) {
   return (
     <g>
       <path d={path.d} fill="none" stroke="#d88735" strokeWidth={10} strokeDasharray="18 18" strokeLinecap="round" />
-      <g transform={`translate(${mx} ${my}) rotate(${angle})`}>
+      <g transform={`translate(${svg(mx)} ${svg(my)}) rotate(${svg(angle)})`}>
         <rect x={-24} y={-16} width={48} height={12} fill="#4a3826" />
         <rect x={-20} y={-13} width={9} height={6} fill="#e4c05a" />
         <rect x={-5} y={-13} width={9} height={6} fill="#e07a3f" />
@@ -255,7 +305,7 @@ function appendGroupedRoads(paths: RoadPath[], parks: RoadPark[], target: RoadNo
   appendRoadBranch(paths, parks, target, children, id);
 }
 
-function branchRoads(cells: Cell[]): { paths: RoadPath[]; parks: RoadPark[] } {
+export function roadLayoutFor(cells: Cell[]): RoadLayout {
   const nodes = cells.filter(c => !c.hidden).map(foot);
   const main = nodes.find(n => n.kind === 'main');
   if (!main) return { paths: [], parks: [] };
@@ -288,8 +338,46 @@ function branchRoads(cells: Cell[]): { paths: RoadPath[]; parks: RoadPark[] } {
   return { paths, parks: mergeParks([...parks, ...overlapParks(paths)]) };
 }
 
+function roadLampCandidates(path: RoadPath, index: number): Point[] {
+  const dx = path.to.x - path.from.x;
+  const dy = path.to.y - path.from.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 190) return [];
+
+  const nx = -dy / length;
+  const ny = dx / length;
+  const side = index % 2 === 0 ? 1 : -1;
+  const offset = path.weight > 2 ? 58 : 44;
+  const stops = length > 520 ? [0.34, 0.66] : [0.52];
+
+  return stops.map((t, stopIndex) =>
+    fixedPoint({
+      x: path.from.x + dx * t + nx * offset * (stopIndex % 2 === 0 ? side : -side),
+      y: path.from.y + dy * t + ny * offset * (stopIndex % 2 === 0 ? side : -side),
+    }),
+  );
+}
+
+export function roadLampSpots(cells: Cell[]): Point[] {
+  const { paths, parks } = roadLayoutFor(cells);
+  const spots: Point[] = [];
+  const blocked = parks.map(park => ({ x: park.x, y: park.y, radius: park.size * 0.85 }));
+
+  for (const [index, path] of paths.entries()) {
+    for (const spot of roadLampCandidates(path, index)) {
+      if (spot.x < 80 || spot.x > WORLD_W - 80 || spot.y < 80 || spot.y > WORLD_H - 80) continue;
+      if (blocked.some(park => distance(spot, park) < park.radius)) continue;
+      if (spots.some(existing => distance(existing, spot) < 150)) continue;
+      spots.push(spot);
+      if (spots.length >= 18) return spots;
+    }
+  }
+
+  return spots;
+}
+
 export function VillageRoads({ cells }: { cells: Cell[] }) {
-  const { paths, parks } = branchRoads(cells);
+  const { paths, parks } = roadLayoutFor(cells);
   if (paths.length === 0) return null;
 
   const layers = [
@@ -307,7 +395,7 @@ export function VillageRoads({ cells }: { cells: Cell[] }) {
     >
       <g>
         {parks.map((park, i) => (
-          <Park key={park.id} park={park} index={i} />
+          <JunctionRoundabout key={park.id} park={park} index={i} />
         ))}
       </g>
       {layers.map((l, li) => (

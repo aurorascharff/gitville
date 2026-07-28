@@ -2,28 +2,16 @@
 
 import { useRef, type ReactNode } from 'react';
 import { NightGlow } from '@/features/village/components/stage/ambience';
+import { VillageDecor } from '@/features/village/components/stage/background';
 import { VillageHouse, VillageLamp } from '@/features/village/components/stage/house';
 import { Player, travelTo } from '@/features/village/components/stage/player';
-import { VillageRoads } from '@/features/village/components/stage/roads';
+import { roadLampSpots, VillageRoads } from '@/features/village/components/stage/roads';
 import { Villager } from '@/features/village/components/stage/villager';
 import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import {
-  timeWindowFor,
-  TOWN_EXIT,
-  WORLD_H,
-  worldModelFor,
-  WORLD_W,
-  type Cell,
-} from '@/features/village/utils/village-model';
+import { timeWindowFor, TOWN_EXIT, WORLD_H, worldModelFor, WORLD_W } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { RepoData } from '@/types/github';
-
-function lampSpots(cells: Cell[]): { x: number; y: number }[] {
-  return cells
-    .filter(c => c.kind !== 'inbox' && !c.hidden)
-    .map((c, i) => ({ x: c.x + (i % 2 === 0 ? 138 : -138), y: c.y - 8 }));
-}
 
 export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode; sky: ReactNode; repo: RepoData }) {
   const { slug, scrub, focusId, zoom } = useVillageUi();
@@ -32,7 +20,7 @@ export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode
   const { cells, placed, occupied } = worldModelFor(payload, slug, asOf, repo);
   const worldRef = useRef<HTMLDivElement>(null);
 
-  const lamps = lampSpots(cells);
+  const lamps = roadLampSpots(cells);
   const litCells = cells.filter(c => !c.hidden && (occupied.get(c.id) ?? 0) > 0);
 
   return (
@@ -57,6 +45,7 @@ export function VillageStageSurface({ terrain, sky, repo }: { terrain: ReactNode
         }}
       >
         {terrain}
+        <VillageDecor cells={cells} />
         <TownExitGate />
         <VillageRoads cells={cells} />
 
@@ -92,7 +81,7 @@ function TownExitGate() {
       data-stop-walk
       onClick={() => travelTo(TOWN_EXIT)}
       className="pixel absolute z-10 cursor-pointer text-left transition-transform hover:-translate-y-1"
-      style={{ left: TOWN_EXIT.x - 56, top: TOWN_EXIT.y - 118 }}
+      style={{ left: `${TOWN_EXIT.x - 56}px`, top: `${TOWN_EXIT.y - 118}px` }}
       aria-label="Walk to the road home"
     >
       <span className="absolute top-18 left-0 h-18 w-22 rounded-r-sm border-y-4 border-r-4 border-[#4a3826] bg-[#a5814e] shadow-[inset_-4px_0_0_rgb(255_255_255/0.16)]" />

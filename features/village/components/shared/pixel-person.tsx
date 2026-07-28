@@ -1,6 +1,10 @@
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { cn } from '@/lib/utils';
 
+function px(value: number): string {
+  return `${value}px`;
+}
+
 export function PixelPerson({
   name,
   avatar,
@@ -30,12 +34,12 @@ export function PixelPerson({
   return (
     <span
       className={cn('pixel relative inline-block', className)}
-      style={{ width: size, height: bodyTop + bodyHeight }}
+      style={{ width: px(size), height: px(bodyTop + bodyHeight) }}
     >
       <span
         aria-hidden
         className="absolute block [image-rendering:pixelated]"
-        style={{ left: 0, top: 0, width: size, height: headHeight }}
+        style={{ left: '0px', top: '0px', width: px(size), height: px(headHeight) }}
       >
         {avatar ? (
           <AvatarImage
@@ -62,7 +66,7 @@ export function PixelPerson({
         viewBox="0 0 13 10"
         shapeRendering="crispEdges"
         className="pixel-person-body absolute left-0 [image-rendering:pixelated]"
-        style={{ top: bodyTop }}
+        style={{ top: px(bodyTop) }}
       >
         <rect x="3" y="0" width="7" height="4" fill={shirt} />
         <rect x="2" y="1" width="1" height="3" fill={shirt} />

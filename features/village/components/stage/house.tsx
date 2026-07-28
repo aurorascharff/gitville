@@ -80,8 +80,8 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
       aria-label={`Enter ${cell.label}`}
       className="group absolute block cursor-pointer transition-transform duration-300"
       style={{
-        left: cell.x,
-        top: cell.y,
+        left: `${cell.x}px`,
+        top: `${cell.y}px`,
         transform: `translate(-50%, ${near ? '-66%' : '-62%'})`,
         filter: awake
           ? `drop-shadow(4px 6px 0 rgb(0 0 0 / 0.25)) drop-shadow(0 0 ${near ? 26 : 18}px rgb(255 214 106 / ${near ? 0.55 : 0.35}))`

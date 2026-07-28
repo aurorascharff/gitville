@@ -14,6 +14,10 @@ function anchorTransform(anchor: Anchor): string | undefined {
   return ANCHORS[anchor];
 }
 
+function px(value: number): string {
+  return `${value}px`;
+}
+
 export function Placed({
   x,
   y,
@@ -33,7 +37,7 @@ export function Placed({
     <span
       aria-hidden
       className={cn('absolute', className)}
-      style={{ left: x, top: y, transform: anchorTransform(anchor), ...style }}
+      style={{ left: px(x), top: px(y), transform: anchorTransform(anchor), ...style }}
     >
       {children}
     </span>

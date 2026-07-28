@@ -60,7 +60,6 @@ async function Village({ slug }: { slug: string }) {
             terrain={
               <>
                 <GrassPatches />
-                <VillageDecor />
                 <NightTint />
               </>
             }
