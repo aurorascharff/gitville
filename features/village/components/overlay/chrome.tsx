@@ -1,24 +1,23 @@
 'use client';
 
-import { AlertTriangle, Minus, Newspaper, Plus, RefreshCw, Users } from 'lucide-react';
-import { useSWRConfig } from 'swr';
+import { Minus, Newspaper, Plus, RefreshCw, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useTransition, type ReactNode } from 'react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import { clampZoom } from '@/features/village/components/stage/player';
-import { refreshVillagePayload, useVillageData } from '@/features/village/hooks/use-village-data';
+import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
-import { villageKey, type VillagePayload } from '@/types/github';
-import type { ReactNode } from 'react';
+import type { VillagePayload } from '@/types/github';
 
 export function VillageBusy() {
   const { slug } = useVillageUi();
   const { payload } = useVillageData(slug);
-  const { mutate } = useSWRConfig();
+  const { pending, refresh } = useVillageRefresh();
   if (payload.ok) return null;
-  const refresh = (current?: VillagePayload) => refreshVillagePayload(slug, current);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 px-4">
@@ -32,10 +31,11 @@ export function VillageBusy() {
         </p>
         <button
           type="button"
-          onClick={() => mutate(villageKey(slug), refresh, { revalidate: false })}
-          className="panel-wood mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[14px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
+          onClick={refresh}
+          disabled={pending}
+          className="panel-wood mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[14px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-80 disabled:hover:translate-y-0"
         >
-          try again
+          {pending ? 'trying...' : 'try again'}
         </button>
       </div>
     </div>
@@ -44,7 +44,7 @@ export function VillageBusy() {
 
 export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
   const { slug, scrub, focusId } = useVillageUi();
-  const { payload, stale } = useVillageData(slug);
+  const { payload } = useVillageData(slug);
   const { asOf, live } = timeWindowFor(payload, scrub);
   const { actors } = worldModelFor(payload, slug, asOf);
 
@@ -55,15 +55,8 @@ export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
       {repoNav}
       {payload.ok ? (
         <p className="flex h-5 min-w-0 items-center gap-1.5 px-1 text-[12px] font-semibold text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.7)] sm:h-6 sm:gap-2 sm:text-[14px]">
-          <span
-            className={cn(
-              'h-2 w-2 shrink-0 rounded-full',
-              live && !stale ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]',
-            )}
-          />
-          {stale ? (
-            <span className="truncate">rate limited</span>
-          ) : live ? (
+          <span className={cn('h-2 w-2 shrink-0 rounded-full', live ? 'animate-pulse bg-[#58d06c]' : 'bg-[#e4c05a]')} />
+          {live ? (
             <span className="truncate">{actors.length} villagers</span>
           ) : (
             <span className="truncate font-mono">
@@ -80,26 +73,21 @@ export function VillageStatus({ repoNav }: { repoNav: ReactNode }) {
 export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
   const { slug, buzzOpen, setBuzzOpen, peopleOpen, setPeopleOpen, focusId, setZoom } = useVillageUi();
   const { payload, stale, validating } = useVillageData(slug);
-  const { mutate } = useSWRConfig();
-  const retrying = stale || !payload.ok;
-  const refresh = (current?: VillagePayload) => refreshVillagePayload(slug, current);
+  const { pending, refresh } = useVillageRefresh();
+  const busy = pending || validating;
+  const refreshLabel = refreshTitle(payload, stale);
   return (
     <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-30 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 sm:top-4 sm:right-4 sm:gap-1.5">
       {repoLink}
       <button
         type="button"
-        onClick={() => mutate(villageKey(slug), refresh, { revalidate: false })}
-        disabled={validating}
-        aria-label={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
-        title={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
+        onClick={refresh}
+        disabled={busy}
+        aria-label={busy ? 'Refreshing village' : refreshLabel}
+        title={busy ? 'Refreshing village' : refreshLabel}
         className="panel relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-80 disabled:hover:translate-y-0 sm:h-9 sm:w-9"
       >
-        <RefreshCw className={cn(validating && 'animate-spin')} size={14} strokeWidth={3} />
-        {retrying ? (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-sm border border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]">
-            <AlertTriangle size={10} strokeWidth={3} />
-          </span>
-        ) : null}
+        <RefreshCw className={cn(busy && 'animate-spin')} size={14} strokeWidth={3} />
       </button>
       {!focusId ? (
         <>
@@ -158,6 +146,22 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
       ) : null}
     </div>
   );
+}
+
+function useVillageRefresh() {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  return {
+    pending,
+    refresh: () => startTransition(() => router.refresh()),
+  };
+}
+
+function refreshTitle(payload: VillagePayload, stale: boolean): string {
+  if (!payload.ok) return 'Retry village sync';
+  if (stale && payload.warnings?.length) return `Refresh village. ${payload.warnings.join(', ')}.`;
+  if (stale) return 'Refresh village. Some GitHub data is still filling in.';
+  return 'Refresh village';
 }
 
 export function VillageTooltip() {
