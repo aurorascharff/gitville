@@ -10,7 +10,7 @@ import {
   furnitureFor,
   type Palette,
 } from '@/features/village/components/shared/pixel-sprite';
-import { backdropFor, type Build } from '@/features/village/utils/room-geometry';
+import { backdropFor, buildSize, type Build } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
 import type { RoomSpecPayload } from '@/types/github';
 import type { Group } from 'three';
@@ -20,6 +20,7 @@ type VoxelPieceData = {
   art: string[];
   palette: Palette;
   offset: number;
+  scale: number;
 };
 
 export function FurnitureCloseup({
@@ -36,14 +37,17 @@ export function FurnitureCloseup({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
-  const spacing = drawn ? 2.7 : 1.4;
-  const start = -((build.commits.length - 1) * spacing) / 2;
-  const pieces = build.commits.map((commit, i) => ({
-    id: commit.sha,
-    art: drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art,
-    palette: drawn ? AI_ART_PALETTE : fallback.palette,
-    offset: start + i * spacing,
-  }));
+  const level = buildSize(build);
+  const pieces = [
+    {
+      id: build.commits.map(commit => commit.sha).join('-'),
+      art: drawn ? build.pieces![0] : fallback.art,
+      palette: drawn ? AI_ART_PALETTE : fallback.palette,
+      offset: 0,
+      scale: 0.9 + (level - 1) * 0.1,
+    },
+  ];
+  const sizeLabel = level === 1 ? 'modest' : level === 2 ? 'roomy' : level === 3 ? 'grand' : 'showpiece';
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -97,7 +101,7 @@ export function FurnitureCloseup({
             </p>
             {spec?.ai ? (
               <span className="rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[12px] font-bold text-[#3a2f22]">
-                furniture fixed
+                {sizeLabel} furniture
               </span>
             ) : null}
           </div>
@@ -162,7 +166,7 @@ function VoxelTurntable({ pieces }: { pieces: VoxelPieceData[] }) {
 }
 
 function VoxelPiece({ piece }: { piece: VoxelPieceData }) {
-  const block = 0.34;
+  const block = 0.34 * piece.scale;
   const width = Math.max(...piece.art.map(row => row.length));
   const height = piece.art.length;
   const voxels = piece.art.flatMap((row, y) =>

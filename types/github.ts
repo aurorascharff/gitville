@@ -88,6 +88,7 @@ export type RoomSpecItem = {
   name: string;
   kind?: string;
   pieces?: string[][];
+  size?: number;
   commits: number[];
 };
 

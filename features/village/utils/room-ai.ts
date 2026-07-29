@@ -21,6 +21,7 @@ type RoomItem = {
   name: string;
   kind?: (typeof ITEM_KINDS)[number];
   pieces?: string[][];
+  size?: number;
   commits: number[];
 };
 
@@ -36,6 +37,7 @@ const specSchema = z.object({
       name: z.string(),
       kind: z.enum(ITEM_KINDS).nullable(),
       pieces: z.array(z.array(z.string())).nullable(),
+      size: z.number().int().min(1).max(4).nullable().optional(),
       commits: z.array(z.number()),
     }),
   ),
@@ -52,7 +54,8 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
     return {
       name: item.name.slice(0, 30),
       kind: item.kind ?? undefined,
-      pieces: pieces.length > 0 ? pieces : undefined,
+      pieces: pieces.length > 0 ? [pieces[0]] : undefined,
+      size: item.size ?? Math.min(4, Math.max(1, item.commits.length)),
       commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
     };
   });
@@ -119,13 +122,14 @@ async function generateRoomSpecCached(
       '- ALWAYS draw the art yourself in `pieces`. The catalog is a last-ditch fallback for when you truly cannot draw something; reaching for `kind` means giving up, so avoid it.',
       '- Each item is ONE invented object standing for ONE piece of work; name it so the tie to the commit is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
       '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained object.',
-      '- Draw each item as `pieces`: EXACTLY one pixel-art block per commit in the group. When an item has several commits they combine into ONE bigger object built from connected segments, designed to join side by side (left end, middle, right end). Keep the segments individually legible — do NOT melt them into one shapeless mass.',
+      '- Draw each item as `pieces`: EXACTLY one pixel-art block for the whole object, even when it represents several commits. Do NOT make one attached segment per commit.',
+      '- Set `size` from 1 to 4. Use bigger sizes for grouped commits or larger changes, and make those objects grander or fancier with stronger silhouettes and richer details.',
       '',
       'Make the room read well:',
       '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller objects around it.',
       '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (towers, legs, drawers, screens, funnels, arms, pots, lids) so the room is a collection of clearly-different things. Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
       '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied objects together.',
-      '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Align piece heights within an item so segments join cleanly. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
+      '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
       `- The catalog kinds [${ITEM_KINDS.join(', ')}] exist only as a last resort; set \`kind\` and \`pieces\` to null when unused, and prefer drawing your own \`pieces\` every time.`,
     ]
@@ -149,7 +153,7 @@ export function fallbackSpec(theme: string, commits: { id: string; actor?: strin
     theme,
     items: groups.map(idx => {
       const kind = ITEM_KINDS[hashString(commits[idx[0]].id) % ITEM_KINDS.length];
-      return { name: kind, kind, commits: idx };
+      return { name: kind, kind, size: Math.min(4, idx.length), commits: idx };
     }),
   };
 }

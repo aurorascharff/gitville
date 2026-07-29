@@ -15,7 +15,7 @@ export const WALL_H = 150;
 export const SIDEBAR_W = 360;
 
 type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
-export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][] };
+export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][]; size?: number };
 export type RoomFrame = { x: number; y: number; scale: number };
 
 function roomRole(cell: Cell): RoomRole {
@@ -112,8 +112,12 @@ export function centerpiece(cell: Cell): { art: string[]; palette: Record<string
 }
 
 export function pieceScale(build: Build): number {
-  const n = build.pieces?.length ?? build.commits.length;
-  return n <= 2 ? 6 : n <= 4 ? 5 : 4;
+  return Math.max(...build.commits.map(sizeScale), 5 + buildSize(build));
+}
+
+export function buildSize(build: Pick<Build, 'commits' | 'size'>): number {
+  const size = build.size ?? build.commits.length;
+  return Math.min(4, Math.max(1, Math.round(size)));
 }
 
 export function sizeScale(commit: BranchCommit): number {
@@ -127,9 +131,9 @@ export function sizeScale(commit: BranchCommit): number {
 function buildWidth(build: Build): number {
   if (build.pieces?.length) {
     const scale = pieceScale(build);
-    return build.pieces.reduce((sum, piece) => sum + Math.max(...piece.map(r => r.length)) * scale, 0);
+    return Math.max(...build.pieces[0].map(r => r.length)) * scale;
   }
-  return build.commits.reduce((sum, c) => sum + 8 * sizeScale(c), 0);
+  return 10 * pieceScale(build);
 }
 
 export function heroIndex(builds: Build[]): number {
@@ -217,7 +221,9 @@ export function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefi
   for (const item of items) {
     const own = item.commits.filter(i => i >= 0 && i < commits.length && !covered.has(i)).map(i => commits[i]);
     item.commits.forEach(i => covered.add(i));
-    if (own.length > 0) builds.push({ commits: own, name: item.name, kind: item.kind, pieces: item.pieces });
+    if (own.length > 0) {
+      builds.push({ commits: own, name: item.name, kind: item.kind, pieces: item.pieces, size: item.size });
+    }
   }
   commits.forEach((c, i) => {
     if (!covered.has(i)) builds.push({ commits: [c] });

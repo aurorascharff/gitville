@@ -31,7 +31,6 @@ import {
   pieceScale,
   roomFrame,
   roomDims,
-  sizeScale,
   toBuilds,
   WALL_H,
   wallClass,
@@ -428,9 +427,12 @@ function Furniture({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
+  const art = drawn ? build.pieces![0] : fallback.art;
+  const palette = drawn ? AI_ART_PALETTE : fallback.palette;
+  const firstCommit = build.commits[0];
   const tipBody =
     build.commits.length === 1
-      ? `${build.commits[0].message}\nby ${build.commits[0].author}`
+      ? `${firstCommit.message}\nby ${firstCommit.author}`
       : [
           `${build.commits.length} commits built this ${name}`,
           ...build.commits.map(c => `• ${c.message.split('\n')[0]} — ${c.author}`),
@@ -464,25 +466,17 @@ function Furniture({
           ⏎ look
         </button>
         <span className={cn('flex items-end rounded-sm', near && 'ring-2 ring-[#e4c05a]')}>
-          {build.commits.map((commit, i) => {
-            const piece = drawn ? (build.pieces![i] ?? build.pieces![build.pieces!.length - 1]) : fallback.art;
-            const palette = drawn ? AI_ART_PALETTE : fallback.palette;
-            return (
-              <a
-                key={commit.sha}
-                href={commit.url}
-                target="_blank"
-                rel="noreferrer"
-                tabIndex={-1}
-                data-stop-walk
-                aria-label={`View commit: ${commit.message.split('\n')[0]}`}
-                className="flex cursor-pointer flex-col items-center"
-                style={drawn ? undefined : { marginLeft: i === 0 ? 0 : -6, translate: `0 ${(i % 2) * 4}px` }}
-              >
-                <PixelSprite art={piece} palette={palette} scale={drawn ? pieceScale(build) : sizeScale(commit)} />
-              </a>
-            );
-          })}
+          <a
+            href={firstCommit.url}
+            target="_blank"
+            rel="noreferrer"
+            tabIndex={-1}
+            data-stop-walk
+            aria-label={`View commit: ${firstCommit.message.split('\n')[0]}`}
+            className="flex cursor-pointer flex-col items-center"
+          >
+            <PixelSprite art={art} palette={palette} scale={pieceScale(build)} />
+          </a>
         </span>
         <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
         <span className="font-pixel mt-1 block max-w-36 truncate rounded-sm bg-black/50 px-1.5 text-[12px] leading-5 text-white/95">
