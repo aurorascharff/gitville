@@ -35,6 +35,11 @@ function stateLine(cell: Cell): string | null {
   return 'ready for review';
 }
 
+function tooltipBody(cell: Cell, state: string | null): string | null {
+  if (cell.sub && state) return `${cell.sub}\n${state}`;
+  return cell.sub ?? state;
+}
+
 export function VillageHouse({ cell, people, repo }: { cell: Cell; people: number; repo?: RepoData }) {
   const { slug, focusId, nearCellId, aiCellIds, aiRoomDecor, setFocusId, setTip } = useVillageUi();
   const lit = people > 0;
@@ -72,7 +77,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
           x: e.clientX,
           y: e.clientY,
           title: cell.label,
-          body: [state, cell.sub].filter(Boolean).join(', ') || null,
+          body: tooltipBody(cell, state),
           when: null,
         })
       }
@@ -203,15 +208,6 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
         : /cache|perf|speed|turbo|build|compile/i.test(text)
           ? 'machine'
           : 'garden';
-  const label = release
-    ? 'release studio'
-    : kind === 'lab'
-      ? 'detection lab'
-      : kind === 'studio'
-        ? 'workbench'
-        : kind === 'machine'
-          ? 'machine shop'
-          : 'garden bench';
   const tipTitle = generated ? 'furniture fixed' : unfinished ? 'carpenter at work' : 'blank sign';
 
   return (

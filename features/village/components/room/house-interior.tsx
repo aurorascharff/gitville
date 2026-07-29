@@ -244,14 +244,6 @@ function InteriorScene({
   );
 }
 
-function KeyHint({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-pixel inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-1 text-[10px] text-[#3a2f22]">
-      {children}
-    </span>
-  );
-}
-
 function WallNotes({ cell, ai }: { cell: Cell; ai: boolean }) {
   const { slug, scrub } = useVillageUi();
   const { payload } = useVillageData(slug);

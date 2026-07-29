@@ -2,22 +2,23 @@
 
 The data layer. Every feature has both: queries to read, actions to write.
 
-This page covers the universal data layer that applies to every Next.js App Router app. For the opt-in Cache Components model (`'use cache'`, `cacheTag`, `cacheLife`, `updateTag`), see `references/cache-components.md`.
+This page covers the universal data layer that applies to every Next.js App Router app. When `cacheComponents: true` is enabled, follow `references/cache-components.md`: reusable reads are cached/tagged/lifetimed, and mutations update matching tags.
 
 ## Queries
 
-Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'`. Wrap every export in [`cache()`](https://react.dev/reference/react/cache) from React for **request-level deduplication** — same query called from multiple components in the same render hits the database once.
+Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'` — that's the invariant. Default to plain async exports.
 
 ```ts
 import 'server-only';
-import { cache } from 'react';
 
-export const getFeed = cache(async (userId: string) => {
+export async function getFeed(userId: string) {
   return db.post.findMany({ where: { userId } });
-});
+}
 ```
 
-That's the floor: every query is server-only and request-deduplicated. If you turn on Cache Components, you'll also add `'use cache'` + `cacheTag` to share results across requests — see `references/cache-components.md`.
+Use [`cache()`](https://react.dev/reference/react/cache) from React only for **request-level deduplication** when the same dynamic query is called multiple times with the same arguments in one render. Highest-value cases: a session/user lookup used by many queries, or a shared expensive read used by metadata + page sections. Don't wrap every query "just in case" — it adds indirection and can hide when data is intentionally dynamic.
+
+`cache()` dedups within a request; `'use cache'` + `cacheTag` (Cache Components) shares results *across* requests. Don't add React `cache()` to a function only because it already uses `'use cache'`; that is double-caching unless you have a separate, proven same-request duplication problem. See `references/cache-components.md`.
 
 ## Actions
 
@@ -47,7 +48,7 @@ export async function createPost(formData: FormData) {
 }
 ```
 
-[`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. With Cache Components, you'd swap this for `updateTag('feed')` to invalidate everything tagged `feed` and get read-your-own-writes across users — see `references/cache-components.md`.
+[`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. Use it when the affected read is deliberately dynamic and has no tag. With Cache Components enabled, reusable reads should have matching `cacheTag()` calls, so server actions normally call `updateTag()` for read-your-own-writes. See `references/cache-components.md`.
 
 ### Action file naming
 
@@ -87,21 +88,23 @@ For one-off buttons, `onClick={() => action(args)}` is fine. Wrap in [`startTran
 Return a discriminated union from actions that can fail:
 
 ```tsx
-export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error: string };
 ```
 
 Toast on `ok: false` from the client. Skip success toasts when an optimistic UI already shows the result.
+
+A shared `ActionResult<T>` is optional — a per-action inline union is just as good, and often clearer when the payload has a natural name: `return { ok: true as const, playlist }` reads better than a generic `data`. What matters is that fallible actions return a discriminated union the client can narrow on, not that every action shares one type.
 
 ## Mappers and domain types
 
 If your DB rows have shapes you don't want to leak to components (extra columns, ORM-specific types), write a mapper inside the query:
 
 ```ts
-export const getPost = cache(async (id: string) => {
+export async function getPost(id: string) {
   const row = await db.post.findUnique({ where: { id }, include: { author: true } });
   if (!row) notFound();
   return toPost(row);
-});
+}
 
 function toPost(row: PostRow & { author: UserRow }): Post {
   return { id: row.id, body: row.body, author: row.author.handle };

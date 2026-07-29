@@ -17,13 +17,7 @@ export async function NotificationsBadge() {
 }
 ```
 
-Wrapped at the page or layout level with Suspense:
-
-```tsx
-<Suspense fallback={<NotificationsBadgeSkeleton />}>
-  <NotificationsBadge />
-</Suspense>
-```
+The page (not this file) wraps it in `<Suspense fallback={<NotificationsBadgeSkeleton />}>` — see `references/pages-suspense.md`.
 
 ## Skeletons live in the same file
 
@@ -54,6 +48,17 @@ export function FeedSkeleton() {
 }
 ```
 
+Don't export a second skeleton whose whole job is to rename or preconfigure another skeleton:
+
+```tsx
+// Wrong — alias wrapper adds an import surface but no behavior
+export function CompactGridSkeleton() {
+  return <GridSkeleton dense />;
+}
+```
+
+Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: `fallback={<GridSkeleton dense />}`.
+
 ### Skeleton design checklist
 
 1. Match the real component's layout: flex direction, gaps, padding, breakpoints.
@@ -65,7 +70,7 @@ export function FeedSkeleton() {
 
 ## Group related components in one file
 
-A card and its grid live in the same file. For example, `genre-card.tsx` exports `GenrePill`, `GenreCard`, `GenreGrid`, `GenreGridSkeleton`. Don't split shared UI primitives prematurely — wait until three call sites need the same shape before extracting.
+A card and its grid live in the same file. For example, `genre-card.tsx` exports `GenrePill`, `GenreCard`, `GenreGrid`, `GenreGridSkeleton`. Variants should reuse that skeleton inline instead of exporting alias skeletons. Don't split shared UI primitives prematurely — wait until three call sites need the same shape before extracting.
 
 Two sidebar widgets that happen to look similar but render different data shapes are **not** the same component. The visuals diverge as soon as one needs an extra slot.
 
@@ -129,9 +134,9 @@ Composition crosses the boundary. A client component can accept server-rendered 
 
 `ComposerForm` is `'use client'`. It doesn't know where the avatar JSX came from. The Suspense boundary streams the avatar in without the form re-rendering.
 
-### Server components don't take promises as props
+### Pass server children resolved values, not promises
 
-Pass plain values (strings, IDs, resolved data). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
+Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component *can* `await` a promise prop, but resolve it in the parent instead — pass an unresolved promise down only to a *client* component that reads it with `use()` (see above). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
 
 ```tsx
 // Right — parent fetches the list, passes each item
@@ -158,27 +163,21 @@ async function Post({ id }: { id: string }) {
 When a client component needs server data but should manage its own loading (a sidebar badge, a popover that opens on hover), pass an **unresolved promise** from the server and resolve it with [`use()`](https://react.dev/reference/react/use) on the client. Wrap the consumer in `<Suspense>`.
 
 ```tsx
-// Server side — don't await the query
+// page: pass the unresolved promise, wrap in Suspense
 <Suspense fallback={<TagListSkeleton />}>
   <TagPicker itemsPromise={getTags()} />
-</Suspense>
-```
+</Suspense>;
 
-```tsx
-'use client';
-import { use } from 'react';
-
-export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
-  const items = use(itemsPromise);
-  // ...
-}
+// TagPicker ('use client'): const items = use(itemsPromise);  // itemsPromise: Promise<Tag[]>
 ```
 
 The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`, `userPromise`) so the contract is obvious at the call site.
 
 ## Live data via polling
 
-For features that reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
+For features that reflect **server-side** updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
+
+`<Poller>` is only for server-authored data. When the live state is **client-owned** — playback position, an audio player, session/UI state — a client [context provider](https://react.dev/reference/react/createContext) owns it and leaf components read it via a hook (`usePlayer()`); there's no server refetch, so no polling. Reserve `router.refresh()` for changes that happened on the server.
 
 ## Mutations
 
