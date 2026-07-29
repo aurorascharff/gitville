@@ -16,6 +16,7 @@ import type {
 const API = 'https://api.github.com';
 
 const UNKNOWN_ACTOR = 'someone';
+const VILLAGE_PAYLOAD_TAG_PREFIX = 'gv-live-v2';
 
 class VillagePayloadMiss extends Error {
   constructor(readonly payload: VillagePayload) {
@@ -26,6 +27,10 @@ class VillagePayloadMiss extends Error {
 function splitSlug(slug: string): [owner: string, repo: string] {
   const [owner, repo] = slug.split('/');
   return [owner, repo];
+}
+
+export function villagePayloadTag(slug: string): string {
+  return `${VILLAGE_PAYLOAD_TAG_PREFIX}-${slug}`;
 }
 
 function ghHeaders(): Record<string, string> {
@@ -103,7 +108,7 @@ type PullResponse = {
   draft: boolean;
   updated_at: string;
   user: { login: string; avatar_url: string } | null;
-  head: { ref: string };
+  head: { ref: string; sha: string };
   base: { ref: string };
   mergeable?: boolean | null;
   mergeable_state?: string | null;
@@ -439,7 +444,20 @@ type GqlPull = {
 type PullsResult = {
   prs: VillagePR[];
   total: number | null;
+  checksComplete: boolean;
 };
+
+type CheckRunsResponse = {
+  total_count: number;
+  check_runs: {
+    status: 'queued' | 'in_progress' | 'completed' | 'waiting' | 'requested' | 'pending';
+    conclusion:
+      'action_required' | 'cancelled' | 'failure' | 'neutral' | 'success' | 'skipped' | 'stale' | 'timed_out' | null;
+  }[];
+};
+
+type CheckStateResult =
+  { complete: true; state: VillagePR['checkState'] } | { complete: false; state: VillagePR['checkState'] };
 
 type ReleaseResponse = {
   tag_name: string;
@@ -552,13 +570,16 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
           .map(person => ({ login: person.login, avatar: person.avatarUrl })),
         updatedAt: pr.updatedAt,
       }));
-    return { prs, total: pullRequests?.totalCount ?? prs.length };
+    return { prs, total: pullRequests?.totalCount ?? prs.length, checksComplete: true };
   }
 
   const pulls = await gh<PullResponse[]>(
     `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=64`,
   );
   if (!Array.isArray(pulls)) return null;
+
+  const checkStates = await Promise.all(pulls.slice(0, 36).map(pr => getRestCheckState(slug, pr.head.sha)));
+  const stateBySha = new Map(pulls.slice(0, 36).map((pr, i) => [pr.head.sha, checkStates[i]]));
 
   return {
     prs: pulls.map(pr => ({
@@ -572,14 +593,38 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
       draft: Boolean(pr.draft),
       mergeable: pr.mergeable === true ? 'MERGEABLE' : pr.mergeable === false ? 'CONFLICTING' : 'UNKNOWN',
       mergeStateStatus: pr.mergeable_state ?? null,
-      checkState: null,
+      checkState: stateBySha.get(pr.head.sha)?.state ?? null,
       reviewDecision: null,
       reviewers: (pr.requested_reviewers ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
       assignees: (pr.assignees ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
       updatedAt: pr.updated_at,
     })),
     total: null,
+    checksComplete: checkStates.every(result => result.complete),
   };
+}
+
+async function getRestCheckState(slug: string, sha: string): Promise<CheckStateResult> {
+  const [owner, repo] = splitSlug(slug);
+  const runs = await gh<CheckRunsResponse>(
+    `/repos/${owner}/${repo}/commits/${encodeURIComponent(sha)}/check-runs?per_page=100`,
+  );
+  if (!runs) return { complete: false, state: null };
+  if (runs.total_count === 0) return { complete: true, state: null };
+  return { complete: true, state: mapCheckRunsState(runs.check_runs) };
+}
+
+function mapCheckRunsState(runs: CheckRunsResponse['check_runs']): VillagePR['checkState'] {
+  if (runs.some(run => run.status !== 'completed')) return 'PENDING';
+  if (
+    runs.some(
+      run => run.conclusion === 'action_required' || run.conclusion === 'failure' || run.conclusion === 'timed_out',
+    )
+  )
+    return 'FAILURE';
+  if (runs.some(run => run.conclusion === 'cancelled' || run.conclusion === 'stale')) return 'ERROR';
+  if (runs.some(run => run.conclusion === null)) return 'PENDING';
+  return 'SUCCESS';
 }
 
 function unavailableVillagePayload(
@@ -610,6 +655,7 @@ async function readVillagePayload(slug: string, defaultBranch: string): Promise<
   ]);
   const warnings: string[] = [];
   if (!pulls) warnings.push('pull requests are still loading');
+  if (pulls && !pulls.checksComplete) warnings.push('pull request checks are still loading');
   const failedEventPages = eventPages.filter(page => !Array.isArray(page)).length;
   if (failedEventPages > 0) warnings.push('recent activity is still loading');
   const merged = eventPages.flatMap(page => (Array.isArray(page) ? page : []));
@@ -642,7 +688,7 @@ async function readVillagePayload(slug: string, defaultBranch: string): Promise<
 async function getCachedVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   'use cache: remote';
   cacheLife({ stale: 45, revalidate: 45, expire: 600 });
-  cacheTag(`gv-live-${slug}`);
+  cacheTag(villagePayloadTag(slug));
 
   const payload = await readVillagePayload(slug, defaultBranch);
   if (!payload.ok || payload.partial) throw new VillagePayloadMiss(payload);

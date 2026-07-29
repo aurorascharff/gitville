@@ -31,13 +31,55 @@ function rememberPayload(slug: string, payload: VillagePayload) {
   if (payload.ok && !payload.partial) lastGoodPayloads.set(slug, payload);
 }
 
-function recoverPayload(slug: string, payload: VillagePayload, current?: VillagePayload): VillagePayload {
-  rememberPayload(slug, payload);
-  if (payload.ok && !payload.partial) return payload;
-  const previous = current?.ok && !current.partial ? current : lastGoodPayloads.get(slug);
-  if (!previous) return payload;
+function mergePeople<T>(next: T[], previous: T[]): T[] {
+  return next.length > 0 ? next : previous;
+}
+
+function mergePayload(previous: VillagePayload, next: VillagePayload): VillagePayload {
+  if (!previous.ok || !next.ok) return next;
+  const previousPrs = new Map(previous.prs.map(pr => [pr.number, pr]));
+  const prs = next.prs.length > 0 ? next.prs : previous.prs;
   return {
     ...previous,
+    ...next,
+    partial: next.partial,
+    warnings: next.warnings,
+    prs: prs.map(pr => {
+      const existing = previousPrs.get(pr.number);
+      if (!existing) return pr;
+      return {
+        ...existing,
+        ...pr,
+        mergeable: pr.mergeable ?? existing.mergeable,
+        mergeStateStatus: pr.mergeStateStatus ?? existing.mergeStateStatus,
+        checkState: pr.checkState ?? existing.checkState,
+        reviewDecision: pr.reviewDecision ?? existing.reviewDecision,
+        reviewers: mergePeople(pr.reviewers, existing.reviewers),
+        assignees: mergePeople(pr.assignees, existing.assignees),
+      };
+    }),
+    branches: next.branches.length > 0 ? next.branches : previous.branches,
+    events: next.events.length > 0 ? next.events : previous.events,
+    versions: next.versions.length > 0 ? next.versions : previous.versions,
+  };
+}
+
+function recoverPayload(slug: string, payload: VillagePayload, current?: VillagePayload): VillagePayload {
+  rememberPayload(slug, payload);
+  const previous = current?.ok ? current : lastGoodPayloads.get(slug);
+  if (!payload.ok && previous) {
+    return {
+      ...previous,
+      partial: true,
+      warnings: payload.warnings ?? previous.warnings,
+      fetchedAt: payload.fetchedAt,
+    };
+  }
+  const merged = previous ? mergePayload(previous, payload) : payload;
+  if (merged.ok && !merged.partial) return merged;
+  if (!previous) return payload;
+  return {
+    ...merged,
     partial: true,
     warnings: payload.warnings ?? previous.warnings,
     fetchedAt: payload.fetchedAt,
