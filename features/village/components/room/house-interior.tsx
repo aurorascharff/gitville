@@ -428,7 +428,10 @@ function Furniture({
   const tipBody =
     build.commits.length === 1
       ? `${build.commits[0].message}\nby ${build.commits[0].author}`
-      : build.commits.map(c => `• ${c.message.split('\n')[0]} — ${c.author}`).join('\n');
+      : [
+          `${build.commits.length} commits built this ${name}`,
+          ...build.commits.map(c => `• ${c.message.split('\n')[0]} — ${c.author}`),
+        ].join('\n');
 
   return (
     <div
