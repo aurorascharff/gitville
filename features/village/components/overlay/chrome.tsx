@@ -201,15 +201,20 @@ function TooltipBody({ body }: { body: string }) {
 
   return (
     <div className="mt-1 flex max-w-full flex-col gap-1.5 text-[13px] leading-snug text-[#6b5b43]">
-      <p className="line-clamp-6">{lines[0]}</p>
-      {lines.slice(1).map(line => (
-        <p
-          key={line}
-          className="w-fit max-w-full rounded-sm bg-[#6b5b43]/10 px-1.5 py-0.5 text-[12px] leading-tight font-semibold text-[#4f422f]"
-        >
-          {line}
-        </p>
-      ))}
+      {lines.map(line =>
+        line.startsWith('status:') ? (
+          <p
+            key={line}
+            className="w-fit max-w-full rounded-sm bg-[#6b5b43]/10 px-1.5 py-0.5 text-[12px] leading-tight font-semibold text-[#4f422f]"
+          >
+            {line}
+          </p>
+        ) : (
+          <p key={line} className="line-clamp-6">
+            {line}
+          </p>
+        ),
+      )}
     </div>
   );
 }
