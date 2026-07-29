@@ -1,7 +1,6 @@
 'use client';
 
 import { Minus, Newspaper, Plus, RefreshCw, Users } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useTransition, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -12,7 +11,6 @@ import { clampZoom } from '@/features/village/components/stage/player';
 import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
-import { refreshVillage } from '@/features/village/village-actions';
 import { cn } from '@/lib/utils';
 import { villageKey, type VillagePayload } from '@/types/github';
 
@@ -153,20 +151,19 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
 
 function useVillageRefresh() {
   const { slug } = useVillageUi();
-  const router = useRouter();
   const { mutate } = useSWRConfig();
   const [pending, startTransition] = useTransition();
   return {
     pending,
     refresh: () =>
       startTransition(async () => {
-        const res = await refreshVillage({ slug });
+        const res = await fetch(villageKey(slug), { method: 'POST' });
         if (!res.ok) {
-          toast.error(res.error);
+          const body = (await res.json().catch(() => null)) as { error?: string } | null;
+          toast.error(body?.error ?? 'That village could not be refreshed.');
           return;
         }
         await mutate(villageKey(slug));
-        router.refresh();
       }),
   };
 }

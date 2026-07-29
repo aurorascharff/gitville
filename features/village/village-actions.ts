@@ -1,23 +1,15 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { getRepoData } from '@/features/repo/repo-queries';
 import { getAiRoomSpecPayload } from '@/features/village/village-queries';
-import { parseRepoSlug, villagePayloadTag } from '@/lib/github';
 import type { RoomSpecPayload } from '@/types/github';
 
 type GenerateRoomFurnitureResult = { ok: true; spec: RoomSpecPayload } | { ok: false; error: string };
-type RefreshVillageResult = { ok: true } | { ok: false; error: string };
 
 const inputSchema = z.object({
   slug: z.string().regex(/^[\w.-]+\/[\w.-]+$/).max(140),
   cellId: z.string().min(1).max(120),
-});
-
-const refreshInputSchema = z.object({
-  slug: z.string().min(1).max(140),
 });
 
 const globalStore = globalThis as typeof globalThis & {
@@ -43,26 +35,6 @@ export async function generateRoomFurniture(input: unknown): Promise<GenerateRoo
     };
   }
   return { ok: true, spec };
-}
-
-export async function refreshVillage(input: unknown): Promise<RefreshVillageResult> {
-  const parsed = refreshInputSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: 'That village could not be refreshed.' };
-
-  const repoSlug = parseRepoSlug(parsed.data.slug);
-  if (!repoSlug) return { ok: false, error: 'That village could not be refreshed.' };
-
-  const requestHeaders = await headers();
-  if (!isSameAppRequest(requestHeaders)) return { ok: false, error: 'Open the app to refresh this village.' };
-
-  const quota = takeRefreshQuota(requestHeaders, repoSlug.slug);
-  if (!quota.ok) return quota;
-
-  const repo = await getRepoData(repoSlug.slug);
-  if (!repo) return { ok: false, error: 'That village could not be refreshed.' };
-
-  revalidateTag(villagePayloadTag(repo.slug), { expire: 0 });
-  return { ok: true };
 }
 
 function isSameAppRequest(requestHeaders: Headers): boolean {
@@ -101,17 +73,6 @@ function takeAiQuota(requestHeaders: Headers, slug: string): { ok: true } | { ok
     takeSlot(store, `repo:${key}:${slug}`, 4, 60 * 1000, now);
 
   return allowed ? { ok: true } : { ok: false, error: 'The carpenter is busy. Try again in a minute.' };
-}
-
-function takeRefreshQuota(requestHeaders: Headers, slug: string): { ok: true } | { ok: false; error: string } {
-  const key = requestKey(requestHeaders);
-  const now = Date.now();
-  const store = bucketStore(now);
-  const allowed =
-    takeSlot(store, `refresh-ip:${key}`, 30, 10 * 60 * 1000, now) &&
-    takeSlot(store, `refresh-repo:${key}:${slug}`, 6, 60 * 1000, now);
-
-  return allowed ? { ok: true } : { ok: false, error: 'This village was refreshed too often. Try again in a minute.' };
 }
 
 function bucketStore(now: number) {

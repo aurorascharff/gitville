@@ -3,7 +3,7 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 
 const eslintConfig = [
   {
-    ignores: ['**/next-env.d.ts', '.next/**', 'node_modules/**', 'generated/**', 'next15-admin-dashboard/**'],
+    ignores: ['**/next-env.d.ts', '.next/**', 'node_modules/**', 'generated/**', 'next15-admin-dashboard*/**'],
   },
   ...nextConfig,
   eslintConfigPrettier,

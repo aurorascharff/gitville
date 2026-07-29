@@ -41,7 +41,7 @@ yarn-error.log*
 
 # generated
 /generated
-/next15-admin-dashboard/
+/next15-admin-dashboard*/
 
 # sqlite
 prisma/*.db
