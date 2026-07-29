@@ -36,8 +36,16 @@ function stateLine(cell: Cell): string | null {
 }
 
 function tooltipBody(cell: Cell, state: string | null): string | null {
-  if (cell.sub && state) return `${cell.sub}\n${state}`;
+  if (cell.sub && state) return `${cell.sub}\nstatus: ${state}`;
   return cell.sub ?? state;
+}
+
+function aiDecorTip(generated: boolean, unfinished: boolean, title: string | null): string {
+  if (generated)
+    return title
+      ? `${title}\nThe carpenter fixed the furniture for this work.`
+      : 'The carpenter fixed the furniture for this room.';
+  return unfinished ? 'The carpenter is fixing the furniture.' : 'Go inside to fix the furniture.';
 }
 
 export function VillageHouse({ cell, people, repo }: { cell: Cell; people: number; repo?: RepoData }) {
@@ -219,13 +227,7 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
           x: e.clientX,
           y: e.clientY,
           title: tipTitle,
-          body: generated
-            ? title
-              ? `The carpenter fixed the furniture for this work: ${title}.`
-              : 'The carpenter fixed the furniture for this room.'
-            : unfinished
-              ? 'The carpenter is fixing the furniture.'
-              : 'Go inside to fix the furniture.',
+          body: aiDecorTip(generated, unfinished, title),
           when: null,
         });
       }}

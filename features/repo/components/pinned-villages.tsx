@@ -1,6 +1,5 @@
 import { Star } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { RepoAvatar } from '@/components/ui/repo-avatar';
 import { RoadScrollViewport } from '@/features/repo/components/road-scroll-viewport';
 import { getRepoData } from '@/features/repo/repo-queries';
@@ -25,49 +24,29 @@ type VillageStopData = {
 type VillageStopLoad =
   { kind: 'ready'; slug: string; index: number; stop: VillageStopData } | { kind: 'plot'; slug: string; index: number };
 
-const PLOT_CHUNK_SIZE = 4;
-
 export async function PinnedVillages() {
   const slugs = await getPinnedRepos();
   if (slugs.length === 0) return <EmptyRoad />;
-  const chunks = chunkSlugs(slugs, PLOT_CHUNK_SIZE);
+  const stops = await Promise.all(slugs.map(loadVillageStop));
 
   return (
     <RoadScrollViewport>
-      <div className="relative mx-auto h-78 max-w-5xl" style={{ minWidth: chunks.length * 720 }}>
+      <div className="relative mx-auto h-78 max-w-5xl" style={{ minWidth: Math.ceil(slugs.length / 4) * 720 }}>
         <Road />
         <ul
           className="relative z-10 grid h-full gap-x-8"
           style={{ gridTemplateColumns: `repeat(${slugs.length}, 1fr)` }}
         >
-          {chunks.map((chunk, chunkIndex) => (
-            <Suspense
-              key={chunk.join(':')}
-              fallback={<ChunkSkeleton count={chunk.length} startIndex={chunkIndex * PLOT_CHUNK_SIZE} />}
-            >
-              <PinnedVillageChunk slugs={chunk} startIndex={chunkIndex * PLOT_CHUNK_SIZE} />
-            </Suspense>
-          ))}
+          {stops.map(stop =>
+            stop.kind === 'ready' ? (
+              <VillageStop key={stop.slug} stop={stop.stop} index={stop.index} />
+            ) : (
+              <Unavailable key={stop.slug} slug={stop.slug} index={stop.index} />
+            ),
+          )}
         </ul>
       </div>
     </RoadScrollViewport>
-  );
-}
-
-function chunkSlugs(slugs: string[], size: number): string[][] {
-  const chunks: string[][] = [];
-  for (let i = 0; i < slugs.length; i += size) chunks.push(slugs.slice(i, i + size));
-  return chunks;
-}
-
-async function PinnedVillageChunk({ slugs, startIndex }: { slugs: string[]; startIndex: number }) {
-  const stops = await Promise.all(slugs.map((slug, i) => loadVillageStop(slug, startIndex + i)));
-  return stops.map(stop =>
-    stop.kind === 'ready' ? (
-      <VillageStop key={stop.slug} stop={stop.stop} index={stop.index} />
-    ) : (
-      <Unavailable key={stop.slug} slug={stop.slug} index={stop.index} />
-    ),
   );
 }
 
@@ -189,10 +168,6 @@ export function PinnedVillagesSkeleton() {
       </div>
     </RoadScrollViewport>
   );
-}
-
-function ChunkSkeleton({ count, startIndex }: { count: number; startIndex: number }) {
-  return Array.from({ length: count }).map((_, i) => <SkeletonStop key={i} index={startIndex + i} />);
 }
 
 function SkeletonStop({ index }: { index: number }) {

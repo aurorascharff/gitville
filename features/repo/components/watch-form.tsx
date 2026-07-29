@@ -1,11 +1,13 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { pinRepo } from '@/features/repo/repo-actions';
 
 export function WatchForm({ autoFocus = false }: { autoFocus?: boolean } = {}) {
+  const router = useRouter();
   const [value, setValue] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -14,7 +16,11 @@ export function WatchForm({ autoFocus = false }: { autoFocus?: boolean } = {}) {
     if (!value.trim()) return;
     startTransition(async () => {
       const res = await pinRepo(value);
-      if (res && !res.ok) toast.error(res.error);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      router.push(res.href);
     });
   }
 

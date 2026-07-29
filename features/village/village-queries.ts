@@ -1,8 +1,7 @@
 import 'server-only';
 
-import { cache } from 'react';
 import { getVillagePayload as getGitHubVillagePayload } from '@/lib/github';
 
-export const getVillagePayload = cache(async (slug: string, defaultBranch: string) =>
-  getGitHubVillagePayload(slug, defaultBranch),
-);
+export async function getVillagePayload(slug: string, defaultBranch: string) {
+  return getGitHubVillagePayload(slug, defaultBranch);
+}

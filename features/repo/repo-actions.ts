@@ -2,7 +2,6 @@
 
 import { updateTag } from 'next/cache';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { getRepoData } from '@/features/repo/repo-queries';
 import { PINNED_REPOS_TAG, REPOS_COOKIE, getPinnedRepos } from '@/features/repo/utils/repo-cookie';
 import { parseRepoSlug } from '@/lib/github';
@@ -22,5 +21,5 @@ export async function pinRepo(input: string) {
   const store = await cookies();
   store.set(REPOS_COOKIE, JSON.stringify(next), COOKIE_OPTS);
   updateTag(PINNED_REPOS_TAG);
-  redirect(`/${repo.slug}` as Route);
+  return { ok: true as const, href: `/${repo.slug}` as Route };
 }

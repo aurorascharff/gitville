@@ -6,11 +6,11 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
 import { clampZoom } from '@/features/village/components/stage/player';
-import { fetchVillagePayload, useVillageData } from '@/features/village/hooks/use-village-data';
+import { refreshVillagePayload, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
-import { villageKey, villageRefreshKey } from '@/types/github';
+import { villageKey, type VillagePayload } from '@/types/github';
 import type { ReactNode } from 'react';
 
 export function VillageBusy() {
@@ -18,6 +18,7 @@ export function VillageBusy() {
   const { payload } = useVillageData(slug);
   const { mutate } = useSWRConfig();
   if (payload.ok) return null;
+  const refresh = (current?: VillagePayload) => refreshVillagePayload(slug, current);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 px-4">
@@ -31,7 +32,7 @@ export function VillageBusy() {
         </p>
         <button
           type="button"
-          onClick={() => mutate(villageKey(slug), fetchVillagePayload(villageRefreshKey(slug)), { revalidate: false })}
+          onClick={() => mutate(villageKey(slug), refresh, { revalidate: false })}
           className="panel-wood mt-1 cursor-pointer rounded-sm px-3 py-1.5 text-[14px] font-bold text-[#f0e6d2] transition-transform hover:-translate-y-0.5"
         >
           try again
@@ -81,12 +82,13 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
   const { payload, stale, validating } = useVillageData(slug);
   const { mutate } = useSWRConfig();
   const retrying = stale || !payload.ok;
+  const refresh = (current?: VillagePayload) => refreshVillagePayload(slug, current);
   return (
     <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-30 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 sm:top-4 sm:right-4 sm:gap-1.5">
       {repoLink}
       <button
         type="button"
-        onClick={() => mutate(villageKey(slug), fetchVillagePayload(villageRefreshKey(slug)), { revalidate: false })}
+        onClick={() => mutate(villageKey(slug), refresh, { revalidate: false })}
         disabled={validating}
         aria-label={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
         title={validating ? 'Refreshing village' : retrying ? 'Retry village sync' : 'Refresh village'}
@@ -176,14 +178,34 @@ export function VillageTooltip() {
       }}
     >
       <p className="text-[14px] leading-tight font-bold">{tip.title}</p>
-      {tip.body ? (
-        <p className="mt-1 line-clamp-14 text-[13px] leading-snug whitespace-pre-line text-[#6b5b43]">{tip.body}</p>
-      ) : null}
+      {tip.body ? <TooltipBody body={tip.body} /> : null}
       {tip.when ? (
         <p className="mt-1 text-[12px] text-[#8a6d2a]">
           <RelativeTime date={tip.when} />
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function TooltipBody({ body }: { body: string }) {
+  const lines = body
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  if (lines.length <= 1) return <p className="mt-1 line-clamp-14 text-[13px] leading-snug text-[#6b5b43]">{body}</p>;
+
+  return (
+    <div className="mt-1 flex max-w-full flex-col gap-1.5 text-[13px] leading-snug text-[#6b5b43]">
+      <p className="line-clamp-6">{lines[0]}</p>
+      {lines.slice(1).map(line => (
+        <p
+          key={line}
+          className="w-fit max-w-full rounded-sm bg-[#6b5b43]/10 px-1.5 py-0.5 text-[12px] leading-tight font-semibold text-[#4f422f]"
+        >
+          {line}
+        </p>
+      ))}
     </div>
   );
 }

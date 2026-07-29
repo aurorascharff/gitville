@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import { villageKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
+import { villageKey, villageRefreshKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
 
 const lastGoodPayloads = new Map<string, VillagePayload>();
 
@@ -27,6 +27,28 @@ export const fetchVillagePayload = async (url: string): Promise<VillagePayload> 
   }
 };
 
+function rememberPayload(slug: string, payload: VillagePayload) {
+  if (payload.ok && !payload.partial) lastGoodPayloads.set(slug, payload);
+}
+
+function recoverPayload(slug: string, payload: VillagePayload, current?: VillagePayload): VillagePayload {
+  rememberPayload(slug, payload);
+  if (payload.ok && !payload.partial) return payload;
+  const previous = current?.ok && !current.partial ? current : lastGoodPayloads.get(slug);
+  if (!previous) return payload;
+  return {
+    ...previous,
+    partial: true,
+    warnings: payload.warnings ?? previous.warnings,
+    fetchedAt: payload.fetchedAt,
+  };
+}
+
+export async function refreshVillagePayload(slug: string, current?: VillagePayload): Promise<VillagePayload> {
+  const payload = await fetchVillagePayload(villageRefreshKey(slug));
+  return recoverPayload(slug, payload, current);
+}
+
 export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean; validating: boolean } {
   const { data, isValidating } = useSWR<VillagePayload>(villageKey(slug), fetchVillagePayload, {
     suspense: true,
@@ -34,10 +56,9 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
     revalidateOnFocus: true,
     revalidateOnMount: false,
   });
-  const payload = data ?? unavailablePayload();
-  if (payload.ok) lastGoodPayloads.set(slug, payload);
-  const previous = lastGoodPayloads.get(slug);
-  if (!payload.ok && previous) return { payload: previous, stale: true, validating: isValidating };
+  const rawPayload = data ?? unavailablePayload();
+  const payload = recoverPayload(slug, rawPayload);
+  if (payload !== rawPayload) return { payload, stale: true, validating: isValidating };
   return { payload, stale: Boolean(payload.partial), validating: isValidating };
 }
 
