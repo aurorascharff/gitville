@@ -17,6 +17,7 @@ import {
   PixelSprite,
   WINDOW,
 } from '@/features/village/components/shared/pixel-sprite';
+import { useRoomAi } from '@/features/village/hooks/use-room-ai';
 import { useViewport, type Viewport } from '@/features/village/hooks/use-viewport';
 import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
@@ -91,6 +92,8 @@ function InteriorScene({
   const [w, h] = roomDims(cell);
   const scene = useRoomScene(cell, ai, w, h);
   const { spec } = scene;
+  const roomAi = useRoomAi(cell, ai, setAiOn);
+  const aiWorking = scene.aiPending || roomAi.pending;
 
   const [nearIndex, setNearIndex] = useState<number | null>(null);
   const [inspectIndex, setInspectIndex] = useState<number | null>(null);
@@ -125,14 +128,14 @@ function InteriorScene({
         e.preventDefault();
         setSignOpen(open => !open);
       }
-      if (key === 'g' && (scene.spec?.aiAvailable || scene.aiPending)) {
+      if (key === 'g' && (scene.spec?.aiAvailable || aiWorking)) {
         e.preventDefault();
-        if (!ai) setAiOn(true);
+        if (!ai) roomAi.generate();
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [ai, scene.aiPending, scene.spec?.ai, scene.spec?.aiAvailable, setAiOn]);
+  }, [ai, aiWorking, roomAi, scene.spec?.aiAvailable]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -208,9 +211,9 @@ function InteriorScene({
           onNear={setNearIndex}
           frozenRef={frozenRef}
         />
-        {ai && (spec?.ai || scene.aiPending) ? (
+        {ai && (spec?.ai || aiWorking) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-            {spec?.ai ? 'furniture fixed' : 'carpenter fixing…'}
+            {spec?.ai ? 'furniture fixed' : 'carpenter fixing...'}
           </span>
         ) : null}
       </div>
@@ -232,7 +235,7 @@ function InteriorScene({
         />
       ) : null}
       <HouseSign cell={cell} ai={ai} open={signOpen} onClose={() => setSignOpen(false)} />
-      <AiPanel cell={cell} ai={ai} onToggle={setAiOn} />
+      <AiPanel ai={ai} onGenerate={roomAi.generate} pending={aiWorking} spec={spec} />
       {inspectIndex !== null && scene.builds[inspectIndex] ? (
         <FurnitureCloseup
           build={scene.builds[inspectIndex]}

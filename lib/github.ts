@@ -15,6 +15,7 @@ import type {
 
 const API = 'https://api.github.com';
 
+const REPO_PART = /^[\w.-]+$/;
 const UNKNOWN_ACTOR = 'someone';
 const VILLAGE_PAYLOAD_TAG_PREFIX = 'gv-live-v2';
 
@@ -24,9 +25,22 @@ class VillagePayloadMiss extends Error {
   }
 }
 
+function repoParts(slug: string): { slug: string; owner: string; name: string; path: string } | null {
+  const parsed = parseRepoSlug(slug);
+  if (!parsed) return null;
+  return {
+    ...parsed,
+    path: `/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.name)}`,
+  };
+}
+
 function splitSlug(slug: string): [owner: string, repo: string] {
-  const [owner, repo] = slug.split('/');
-  return [owner, repo];
+  const parsed = repoParts(slug);
+  return parsed ? [parsed.owner, parsed.name] : ['', ''];
+}
+
+function repoPath(slug: string): string | null {
+  return repoParts(slug)?.path ?? null;
 }
 
 export function villagePayloadTag(slug: string): string {
@@ -59,7 +73,14 @@ export function parseRepoSlug(input: string): { slug: string; owner: string; nam
     clean.match(/github\.com[/:]([^/\s]+)\/([^/\s#?]+?)(?:\.git)?(?:[#?].*)?$/i) ??
     clean.match(/^([\w.-]+)\/([\w.-]+?)(?:\.git)?$/);
   if (!m) return null;
-  return { slug: `${m[1]}/${m[2]}`, owner: m[1], name: m[2] };
+  const owner = m[1];
+  const name = m[2];
+  if (!validRepoPart(owner, 39) || !validRepoPart(name, 100)) return null;
+  return { slug: `${owner}/${name}`, owner, name };
+}
+
+function validRepoPart(part: string, max: number) {
+  return part.length > 0 && part.length <= max && part !== '.' && part !== '..' && REPO_PART.test(part);
 }
 
 type RepoResponse = {
@@ -69,6 +90,7 @@ type RepoResponse = {
   open_issues_count: number;
   default_branch: string;
   homepage: string | null;
+  private?: boolean;
   owner: { avatar_url: string };
 };
 
@@ -76,11 +98,12 @@ export async function getRepoData(slug: string): Promise<RepoData | null> {
   'use cache: remote';
   cacheLife('hours');
   cacheTag(`gh-repo-${slug}`);
-  const [owner, repo] = splitSlug(slug);
-  const meta = await gh<RepoResponse>(`/repos/${owner}/${repo}`);
-  if (!meta) return null;
+  const parsed = repoParts(slug);
+  if (!parsed) return null;
+  const meta = await gh<RepoResponse>(parsed.path);
+  if (!meta || meta.private) return null;
 
-  const langs = (await gh<Record<string, number>>(`/repos/${owner}/${repo}/languages`)) ?? {};
+  const langs = (await gh<Record<string, number>>(`${parsed.path}/languages`)) ?? {};
   const total = Object.values(langs).reduce((s, b) => s + Number(b), 0) || 1;
   const languages = Object.entries(langs)
     .map(([name, bytes]) => ({ name, percent: Math.round((Number(bytes) / total) * 100) }))
@@ -88,8 +111,8 @@ export async function getRepoData(slug: string): Promise<RepoData | null> {
     .slice(0, 5);
 
   return {
-    slug,
-    owner,
+    slug: parsed.slug,
+    owner: parsed.owner,
     name: meta.name,
     description: meta.description ?? '',
     languages,
@@ -321,6 +344,8 @@ export async function getPrCommits(slug: string, number: number): Promise<Branch
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
   const [owner, repo] = splitSlug(slug);
+  const path = repoPath(slug);
+  if (!path) return [];
 
   const data = await ghGraphQL<{
     repository: { pullRequest: { commits: { nodes: { commit: GqlCommit }[] } } | null } | null;
@@ -332,7 +357,7 @@ export async function getPrCommits(slug: string, number: number): Promise<Branch
   const nodes = data?.repository?.pullRequest?.commits.nodes;
   if (nodes) return nodes.map(n => mapGqlCommit(n.commit));
 
-  const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/commits?per_page=14`);
+  const list = await gh<CommitResponse[]>(`${path}/pulls/${number}/commits?per_page=14`);
   return (list ?? []).map(mapCommit);
 }
 
@@ -341,6 +366,8 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-commits-${slug}`);
   const [owner, repo] = splitSlug(slug);
+  const path = repoPath(slug);
+  if (!path) return [];
 
   const data = await ghGraphQL<{
     repository: { ref: { target: { history: { nodes: GqlCommit[] } } | null } | null } | null;
@@ -355,7 +382,7 @@ export async function getBranchCommits(slug: string, ref: string): Promise<Branc
       : null;
   if (nodes) return nodes.map(mapGqlCommit).reverse();
 
-  const list = await gh<CommitResponse[]>(`/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
+  const list = await gh<CommitResponse[]>(`${path}/commits?sha=${encodeURIComponent(ref)}&per_page=14`);
   return (list ?? []).map(mapCommit).reverse();
 }
 
@@ -372,10 +399,11 @@ export async function getThreadNotes(slug: string, number: number, isPr: boolean
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-notes-${slug}`);
-  const [owner, repo] = splitSlug(slug);
+  const path = repoPath(slug);
+  if (!path) return [];
   const [comments, reviews] = await Promise.all([
-    gh<CommentResponse[]>(`/repos/${owner}/${repo}/issues/${number}/comments?per_page=30`),
-    isPr ? gh<CommentResponse[]>(`/repos/${owner}/${repo}/pulls/${number}/reviews?per_page=30`) : Promise.resolve(null),
+    gh<CommentResponse[]>(`${path}/issues/${number}/comments?per_page=30`),
+    isPr ? gh<CommentResponse[]>(`${path}/pulls/${number}/reviews?per_page=30`) : Promise.resolve(null),
   ]);
   return [...(comments ?? []), ...(reviews ?? [])]
     .filter(c => (c.body ?? '').trim().length > 0 && !(c.user?.login ?? '').endsWith('[bot]'))
@@ -394,8 +422,9 @@ export async function getIssueTitle(slug: string, number: number): Promise<strin
   'use cache: remote';
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(`gh-title-${slug}`);
-  const [owner, repo] = splitSlug(slug);
-  const data = await gh<{ title: string | null }>(`/repos/${owner}/${repo}/issues/${number}`);
+  const path = repoPath(slug);
+  if (!path) return null;
+  const data = await gh<{ title: string | null }>(`${path}/issues/${number}`);
   return data?.title ?? null;
 }
 
@@ -501,8 +530,9 @@ function pickVersionChannels(items: VersionChannel[]): VersionChannel[] {
 }
 
 async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
-  const [owner, repo] = splitSlug(slug);
-  const releases = await gh<ReleaseResponse[]>(`/repos/${owner}/${repo}/releases?per_page=30`);
+  const path = repoPath(slug);
+  if (!path) return [];
+  const releases = await gh<ReleaseResponse[]>(`${path}/releases?per_page=30`);
   const releaseChannels = (releases ?? [])
     .filter(release => !release.draft)
     .map(release => {
@@ -517,7 +547,7 @@ async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
 
   if (releaseChannels.length > 0) return pickVersionChannels(releaseChannels);
 
-  const tags = await gh<TagResponse[]>(`/repos/${owner}/${repo}/tags?per_page=30`);
+  const tags = await gh<TagResponse[]>(`${path}/tags?per_page=30`);
   return pickVersionChannels(
     (tags ?? []).map(tag => ({
       channel: channelForVersion(tag.name),
@@ -530,6 +560,8 @@ async function getVersionChannels(slug: string): Promise<VersionChannel[]> {
 
 async function getOpenPulls(slug: string): Promise<PullsResult | null> {
   const [owner, repo] = splitSlug(slug);
+  const path = repoPath(slug);
+  if (!path) return null;
   const data = await ghGraphQL<{
     repository: { pullRequests: { totalCount: number; nodes: (GqlPull | null)[] | null } | null } | null;
   }>(
@@ -573,9 +605,7 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
     return { prs, total: pullRequests?.totalCount ?? prs.length, checksComplete: true };
   }
 
-  const pulls = await gh<PullResponse[]>(
-    `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=64`,
-  );
+  const pulls = await gh<PullResponse[]>(`${path}/pulls?state=open&sort=updated&direction=desc&per_page=64`);
   if (!Array.isArray(pulls)) return null;
 
   const checkStates = await Promise.all(pulls.slice(0, 36).map(pr => getRestCheckState(slug, pr.head.sha)));
@@ -605,10 +635,9 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
 }
 
 async function getRestCheckState(slug: string, sha: string): Promise<CheckStateResult> {
-  const [owner, repo] = splitSlug(slug);
-  const runs = await gh<CheckRunsResponse>(
-    `/repos/${owner}/${repo}/commits/${encodeURIComponent(sha)}/check-runs?per_page=100`,
-  );
+  const path = repoPath(slug);
+  if (!path) return { complete: false, state: null };
+  const runs = await gh<CheckRunsResponse>(`${path}/commits/${encodeURIComponent(sha)}/check-runs?per_page=100`);
   if (!runs) return { complete: false, state: null };
   if (runs.total_count === 0) return { complete: true, state: null };
   return { complete: true, state: mapCheckRunsState(runs.check_runs) };
@@ -645,13 +674,14 @@ function unavailableVillagePayload(
 }
 
 async function readVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
-  const [owner, repo] = splitSlug(slug);
+  const path = repoPath(slug);
+  if (!path) return unavailableVillagePayload(defaultBranch, ['That GitHub repo path is not supported.']);
   const [pulls, versions, ...eventPages] = await Promise.all([
     getOpenPulls(slug),
     getVersionChannels(slug),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=1`),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=2`),
-    gh<EventResponse[]>(`/repos/${owner}/${repo}/events?per_page=100&page=3`),
+    gh<EventResponse[]>(`${path}/events?per_page=100&page=1`),
+    gh<EventResponse[]>(`${path}/events?per_page=100&page=2`),
+    gh<EventResponse[]>(`${path}/events?per_page=100&page=3`),
   ]);
   const warnings: string[] = [];
   if (!pulls) warnings.push('pull requests are still loading');

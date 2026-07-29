@@ -2,19 +2,25 @@
 
 import { WandSparkles } from 'lucide-react';
 import { CARPENTER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
-import { useRoomSpec } from '@/features/village/hooks/use-village-data';
-import { useVillageUi } from '@/features/village/providers/village-ui-provider';
-import type { Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
+import type { RoomSpecPayload } from '@/types/github';
 
-export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onToggle: (on: boolean) => void }) {
-  const { slug } = useVillageUi();
-  const { spec, aiPending } = useRoomSpec(slug, cell.id, ai);
-  const working = aiPending;
+export function AiPanel({
+  ai,
+  onGenerate,
+  pending,
+  spec,
+}: {
+  ai: boolean;
+  onGenerate: () => void;
+  pending: boolean;
+  spec: RoomSpecPayload | null;
+}) {
+  const working = pending;
   const generated = Boolean(ai && spec?.ai);
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const status = working ? 'Come back later.' : generated ? 'Ready.' : ai ? 'Plans started.' : 'Use real commits.';
+  const status = working ? 'Working.' : generated ? 'Ready.' : ai ? 'Plans started.' : 'Use real commits.';
   const title = generated
     ? 'Furniture fixed'
     : working
@@ -27,10 +33,8 @@ export function AiPanel({ cell, ai, onToggle }: { cell: Cell; ai: boolean; onTog
     <aside className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 md:top-8 md:right-4 md:w-72">
       <button
         type="button"
-        onClick={() => {
-          if (!ai) onToggle(true);
-        }}
-        disabled={ai}
+        onClick={onGenerate}
+        disabled={ai || working}
         role="switch"
         aria-checked={ai}
         aria-keyshortcuts="G"

@@ -6,10 +6,9 @@ import {
   WELL,
   WORKBENCH,
 } from '@/features/village/components/shared/pixel-sprite';
-import type { RoomSpecItem } from '@/features/village/hooks/use-village-data';
 import type { Cell } from '@/features/village/utils/village-model';
 import { hashString } from '@/lib/utils';
-import type { BranchCommit } from '@/types/github';
+import type { BranchCommit, RoomSpecItem } from '@/types/github';
 
 export const WALL_H = 150;
 

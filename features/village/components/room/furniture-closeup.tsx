@@ -10,9 +10,9 @@ import {
   furnitureFor,
   type Palette,
 } from '@/features/village/components/shared/pixel-sprite';
-import type { RoomSpecPayload } from '@/features/village/hooks/use-village-data';
 import { backdropFor, type Build } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
+import type { RoomSpecPayload } from '@/types/github';
 import type { Group } from 'three';
 
 type VoxelPieceData = {

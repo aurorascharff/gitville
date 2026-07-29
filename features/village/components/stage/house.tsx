@@ -18,10 +18,14 @@ import {
 } from '@/features/village/components/shared/pixel-sprite';
 import { Placed } from '@/features/village/components/shared/placed';
 import { travelTo } from '@/features/village/components/stage/player';
-import { preloadRoomSpec, roomSpecKey, type RoomSpecPayload } from '@/features/village/hooks/use-village-data';
+import {
+  cachedRoomSpec,
+  preloadRoomSpec,
+  roomSpecKey,
+} from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
-import type { RepoData } from '@/types/github';
+import type { RepoData, RoomSpecPayload } from '@/types/github';
 
 function stateLine(cell: Cell): string | null {
   if (cell.kind !== 'pr') return null;
@@ -59,6 +63,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
   const state = stateLine(cell);
   const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
   const { data: aiSpec } = useSWR<RoomSpecPayload>(roomSpecKey(slug, cell.id, true), null, {
+    fallbackData: cachedRoomSpec(slug, cell.id),
     revalidateIfStale: false,
     revalidateOnFocus: false,
     revalidateOnMount: false,

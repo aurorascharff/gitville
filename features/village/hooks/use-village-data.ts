@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import { villageKey, villageRefreshKey, type BranchCommit, type RoomNote, type VillagePayload } from '@/types/github';
+import { villageKey, type RoomSpecPayload, type VillagePayload } from '@/types/github';
 
 const lastGoodPayloads = new Map<string, VillagePayload>();
 
@@ -86,11 +86,6 @@ function recoverPayload(slug: string, payload: VillagePayload, current?: Village
   };
 }
 
-export async function refreshVillagePayload(slug: string, current?: VillagePayload): Promise<VillagePayload> {
-  const payload = await fetchVillagePayload(villageRefreshKey(slug));
-  return recoverPayload(slug, payload, current);
-}
-
 export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean; validating: boolean } {
   const { data, isValidating } = useSWR<VillagePayload>(villageKey(slug), fetchVillagePayload, {
     suspense: true,
@@ -103,25 +98,6 @@ export function useVillageData(slug: string): { payload: VillagePayload; stale: 
   if (payload !== rawPayload) return { payload, stale: true, validating: isValidating };
   return { payload, stale: Boolean(payload.partial), validating: isValidating };
 }
-
-export type RoomSpecItem = {
-  name: string;
-  kind?: string;
-  pieces?: string[][];
-  commits: number[];
-};
-
-export type RoomSpecPayload = {
-  ok: boolean;
-  cellId: string;
-  theme: string;
-  title: string | null;
-  items: RoomSpecItem[];
-  commits: BranchCommit[];
-  notes: RoomNote[];
-  ai: boolean;
-  aiAvailable: boolean;
-};
 
 const specFetcher = (url: string): Promise<RoomSpecPayload> =>
   fetch(url)
@@ -141,6 +117,25 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
 export const roomSpecKey = (slug: string, cellId: string, ai: boolean) =>
   `/api/room?v=2&slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
 
+export function cachedRoomSpec(slug: string, cellId: string): RoomSpecPayload | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = window.localStorage.getItem(roomSpecStorageKey(slug, cellId));
+    if (!raw) return undefined;
+    const spec = JSON.parse(raw) as RoomSpecPayload;
+    return spec?.ok && spec.ai && spec.cellId === cellId ? spec : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function rememberRoomSpec(slug: string, cellId: string, spec: RoomSpecPayload): void {
+  if (typeof window === 'undefined' || !spec.ok || !spec.ai || spec.cellId !== cellId) return;
+  try {
+    window.localStorage.setItem(roomSpecStorageKey(slug, cellId), JSON.stringify(spec));
+  } catch {}
+}
+
 export function preloadRoomSpec(slug: string, cellId: string): void {
   void preload(roomSpecKey(slug, cellId, false), specFetcher);
 }
@@ -154,7 +149,10 @@ export function useRoomSpec(
     revalidateOnFocus: false,
   });
   const aiRes = useSWR<RoomSpecPayload>(ai ? roomSpecKey(slug, cellId, true) : null, specFetcher, {
+    fallbackData: ai ? cachedRoomSpec(slug, cellId) : undefined,
+    revalidateIfStale: false,
     revalidateOnFocus: false,
+    revalidateOnMount: false,
   });
   const aiSpec = aiRes.data?.ok && aiRes.data.cellId === cellId ? aiRes.data : null;
   const baseSpec = base.data?.ok && base.data.cellId === cellId ? base.data : null;
@@ -164,4 +162,8 @@ export function useRoomSpec(
     loading: !spec && base.isLoading,
     aiPending: ai && !aiSpec && aiRes.isLoading,
   };
+}
+
+function roomSpecStorageKey(slug: string, cellId: string) {
+  return `gitville:room-spec:${slug}:${cellId}`;
 }

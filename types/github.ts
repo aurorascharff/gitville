@@ -84,6 +84,25 @@ export type RoomNote = {
   url: string | null;
 };
 
+export type RoomSpecItem = {
+  name: string;
+  kind?: string;
+  pieces?: string[][];
+  commits: number[];
+};
+
+export type RoomSpecPayload = {
+  ok: boolean;
+  cellId: string;
+  theme: string;
+  title: string | null;
+  items: RoomSpecItem[];
+  commits: BranchCommit[];
+  notes: RoomNote[];
+  ai: boolean;
+  aiAvailable: boolean;
+};
+
 export type VillagePayload = {
   ok: boolean;
   partial?: boolean;
@@ -98,4 +117,3 @@ export type VillagePayload = {
 };
 
 export const villageKey = (slug: string) => `/api/village/${slug}`;
-export const villageRefreshKey = (slug: string) => `${villageKey(slug)}?refresh=1`;

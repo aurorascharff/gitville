@@ -3,6 +3,8 @@
 import { Minus, Newspaper, Plus, RefreshCw, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTransition, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cottageArt, housePalette, PixelSprite, ROOF } from '@/features/village/components/shared/pixel-sprite';
@@ -10,8 +12,9 @@ import { clampZoom } from '@/features/village/components/stage/player';
 import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
+import { refreshVillage } from '@/features/village/village-actions';
 import { cn } from '@/lib/utils';
-import type { VillagePayload } from '@/types/github';
+import { villageKey, type VillagePayload } from '@/types/github';
 
 export function VillageBusy() {
   const { slug } = useVillageUi();
@@ -149,11 +152,22 @@ export function VillageControls({ repoLink }: { repoLink: ReactNode }) {
 }
 
 function useVillageRefresh() {
+  const { slug } = useVillageUi();
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [pending, startTransition] = useTransition();
   return {
     pending,
-    refresh: () => startTransition(() => router.refresh()),
+    refresh: () =>
+      startTransition(async () => {
+        const res = await refreshVillage({ slug });
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        await mutate(villageKey(slug));
+        router.refresh();
+      }),
   };
 }
 
