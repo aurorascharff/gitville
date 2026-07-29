@@ -57,6 +57,7 @@ export function HouseInterior() {
 
   return (
     <InteriorScene
+      key={cell.id}
       cell={cell}
       ai={aiOn}
       setAiOn={setAiOn}
