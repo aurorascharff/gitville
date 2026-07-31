@@ -446,7 +446,6 @@ function Furniture({
       style={{ left: x, top: y, transform: 'translate(-50%, -50%)', zIndex: Math.round(y) }}
     >
       <div
-        data-stop-walk
         onMouseMove={e =>
           setTip({ x: e.clientX, y: e.clientY, title: name, body: tipBody, when: build.commits[0].at || null })
         }
@@ -468,17 +467,9 @@ function Furniture({
           ⏎ look
         </button>
         <span className={cn('flex items-end rounded-sm', near && 'ring-2 ring-[#e4c05a]')}>
-          <a
-            href={firstCommit.url}
-            target="_blank"
-            rel="noreferrer"
-            tabIndex={-1}
-            data-stop-walk
-            aria-label={`View commit: ${firstCommit.message.split('\n')[0]}`}
-            className="flex cursor-pointer flex-col items-center"
-          >
+          <span className="flex cursor-pointer flex-col items-center">
             <PixelSprite art={art} palette={palette} scale={pieceScale(build)} />
-          </a>
+          </span>
         </span>
         <span aria-hidden className="mt-0.5 block h-1 w-7 rounded-full bg-black/30" />
         <span className="font-pixel mt-1 block max-w-36 truncate rounded-sm bg-black/50 px-1.5 text-[12px] leading-5 text-white/95">
