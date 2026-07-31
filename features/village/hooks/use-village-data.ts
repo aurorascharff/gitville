@@ -55,6 +55,7 @@ function mergePayload(previous: VillagePayload, next: VillagePayload): VillagePa
         mergeStateStatus: pr.mergeStateStatus ?? existing.mergeStateStatus,
         checkState: pr.checkState ?? existing.checkState,
         reviewDecision: pr.reviewDecision ?? existing.reviewDecision,
+        noteCount: Math.max(pr.noteCount ?? 0, existing.noteCount ?? 0),
         reviewers: mergePeople(pr.reviewers, existing.reviewers),
         assignees: mergePeople(pr.assignees, existing.assignees),
       };

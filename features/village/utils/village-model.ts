@@ -160,6 +160,17 @@ function prNoteSignal(events: WireEvent[], number: number): Pick<Cell, 'noteCoun
   };
 }
 
+function prNoteSummary(
+  events: WireEvent[],
+  pr: VillagePayload['prs'][number],
+): Pick<Cell, 'noteCount' | 'noteAuthor' | 'notePreview'> {
+  const signal = prNoteSignal(events, pr.number);
+  return {
+    ...signal,
+    noteCount: Math.max(pr.noteCount ?? 0, signal.noteCount ?? 0),
+  };
+}
+
 function isStalePr(updatedAt: string): boolean {
   const t = new Date(updatedAt).getTime();
   return Number.isFinite(t) && Date.now() - t > 1000 * 60 * 60 * 24 * 14;
@@ -302,7 +313,7 @@ export function buildCells(
     const floors = prStack(payload, pr).length;
     const under = byHead.get(pr.baseRef);
     const pos = slotPos(slot++);
-    const notes = prNoteSignal(payload.events, pr.number);
+    const notes = prNoteSummary(payload.events, pr);
     placed.add(pr.number);
     cells.push({
       id: `pr:${pr.number}`,
@@ -330,7 +341,7 @@ export function buildCells(
     for (;;) {
       const parent = byHead.get(cur.baseRef);
       if (!parent || placed.has(parent.number)) break;
-      const notes = prNoteSignal(payload.events, parent.number);
+      const notes = prNoteSummary(payload.events, parent);
       placed.add(parent.number);
       cells.push({
         id: `pr:${parent.number}`,

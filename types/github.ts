@@ -38,6 +38,7 @@ export type VillagePR = {
   mergeStateStatus: string | null;
   checkState: 'EXPECTED' | 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS' | null;
   reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null;
+  noteCount: number;
   reviewers: VillagePerson[];
   assignees: VillagePerson[];
   updatedAt: string;

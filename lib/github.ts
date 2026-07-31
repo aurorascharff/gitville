@@ -137,6 +137,8 @@ type PullResponse = {
   mergeable_state?: string | null;
   requested_reviewers?: { login: string; avatar_url: string }[];
   assignees?: { login: string; avatar_url: string }[];
+  comments?: number;
+  review_comments?: number;
 };
 
 type EventResponse = {
@@ -450,6 +452,8 @@ type GqlPull = {
   mergeable: VillagePR['mergeable'];
   mergeStateStatus: string | null;
   reviewDecision: VillagePR['reviewDecision'];
+  comments: { totalCount: number } | null;
+  reviews: { totalCount: number } | null;
   assignees: { nodes: ({ login: string; avatarUrl: string } | null)[] | null } | null;
   reviewRequests: {
     nodes:
@@ -570,6 +574,8 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
         totalCount
         nodes{
           number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus reviewDecision
+          comments{ totalCount }
+          reviews{ totalCount }
           assignees(first:3){ nodes{ login avatarUrl } }
           reviewRequests(first:3){ nodes{ requestedReviewer{ ... on User { login avatarUrl } ... on Team { name } } } }
           commits(last:1){ nodes{ commit{ statusCheckRollup{ state } } } }
@@ -596,6 +602,7 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
         mergeStateStatus: pr.mergeStateStatus,
         checkState: pr.commits?.nodes?.[0]?.commit.statusCheckRollup?.state ?? null,
         reviewDecision: pr.reviewDecision,
+        noteCount: (pr.comments?.totalCount ?? 0) + (pr.reviews?.totalCount ?? 0),
         reviewers: (pr.reviewRequests?.nodes ?? []).map(mapReviewRequest).filter(r => r !== null),
         assignees: (pr.assignees?.nodes ?? [])
           .filter(person => person !== null)
@@ -625,6 +632,7 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
       mergeStateStatus: pr.mergeable_state ?? null,
       checkState: stateBySha.get(pr.head.sha)?.state ?? null,
       reviewDecision: null,
+      noteCount: (pr.comments ?? 0) + (pr.review_comments ?? 0),
       reviewers: (pr.requested_reviewers ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
       assignees: (pr.assignees ?? []).map(person => ({ login: person.login, avatar: person.avatar_url })),
       updatedAt: pr.updated_at,
