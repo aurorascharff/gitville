@@ -60,6 +60,9 @@ export type Cell = {
   stale?: boolean;
   checkState?: VillagePayload['prs'][number]['checkState'];
   reviewDecision?: VillagePayload['prs'][number]['reviewDecision'];
+  noteCount?: number;
+  noteAuthor?: string | null;
+  notePreview?: string | null;
   reviewers?: VillagePerson[];
   assignees?: VillagePerson[];
   versions?: VersionChannel[];
@@ -143,6 +146,18 @@ function prActivity(events: WireEvent[]): Map<number, { count: number; latest: n
     activity.set(event.number, current);
   }
   return activity;
+}
+
+function prNoteSignal(events: WireEvent[], number: number): Pick<Cell, 'noteCount' | 'noteAuthor' | 'notePreview'> {
+  const notes = events
+    .filter(event => event.isPr && event.number === number && (event.kind === 'comment' || event.kind === 'review'))
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  const latest = notes[0];
+  return {
+    noteCount: notes.length,
+    noteAuthor: latest?.actor ?? null,
+    notePreview: latest?.body || latest?.line || null,
+  };
 }
 
 function isStalePr(updatedAt: string): boolean {
@@ -287,6 +302,7 @@ export function buildCells(
     const floors = prStack(payload, pr).length;
     const under = byHead.get(pr.baseRef);
     const pos = slotPos(slot++);
+    const notes = prNoteSignal(payload.events, pr.number);
     placed.add(pr.number);
     cells.push({
       id: `pr:${pr.number}`,
@@ -299,6 +315,7 @@ export function buildCells(
       stale: isStalePr(pr.updatedAt),
       checkState: pr.checkState,
       reviewDecision: pr.reviewDecision,
+      ...notes,
       reviewers: pr.reviewers,
       assignees: pr.assignees,
       prState: floors > 1 ? 'stacked' : pr.draft ? 'draft' : 'ready',
@@ -313,6 +330,7 @@ export function buildCells(
     for (;;) {
       const parent = byHead.get(cur.baseRef);
       if (!parent || placed.has(parent.number)) break;
+      const notes = prNoteSignal(payload.events, parent.number);
       placed.add(parent.number);
       cells.push({
         id: `pr:${parent.number}`,
@@ -325,6 +343,7 @@ export function buildCells(
         stale: isStalePr(parent.updatedAt),
         checkState: parent.checkState,
         reviewDecision: parent.reviewDecision,
+        ...notes,
         reviewers: parent.reviewers,
         assignees: parent.assignees,
         prState: 'stacked',

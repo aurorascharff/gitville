@@ -122,6 +122,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
         {main && repo ? <RepoCrest repo={repo} /> : null}
         {cell.kind === 'pr' && cell.stale ? <Moss /> : null}
         {cell.kind === 'pr' && cell.checkState ? <CheckFlag state={cell.checkState} /> : null}
+        {cell.kind === 'pr' && cell.noteCount ? <ReviewNotice cell={cell} /> : null}
         {canDecorate ? (
           <AiExteriorDecor theme={aiDecor?.theme ?? null} title={aiDecor?.title ?? cell.sub} pending={aiPending} />
         ) : null}
@@ -201,6 +202,55 @@ function RepoCrest({ repo }: { repo: RepoData }) {
       className="absolute -top-2 -left-6 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] p-0.5 shadow-[2px_2px_0_rgb(0_0_0/0.25)]"
     >
       <AvatarImage src={repo.ownerAvatar} name={repo.owner} size={22} className="rounded-[2px]" />
+    </span>
+  );
+}
+
+function ReviewNotice({ cell }: { cell: Cell }) {
+  const { setTip } = useVillageUi();
+  const count = cell.noteCount ?? 0;
+  const latest = cell.notePreview?.split('\n')[0]?.trim();
+  const body = [
+    `${count} ${count === 1 ? 'review note' : 'review notes'} on this PR`,
+    cell.noteAuthor ? `latest from ${cell.noteAuthor}` : null,
+    latest ? `“${latest.slice(0, 120)}”` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return (
+    <span
+      title={body}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({
+          x: e.clientX,
+          y: e.clientY,
+          title: 'review notice',
+          body,
+          when: null,
+        });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="pixel absolute bottom-13 -left-5 z-20 block h-10 w-12 -rotate-3 drop-shadow-[2px_2px_0_rgb(0_0_0/0.28)] transition-transform group-hover:-translate-y-0.5"
+    >
+      <span className="absolute top-0 left-2 h-8 w-8 border-2 border-[#4a3826] bg-[#f6df72]">
+        <span className="font-pixel absolute top-0.5 left-1 text-[6px] leading-none font-bold text-[#6b4223]">
+          NOTE
+        </span>
+        <span className="absolute top-3 left-1 h-1 w-5 bg-[#8a6d2a]" />
+        <span className="absolute top-5 left-1 h-1 w-3 bg-[#c85b5b]" />
+      </span>
+      <span className="absolute top-5 left-0 h-5 w-7 rotate-6 border-2 border-[#4a3826] bg-[#f7efdc]">
+        <span className="absolute top-1 left-1 h-1 w-4 bg-[#d8c9a8]" />
+        <span className="absolute top-3 left-1 h-1 w-3 bg-[#d8c9a8]" />
+      </span>
+      <span className="bg-brand text-brand-foreground font-pixel absolute -top-1 right-0 flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#2e2418] px-1 text-[10px] font-bold">
+        {count > 9 ? '9+' : count}
+      </span>
     </span>
   );
 }
