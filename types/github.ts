@@ -116,5 +116,3 @@ export type VillagePayload = {
   events: WireEvent[];
   versions: VersionChannel[];
 };
-
-export const villageKey = (slug: string) => `/api/village/${slug}`;

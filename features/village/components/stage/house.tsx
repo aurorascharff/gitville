@@ -21,10 +21,10 @@ import { travelTo } from '@/features/village/components/stage/player';
 import {
   cachedRoomSpec,
   preloadRoomSpec,
-  roomSpecKey,
 } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
+import { roomSpecKeys } from '@/features/village/village-cache';
 import type { RepoData, RoomSpecPayload } from '@/types/github';
 
 function stateLine(cell: Cell): string | null {
@@ -62,7 +62,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
   const palette = housePalette(roof, roofShade, awake);
   const state = stateLine(cell);
   const peopleToShow = [...(cell.reviewers ?? []), ...(cell.assignees ?? [])].slice(0, 3);
-  const { data: aiSpec } = useSWR<RoomSpecPayload>(roomSpecKey(slug, cell.id, true), null, {
+  const { data: aiSpec } = useSWR<RoomSpecPayload>(roomSpecKeys.detail(slug, cell.id, true), null, {
     fallbackData: cachedRoomSpec(slug, cell.id),
     revalidateIfStale: false,
     revalidateOnFocus: false,

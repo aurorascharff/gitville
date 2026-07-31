@@ -11,8 +11,9 @@ import { clampZoom } from '@/features/village/components/stage/player';
 import { useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { timeWindowFor, worldModelFor } from '@/features/village/utils/village-model';
+import { villageKeys } from '@/features/village/village-cache';
 import { cn } from '@/lib/utils';
-import { villageKey, type VillagePayload } from '@/types/github';
+import type { VillagePayload } from '@/types/github';
 
 export function VillageBusy() {
   const { slug } = useVillageUi();
@@ -157,13 +158,13 @@ function useVillageRefresh() {
     pending,
     refresh: () =>
       startTransition(async () => {
-        const res = await fetch(villageKey(slug), { method: 'POST' });
+        const res = await fetch(villageKeys.payload(slug), { method: 'POST' });
         if (!res.ok) {
           const body = (await res.json().catch(() => null)) as { error?: string } | null;
           toast.error(body?.error ?? 'That village could not be refreshed.');
           return;
         }
-        await mutate(villageKey(slug));
+        await mutate(villageKeys.payload(slug));
       }),
   };
 }

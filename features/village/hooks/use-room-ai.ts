@@ -3,10 +3,11 @@
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import { rememberRoomSpec, roomSpecKey } from '@/features/village/hooks/use-village-data';
+import { rememberRoomSpec } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
 import { generateRoomFurniture } from '@/features/village/village-actions';
+import { roomSpecKeys } from '@/features/village/village-cache';
 
 export function useRoomAi(cell: Cell, ai: boolean, onToggle: (on: boolean) => void) {
   const { slug } = useVillageUi();
@@ -22,7 +23,7 @@ export function useRoomAi(cell: Cell, ai: boolean, onToggle: (on: boolean) => vo
         return;
       }
       rememberRoomSpec(slug, cell.id, res.spec);
-      await mutate(roomSpecKey(slug, cell.id, true), res.spec, { revalidate: false });
+      await mutate(roomSpecKeys.detail(slug, cell.id, true), res.spec, { revalidate: false });
       onToggle(true);
     });
   }

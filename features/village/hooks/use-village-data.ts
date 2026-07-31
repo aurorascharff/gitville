@@ -1,7 +1,8 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import { villageKey, type RoomSpecPayload, type VillagePayload } from '@/types/github';
+import { roomSpecKeys, villageKeys } from '@/features/village/village-cache';
+import type { RoomSpecPayload, VillagePayload } from '@/types/github';
 
 const lastGoodPayloads = new Map<string, VillagePayload>();
 
@@ -87,7 +88,7 @@ function recoverPayload(slug: string, payload: VillagePayload, current?: Village
 }
 
 export function useVillageData(slug: string): { payload: VillagePayload; stale: boolean; validating: boolean } {
-  const { data, isValidating } = useSWR<VillagePayload>(villageKey(slug), fetchVillagePayload, {
+  const { data, isValidating } = useSWR<VillagePayload>(villageKeys.payload(slug), fetchVillagePayload, {
     suspense: true,
     refreshInterval: 15_000,
     revalidateOnFocus: true,
@@ -114,9 +115,6 @@ const specFetcher = (url: string): Promise<RoomSpecPayload> =>
       aiAvailable: false,
     }));
 
-export const roomSpecKey = (slug: string, cellId: string, ai: boolean) =>
-  `/api/room?v=2&slug=${encodeURIComponent(slug)}&cell=${encodeURIComponent(cellId)}${ai ? '&ai=1' : ''}`;
-
 export function cachedRoomSpec(slug: string, cellId: string): RoomSpecPayload | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
@@ -137,7 +135,7 @@ export function rememberRoomSpec(slug: string, cellId: string, spec: RoomSpecPay
 }
 
 export function preloadRoomSpec(slug: string, cellId: string): void {
-  void preload(roomSpecKey(slug, cellId, false), specFetcher);
+  void preload(roomSpecKeys.detail(slug, cellId), specFetcher);
 }
 
 export function useRoomSpec(
@@ -145,10 +143,10 @@ export function useRoomSpec(
   cellId: string,
   ai = false,
 ): { spec: RoomSpecPayload | null; loading: boolean; aiPending: boolean } {
-  const base = useSWR<RoomSpecPayload>(roomSpecKey(slug, cellId, false), specFetcher, {
+  const base = useSWR<RoomSpecPayload>(roomSpecKeys.detail(slug, cellId), specFetcher, {
     revalidateOnFocus: false,
   });
-  const aiRes = useSWR<RoomSpecPayload>(ai ? roomSpecKey(slug, cellId, true) : null, specFetcher, {
+  const aiRes = useSWR<RoomSpecPayload>(ai ? roomSpecKeys.detail(slug, cellId, true) : null, specFetcher, {
     fallbackData: ai ? cachedRoomSpec(slug, cellId) : undefined,
     revalidateIfStale: false,
     revalidateOnFocus: false,
