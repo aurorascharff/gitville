@@ -20,6 +20,7 @@ export const SIDEBAR_W = 360;
 type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
 export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][]; size?: number };
 export type RoomFrame = { x: number; y: number; scale: number };
+type ArtLetter = 'O' | 'W' | 'w' | 'm' | 's' | 'b' | 'r' | 'y' | 'g' | 'p' | 'c' | 'o' | 't';
 
 function roomRole(cell: Cell): RoomRole {
   if (cell.kind !== 'pr') return 'single';
@@ -140,6 +141,98 @@ function buildWidth(build: Build): number {
   return Math.max(...sizedFurnitureArt(fallback, buildSize(build)).map(r => r.length)) * scale;
 }
 
+function generatedFurnitureArt(build: Pick<Build, 'commits' | 'name' | 'kind' | 'size'>): string[] {
+  const seed = hashString(
+    `${build.name ?? build.kind ?? 'furniture'}:${build.commits.map(commit => commit.sha).join(':')}`,
+  );
+  const level = buildSize(build);
+  const w = Math.min(16, 9 + level * 2 + (seed % 2));
+  const h = Math.min(12, 7 + level + ((seed >> 3) % 2));
+  const grid = Array.from({ length: h }, () => Array.from({ length: w }, () => '.'));
+  const accents: ArtLetter[] = ['b', 't', 'p', 'r', 'y', 'g', 'o', 's'];
+  const accent = accents[seed % accents.length];
+  const secondary = accents[(seed >> 4) % accents.length];
+
+  const put = (x: number, y: number, ch: ArtLetter) => {
+    if (x >= 0 && x < w && y >= 0 && y < h) grid[y][x] = ch;
+  };
+  const rect = (x: number, y: number, rw: number, rh: number, ch: ArtLetter) => {
+    for (let yy = y; yy < y + rh; yy++) {
+      for (let xx = x; xx < x + rw; xx++) put(xx, yy, ch);
+    }
+  };
+  const box = (x: number, y: number, rw: number, rh: number, fill: ArtLetter) => {
+    rect(x, y, rw, rh, 'O');
+    if (rw > 2 && rh > 2) rect(x + 1, y + 1, rw - 2, rh - 2, fill);
+  };
+
+  switch (seed % 5) {
+    case 0: {
+      const bodyW = Math.min(w - 2, 8 + level * 2);
+      const x = Math.floor((w - bodyW) / 2);
+      box(x, 1, bodyW, Math.min(5 + level, h - 3), 'W');
+      rect(x + 2, 2, Math.max(2, bodyW - 4), 2, accent);
+      rect(x + 1, 5, bodyW - 2, 1, 'w');
+      for (let i = 0; i < level; i++) put(x + 2 + i * 2, h - 4, secondary);
+      put(x + 1, h - 2, 'W');
+      put(x + bodyW - 2, h - 2, 'W');
+      break;
+    }
+    case 1: {
+      const bodyW = Math.min(w - 1, 9 + level);
+      const x = Math.floor((w - bodyW) / 2);
+      rect(x + 1, 1, bodyW - 2, 1, 'm');
+      box(x, 2, bodyW, 4 + level, 'm');
+      rect(x + 2, 3, Math.max(3, bodyW - 5), 2, accent);
+      put(x + bodyW - 2, 4, secondary);
+      put(x + bodyW - 2, 5, 'y');
+      rect(x + 2, h - 3, bodyW - 4, 1, 'W');
+      put(x + 2, h - 2, 'W');
+      put(x + bodyW - 3, h - 2, 'W');
+      break;
+    }
+    case 2: {
+      const baseW = Math.min(w - 2, 8 + level * 2);
+      const x = Math.floor((w - baseW) / 2);
+      box(x, h - 5 - level, baseW, 4 + level, 'w');
+      rect(x + 1, h - 4 - level, baseW - 2, 1, accent);
+      rect(x + 2, h - 2 - level, Math.max(2, baseW - 4), 1, secondary);
+      for (let y = 1; y < h - 5 - level; y++) {
+        put(Math.floor(w / 2), y, 'm');
+        if (y % 2 === 0) {
+          put(Math.floor(w / 2) - 1 - (y % 3), y, accent);
+          put(Math.floor(w / 2) + 1 + (y % 3), y, secondary);
+        }
+      }
+      break;
+    }
+    case 3: {
+      const bodyW = Math.min(w - 2, 10 + level);
+      const x = Math.floor((w - bodyW) / 2);
+      rect(x + 1, 1, bodyW - 2, 1, 'O');
+      box(x, 2, bodyW, h - 4, 'W');
+      for (let yy = 3; yy < h - 3; yy += 2) {
+        rect(x + 1, yy, bodyW - 2, 1, yy % 4 === 1 ? accent : secondary);
+        put(x + Math.min(bodyW - 2, 2 + (yy % Math.max(2, bodyW - 3))), yy, 'c');
+      }
+      break;
+    }
+    default: {
+      const bodyW = Math.min(w - 2, 8 + level * 2);
+      const x = Math.floor((w - bodyW) / 2);
+      rect(x + 2, 1, bodyW - 4, 1, 'm');
+      box(x, 2, bodyW, h - 5, 'W');
+      rect(x + 2, 3, Math.max(2, bodyW - 4), Math.min(2 + level, h - 7), accent);
+      put(x + 1, h - 5, secondary);
+      put(x + bodyW - 2, h - 5, secondary);
+      rect(x + 1, h - 3, bodyW - 2, 1, 'w');
+      break;
+    }
+  }
+
+  return grid.map(row => row.join(''));
+}
+
 export function heroIndex(builds: Build[]): number {
   let best = 0;
   let bestW = -1;
@@ -218,7 +311,7 @@ export function layoutBuilds(builds: Build[], w: number, floorH: number): { x: n
   return positions;
 }
 
-export function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined): Build[] {
+export function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefined, ai = false): Build[] {
   if (!items?.length) return commits.map(c => ({ commits: [c] }));
   const covered = new Set<number>();
   const builds: Build[] = [];
@@ -226,7 +319,8 @@ export function toBuilds(commits: BranchCommit[], items: RoomSpecItem[] | undefi
     const own = item.commits.filter(i => i >= 0 && i < commits.length && !covered.has(i)).map(i => commits[i]);
     item.commits.forEach(i => covered.add(i));
     if (own.length > 0) {
-      builds.push({ commits: own, name: item.name, kind: item.kind, pieces: item.pieces, size: item.size });
+      const build = { commits: own, name: item.name, kind: item.kind, pieces: item.pieces, size: item.size };
+      builds.push({ ...build, pieces: build.pieces?.length ? build.pieces : ai ? [generatedFurnitureArt(build)] : undefined });
     }
   }
   commits.forEach((c, i) => {

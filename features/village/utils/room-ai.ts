@@ -36,7 +36,7 @@ const specSchema = z.object({
     z.object({
       name: z.string(),
       kind: z.enum(ITEM_KINDS).nullable(),
-      pieces: z.array(z.array(z.string())).nullable(),
+      pieces: z.array(z.array(z.string())).min(1),
       size: z.number().int().min(1).max(4).nullable().optional(),
       commits: z.array(z.number()),
     }),
@@ -119,7 +119,7 @@ async function generateRoomSpecCached(
       '- Every object should feel at home in that room, but let each commit inspire a DIFFERENT invention — one a machine, one a piece of furniture, one an odd little prop — so the room is a cabinet of curiosities, not a matching set.',
       '',
       'Map commits to objects:',
-      '- ALWAYS draw the art yourself in `pieces`. The catalog is a last-ditch fallback for when you truly cannot draw something; reaching for `kind` means giving up, so avoid it.',
+      '- ALWAYS draw the art yourself in `pieces`. Every item must include one valid `pieces` block; reaching for `kind` without art means giving up, so avoid it.',
       '- Each item is ONE invented object standing for ONE piece of work; name it so the tie to the commit is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
       '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained object.',
       '- Draw each item as `pieces`: EXACTLY one pixel-art block for the whole object, even when it represents several commits. Do NOT make one attached segment per commit.',
@@ -131,7 +131,7 @@ async function generateRoomSpecCached(
       '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied objects together.',
       '- Each piece is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
       '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
-      `- The catalog kinds [${ITEM_KINDS.join(', ')}] exist only as a last resort; set \`kind\` and \`pieces\` to null when unused, and prefer drawing your own \`pieces\` every time.`,
+      `- The catalog kinds [${ITEM_KINDS.join(', ')}] exist only as a last resort; set \`kind\` to null when unused, and draw your own \`pieces\` every time.`,
     ]
       .filter(Boolean)
       .join('\n'),

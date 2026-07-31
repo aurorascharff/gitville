@@ -329,7 +329,7 @@ function useRoomScene(cell: Cell, ai: boolean, width: number, height: number): S
   const commits = campsite || plaza ? [] : (spec?.commits ?? []);
 
   const floorH = height - WALL_H;
-  const builds = toBuilds(commits, spec?.items);
+  const builds = toBuilds(commits, spec?.items, Boolean(spec?.ai));
   const aiScene = builds.some(b => Boolean(b.pieces?.length));
   const hero = aiScene ? heroIndex(builds) : -1;
   const anchor = campsite ? null : centerpiece(cell);
