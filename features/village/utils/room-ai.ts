@@ -16,6 +16,7 @@ const ITEM_KINDS = [
 ] as const;
 
 const ART_LETTERS = 'OWwmsbrygpcot';
+const AI_ROOM_SPEC_VERSION = 3;
 
 type RoomItem = {
   name: string;
@@ -51,6 +52,7 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
       .map(piece => piece.filter(row => artRow.test(row)).slice(0, 12))
       .filter(piece => piece.length >= 3)
       .slice(0, 14);
+    if (pieces.length === 0) throw new Error('AI item is missing valid pixel art.');
     return {
       name: item.name.slice(0, 30),
       kind: item.kind ?? undefined,
@@ -59,7 +61,21 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>): RoomSpec {
       commits: item.commits.filter(i => Number.isInteger(i) && i >= 0 && i <= 13),
     };
   });
-  return { theme: raw.theme.slice(0, 28), items: items.filter(i => i.commits.length > 0) };
+  const spec = { theme: raw.theme.slice(0, 28), items: items.filter(i => i.commits.length > 0) };
+  if (spec.items.length === 0) throw new Error('AI room has no drawable items.');
+  return spec;
+}
+
+function assertCompleteSpec(spec: RoomSpec, commitCount: number): void {
+  const expected = Math.min(14, commitCount);
+  if (expected === 0) return;
+  const covered = new Set<number>();
+  for (const item of spec.items) {
+    for (const index of item.commits) {
+      if (index >= 0 && index < expected) covered.add(index);
+    }
+  }
+  if (covered.size < expected) throw new Error('AI room did not draw every commit.');
 }
 
 function gatewayKey(): string | undefined {
@@ -80,13 +96,14 @@ export async function generateRoomSpec(
 ): Promise<RoomSpec | null> {
   if (!aiRoomsEnabled()) return null;
   try {
-    return await generateRoomSpecCached(slug, label, sub, commits, notes, state);
+    return await generateRoomSpecCached(AI_ROOM_SPEC_VERSION, slug, label, sub, commits, notes, state);
   } catch {
     return null;
   }
 }
 
 async function generateRoomSpecCached(
+  version: number,
   slug: string,
   label: string,
   sub: string | null,
@@ -107,6 +124,7 @@ async function generateRoomSpecCached(
     schema: specSchema,
     prompt: [
       'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Fill the room with a VARIED collection of objects you INVENT yourself — each one your own little pixel-art creation that playfully stands for a real commit and would believably sit in this room. Mix it up freely: furniture (desks, shelves, chests), props and curios, and gadgets or machines when the work calls for it. The one rule is variety and invention — never repeat the same kind of object, and never settle for a plain bookshelf-and-crate look.',
+      `Pixel art contract v${version}: every accepted room must include drawn art for every item.`,
       `The room belongs to "${label}"${sub ? ` (${sub})` : ''} in the ${slug} repository.`,
       state ? `It is ${state}.` : '',
       'Commits in this room, in order (0-indexed):',
@@ -126,6 +144,8 @@ async function generateRoomSpecCached(
       '- Set `size` from 1 to 4. Use bigger sizes for grouped commits or larger changes, and make those objects grander or fancier with stronger silhouettes and richer details.',
       '',
       'Make the room read well:',
+      '- Make objects readable as a mix of furniture, tools, props, and abstract machines. Avoid plain rectangular screens/boxes unless the commit truly calls for one.',
+      '- Use thin silhouettes, cutouts, handles, legs, wheels, shelves, cloth folds, levers, funnels, cables, and asymmetry so each item looks like a particular thing, not a generic console.',
       '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller objects around it.',
       '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (towers, legs, drawers, screens, funnels, arms, pots, lids) so the room is a collection of clearly-different things. Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
       '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied objects together.',
@@ -137,7 +157,9 @@ async function generateRoomSpecCached(
       .join('\n'),
   });
 
-  return sanitizeSpec(specSchema.parse(object));
+  const spec = sanitizeSpec(specSchema.parse(object));
+  assertCompleteSpec(spec, commits.length);
+  return spec;
 }
 
 export function fallbackSpec(theme: string, commits: { id: string; actor?: string }[]): RoomSpec {
