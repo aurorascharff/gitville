@@ -18,9 +18,16 @@ export function AiPanel({
 }) {
   const working = pending;
   const generated = Boolean(ai && spec?.ai);
+  const highlighted = ai || working;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const status = working ? 'Working.' : generated ? 'Ready.' : ai ? 'Plans started.' : 'Use real commits.';
+  const status = working
+    ? 'Leave it with the carpenter. Come back later.'
+    : generated
+      ? 'Ready.'
+      : ai
+        ? 'Come back later.'
+        : 'Use real commits.';
   const title = generated
     ? 'Furniture fixed'
     : working
@@ -38,11 +45,13 @@ export function AiPanel({
         role="switch"
         aria-checked={ai}
         aria-keyshortcuts="G"
-        aria-label="Ask the carpenter to fix the furniture"
+        aria-label={
+          working ? 'Carpenter is furnishing this room. Come back later.' : 'Ask the carpenter to fix the furniture'
+        }
         className={cn(
           'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-16 md:w-full md:justify-start md:p-2.5',
-          ai && 'ring-2 ring-[#e4c05a]',
-          ai && 'cursor-default hover:translate-y-0',
+          highlighted && 'ring-2 ring-[#e4c05a]',
+          highlighted && 'cursor-default hover:translate-y-0',
         )}
       >
         <span className="pixel relative flex h-6 w-6 shrink-0 items-center justify-center md:h-10 md:w-10">
@@ -68,7 +77,7 @@ export function AiPanel({
               <span className="truncate">{title}</span>
               <KeyHint>G</KeyHint>
             </span>
-            <span className="block truncate text-[13px] leading-4 text-[#6b5b43]">{status}</span>
+            <span className="block text-[13px] leading-4 text-[#6b5b43]">{status}</span>
           </span>
         </span>
       </button>

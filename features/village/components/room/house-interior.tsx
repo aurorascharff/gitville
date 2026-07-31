@@ -95,6 +95,7 @@ function InteriorScene({
   const { spec } = scene;
   const roomAi = useRoomAi(cell, ai, setAiOn);
   const aiWorking = scene.aiPending || roomAi.pending;
+  const aiHighlighted = ai || aiWorking;
 
   const [nearIndex, setNearIndex] = useState<number | null>(null);
   const [inspectIndex, setInspectIndex] = useState<number | null>(null);
@@ -182,7 +183,7 @@ function InteriorScene({
         ref={roomRef}
         className={cn(
           'pixel absolute top-0 left-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)] will-change-transform',
-          ai && 'ring-4 ring-[#e4c05a]',
+          aiHighlighted && 'ring-4 ring-[#e4c05a]',
         )}
         style={{
           width: `${w}px`,
@@ -212,9 +213,9 @@ function InteriorScene({
           onNear={setNearIndex}
           frozenRef={frozenRef}
         />
-        {ai && (spec?.ai || aiWorking) ? (
+        {aiHighlighted && (spec?.ai || aiWorking) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-            {spec?.ai ? 'furniture fixed' : 'carpenter fixing...'}
+            {spec?.ai ? 'furniture fixed' : 'come back later'}
           </span>
         ) : null}
       </div>
