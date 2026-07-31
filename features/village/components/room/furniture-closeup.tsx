@@ -8,6 +8,7 @@ import {
   AI_ART_PALETTE,
   furnitureByName,
   furnitureFor,
+  sizedFurnitureArt,
   type Palette,
 } from '@/features/village/components/shared/pixel-sprite';
 import { backdropFor, buildSize, type Build } from '@/features/village/utils/room-geometry';
@@ -41,7 +42,7 @@ export function FurnitureCloseup({
   const pieces = [
     {
       id: build.commits.map(commit => commit.sha).join('-'),
-      art: drawn ? build.pieces![0] : fallback.art,
+      art: drawn ? build.pieces![0] : sizedFurnitureArt(fallback, level),
       palette: drawn ? AI_ART_PALETTE : fallback.palette,
       offset: 0,
       scale: 0.9 + (level - 1) * 0.1,

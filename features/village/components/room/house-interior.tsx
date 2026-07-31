@@ -15,6 +15,7 @@ import {
   furnitureFor,
   LOG_SEAT,
   PixelSprite,
+  sizedFurnitureArt,
   WINDOW,
 } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomAi } from '@/features/village/hooks/use-room-ai';
@@ -23,6 +24,7 @@ import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-villag
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import {
   backdropFor,
+  buildSize,
   centerpiece,
   composeScene,
   floorClass,
@@ -427,14 +429,14 @@ function Furniture({
   const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
   const name = build.name ?? fallback.name;
   const drawn = Boolean(build.pieces?.length);
-  const art = drawn ? build.pieces![0] : fallback.art;
+  const art = drawn ? build.pieces![0] : sizedFurnitureArt(fallback, buildSize(build));
   const palette = drawn ? AI_ART_PALETTE : fallback.palette;
   const firstCommit = build.commits[0];
   const tipBody =
-    build.commits.length === 1
+    build.commits.length === 1 && !drawn
       ? `${firstCommit.message}\nby ${firstCommit.author}`
       : [
-          `${build.commits.length} commits built this ${name}`,
+          `${build.commits.length} ${build.commits.length === 1 ? 'commit' : 'commits'} built this ${name}`,
           ...build.commits.map(c => `• ${c.message.split('\n')[0]} — ${c.author}`),
         ].join('\n');
 

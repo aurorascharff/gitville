@@ -70,7 +70,9 @@ const WOOD_D = '#6b4223';
 const LEAF = '#4e9a4e';
 const LEAF_D = '#2f7a3c';
 
-export const FURNITURE: { name: string; art: string[]; palette: Palette }[] = [
+export type FurnitureSprite = { name: string; art: string[]; palette: Palette };
+
+export const FURNITURE: FurnitureSprite[] = [
   {
     name: 'plant',
     palette: { l: LEAF, d: LEAF_D, p: '#b0623b', q: '#8a4a2b' },
@@ -115,6 +117,158 @@ export const FURNITURE: { name: string; art: string[]; palette: Palette }[] = [
 
 export function furnitureByName(name: string): (typeof FURNITURE)[number] | null {
   return FURNITURE.find(f => f.name === name) ?? null;
+}
+
+const SIZED_FURNITURE_ART: Record<string, Record<number, string[]>> = {
+  plant: {
+    2: ['...ld...', '..dld..', '.dlldl.', 'ldllldl', '.dldld.', '..dld..', '..ppp..', '.ppppp.', '.pqqqp.', '..qqq..'],
+    3: [
+      '....ld....',
+      '..dldld..',
+      '.dlldlld.',
+      'ldllldldl',
+      '.dldlldl.',
+      '..dlld...',
+      '...dd....',
+      '..pppp...',
+      '.pppppp..',
+      '.pqqqqp..',
+      '..qqqq...',
+    ],
+    4: [
+      '.....ld.....',
+      '...dldld...',
+      '..dlldlld..',
+      '.ldllldldl.',
+      'ldlldlldldl',
+      '.dldlldlld.',
+      '..dlldld...',
+      '....dd.....',
+      '..pppppp...',
+      '.pppppppp..',
+      '.ppqqqqpp..',
+      '..qqqqqq...',
+    ],
+  },
+  desk: {
+    2: ['..mmmmmm..', '..mssssm..', '..msssdm..', 'wwwwwwwwww', 'wddddddddw', 'w.d.ww.d.w', 'w.d....d.w'],
+    3: ['..mmmmmmmm..', '..mssssssm..', '..mssssddm..', 'wwwwwwwwwwww', 'wddddddddddw', 'w.d.wwww.d.w', 'w.d......d.w'],
+    4: [
+      '..mmmmmmmm..',
+      '..mssssssm..',
+      '..msssssmm..',
+      '..mmmmmmmm..',
+      'wwwwwwwwwwww',
+      'wddddddddddw',
+      'w.d.wwww.d.w',
+      'w.d......d.w',
+      'w.d......d.w',
+    ],
+  },
+  bookshelf: {
+    2: ['wwwwwwww', 'wrbgyyrw', 'wwwwwwww', 'wybrggyw', 'wwwwwwww', 'wgyrbbgw', 'wwwwwwww', 'wddddddw'],
+    3: [
+      'wwwwwwwwww',
+      'wrbgyyrbgw',
+      'wwwwwwwwww',
+      'wybrggywgw',
+      'wwwwwwwwww',
+      'wgyrbbgyrw',
+      'wwwwwwwwww',
+      'wyygbrbgyw',
+      'wddddddddw',
+    ],
+    4: [
+      'wwwwwwwwwwww',
+      'wrbgyyrbgyyw',
+      'wwwwwwwwwwww',
+      'wybrggywgrbw',
+      'wwwwwwwwwwww',
+      'wgyrbbgyrbyw',
+      'wwwwwwwwwwww',
+      'wyygbrbgyggw',
+      'wwwwwwwwwwww',
+      'wddddddddddw',
+    ],
+  },
+  lamp: {
+    2: ['..yyyy..', '.yyyyyy.', 'yyyyyyyy', '.ooyyoo.', '...pp...', '...pp...', '..pppp..', '.pppppp.'],
+    3: ['...yyyy...', '..yyyyyy..', '.yyyyyyyy.', 'yyyyyyyyyy', '..ooyyoo..', '....pp....', '....pp....', '...pppp...', '..pppppp..'],
+    4: [
+      '....yyyy....',
+      '..yyyyyyyy..',
+      '.yyyyyyyyyy.',
+      'yyyyyyyyyyyy',
+      '..ooyyyyoo..',
+      '....yppy....',
+      '.....pp.....',
+      '.....pp.....',
+      '....pppp....',
+      '..pppppppp..',
+    ],
+  },
+  crate: {
+    2: ['wwwwwwww', 'wdwwwwdw', 'wwddddww', 'wwddddww', 'wdwwwwdw', 'wwddddww', 'wwwwwwww'],
+    3: ['wwwwwwwwww', 'wdwwwwwwdw', 'wwddwwddww', 'wwwddddwww', 'wwwddddwww', 'wwddwwddww', 'wdwwwwwwdw', 'wwwwwwwwww'],
+    4: [
+      'wwwwwwwwwwww',
+      'wdwwwwwwwwdw',
+      'wwddwwwwddww',
+      'wwwddddddwww',
+      'wwwddddddwww',
+      'wwddwwwwddww',
+      'wdwwwwwwwwdw',
+      'wwddddddddww',
+      'wwwwwwwwwwww',
+    ],
+  },
+  sofa: {
+    2: ['rr.....rr', 'rrrrrrrrr', 'rdddddddr', 'rdddddddr', 'rrrrrrrrr', 'w.......w'],
+    3: ['rr.......rr', 'rrrrrrrrrrr', 'rdddddddddr', 'rdddddddddr', 'rrrrrrrrrrr', 'w...rrr...w', 'w.........w'],
+    4: [
+      'rr.........rr',
+      'rrrrrrrrrrrrr',
+      'rdddddddddddr',
+      'rdddddddddddr',
+      'rddrrrrrrrddr',
+      'rrrrrrrrrrrrr',
+      'w...rr.rr...w',
+      'w...........w',
+    ],
+  },
+  'coffee table': {
+    2: ['...cc...', '...cs...', '..cccc..', 'wwwwwwww', 'wddddddw', '.w....w.'],
+    3: ['...cccc...', '...cssc...', '..cccccc..', 'wwwwwwwwww', 'wddddddddw', '.w.c..c.w.', '.w......w.'],
+    4: [
+      '....cccc....',
+      '....cssc....',
+      '...cccccc...',
+      '..cccssccc..',
+      'wwwwwwwwwwww',
+      'wddddddddddw',
+      '.w.c....c.w.',
+      '.w........w.',
+    ],
+  },
+  'monitor rig': {
+    2: ['mmmmmmmmm', 'mssssssmm', 'mssssssmm', 'mmmmmmmmm', '...ppp...', '..ppppp..'],
+    3: ['mmmmmmmmmmm', 'mssssmsssmm', 'mssssmsssmm', 'mmmmmmmmmmm', '....ppp....', '...ppppp...', '..ppppppp..'],
+    4: [
+      'mmmmmmmmmmmmm',
+      'mssssmssssmms',
+      'mssssmssssmms',
+      'mmmmmmmmmmmmm',
+      '.....ppp.....',
+      '....ppppp....',
+      '...ppppppp...',
+      '..ppppppppp..',
+    ],
+  },
+};
+
+export function sizedFurnitureArt(furniture: FurnitureSprite, level: number): string[] {
+  const size = Math.min(4, Math.max(1, Math.round(level)));
+  return SIZED_FURNITURE_ART[furniture.name]?.[size] ?? furniture.art;
 }
 
 export const AI_ART_PALETTE: Palette = {

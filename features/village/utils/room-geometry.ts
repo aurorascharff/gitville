@@ -2,6 +2,9 @@ import {
   BARREL,
   CHEST,
   FIREPLACE,
+  furnitureByName,
+  furnitureFor,
+  sizedFurnitureArt,
   TABLE_LONG,
   WELL,
   WORKBENCH,
@@ -129,11 +132,12 @@ export function sizeScale(commit: BranchCommit): number {
 }
 
 function buildWidth(build: Build): number {
+  const scale = pieceScale(build);
   if (build.pieces?.length) {
-    const scale = pieceScale(build);
     return Math.max(...build.pieces[0].map(r => r.length)) * scale;
   }
-  return 10 * pieceScale(build);
+  const fallback = (build.kind ? furnitureByName(build.kind) : null) ?? furnitureFor(build.commits[0].sha);
+  return Math.max(...sizedFurnitureArt(fallback, buildSize(build)).map(r => r.length)) * scale;
 }
 
 export function heroIndex(builds: Build[]): number {
