@@ -197,7 +197,7 @@ function PeopleBadge({ count }: { count: number }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="bg-brand text-brand-foreground font-pixel absolute -top-2 -right-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#2e2418] px-1 text-[11px] font-bold"
+      className="bg-brand text-brand-foreground font-pixel absolute -top-2 -right-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#2e2418] px-1 text-[11px] font-bold transition-transform hover:-translate-y-0.5"
     >
       {count}
     </span>
@@ -218,7 +218,7 @@ function RepoCrest({ repo }: { repo: RepoData }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute -top-2 -left-6 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] p-0.5 shadow-[2px_2px_0_rgb(0_0_0/0.25)]"
+      className="absolute -top-2 -left-6 z-10 rounded-sm border-2 border-[#2e2418] bg-[#f0e6d2] p-0.5 shadow-[2px_2px_0_rgb(0_0_0/0.25)] transition-transform hover:-translate-y-0.5"
     >
       <AvatarImage src={repo.ownerAvatar} name={repo.owner} size={22} className="rounded-[2px]" />
     </span>
@@ -256,7 +256,7 @@ function ReviewNotice({ cell }: { cell: Cell }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="pixel absolute top-9 left-2 z-20 block h-10 w-12 -rotate-3 drop-shadow-[2px_2px_0_rgb(0_0_0/0.28)]"
+      className="pixel absolute top-9 left-2 z-20 block h-10 w-12 -rotate-3 drop-shadow-[2px_2px_0_rgb(0_0_0/0.28)] transition-transform hover:-translate-y-0.5"
     >
       <span className="absolute top-0 left-2 h-8 w-8 border-2 border-[#4a3826] bg-[#f6df72]">
         <span className="font-pixel absolute top-0.5 left-1 text-[6px] leading-none font-bold text-[#6b4223]">
@@ -311,7 +311,7 @@ function AiExteriorDecor({ theme, title, pending }: { theme: string | null; titl
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute -right-11 bottom-13 z-10 flex items-end"
+      className="absolute -right-11 bottom-13 z-10 flex items-end transition-transform hover:-translate-y-0.5"
     >
       {unfinished ? (
         <WorkSign pending seed={seed} />
@@ -477,7 +477,7 @@ function TownHallBanners({ cell }: { cell: Cell }) {
               e.stopPropagation();
               setTip(null);
             }}
-            className={`font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[9px] font-bold shadow-[2px_2px_0_rgb(0_0_0/0.25)] ${colors[version.channel]}`}
+            className={`font-pixel rounded-sm border-2 border-[#2e2418] px-1.5 py-0.5 text-[9px] font-bold shadow-[2px_2px_0_rgb(0_0_0/0.25)] transition-transform hover:-translate-y-0.5 ${colors[version.channel]}`}
           >
             {label}
           </span>
@@ -507,7 +507,7 @@ function Moss() {
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute top-8 left-1/2 z-10 flex -translate-x-1/2 gap-1"
+      className="absolute top-8 left-1/2 z-10 flex -translate-x-1/2 gap-1 transition-transform hover:-translate-y-0.5"
     >
       <span className="h-2 w-7 bg-[#2f6a3b]" />
       <span className="mt-1 h-2 w-4 bg-[#3f8150]" />
@@ -540,7 +540,7 @@ function CheckFlag({ state }: { state: NonNullable<Cell['checkState']> }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute -top-10 right-1 z-30 block h-10 w-10"
+      className="absolute -top-10 right-1 z-30 block h-10 w-10 transition-transform hover:-translate-y-0.5"
     >
       <span className="absolute top-1 left-3 h-8 w-1 bg-[#2e2418]" />
       <span className="absolute top-0 left-4 h-5 w-7 border-2 border-[#2e2418]" style={{ backgroundColor: color }}>
@@ -583,7 +583,7 @@ function Mailbox({
         e.stopPropagation();
         setTip(null);
       }}
-      className="absolute right-[-34px] bottom-7 z-10 flex flex-col items-center gap-0.5"
+      className="absolute right-[-34px] bottom-7 z-10 flex flex-col items-center gap-0.5 transition-transform hover:-translate-y-0.5"
     >
       <span className="relative h-5 w-6 rounded-t-sm border-2 border-[#2e2418] bg-[#8fd0c0] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
         <span className="absolute top-1 left-1 h-1 w-3 bg-[#2e2418]" />
