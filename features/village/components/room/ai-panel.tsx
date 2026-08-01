@@ -26,14 +26,14 @@ export function AiPanel({
     : generated
       ? 'Ready.'
       : ai
-        ? 'Come back later.'
+        ? 'Still using commit furniture.'
         : 'Use real commits.';
   const title = generated
     ? 'Furniture fixed'
     : working
       ? 'Carpenter at work'
       : ai
-        ? 'Carpenter queued'
+        ? 'Try carpenter again'
         : 'Fix furniture';
 
   return (
@@ -41,9 +41,9 @@ export function AiPanel({
       <button
         type="button"
         onClick={onGenerate}
-        disabled={ai || working}
+        disabled={generated || working}
         role="switch"
-        aria-checked={ai}
+        aria-checked={generated}
         aria-keyshortcuts="G"
         aria-label={
           working ? 'Carpenter is furnishing this room. Come back later.' : 'Ask the carpenter to fix the furniture'

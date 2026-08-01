@@ -93,7 +93,8 @@ function InteriorScene({
   const [w, h] = roomDims(cell);
   const scene = useRoomScene(cell, ai, w, h);
   const { spec } = scene;
-  const roomAi = useRoomAi(cell, ai, setAiOn);
+  const aiGenerated = Boolean(ai && spec?.ai);
+  const roomAi = useRoomAi(cell, aiGenerated, setAiOn);
   const aiWorking = scene.aiPending || roomAi.pending;
   const aiHighlighted = ai || aiWorking;
 
@@ -118,9 +119,9 @@ function InteriorScene({
   }, [inspectIndex]);
 
   useEffect(() => {
-    if (!ai || !spec?.ai) return;
+    if (!aiGenerated || !spec?.ai) return;
     setAiRoomDecor(cell.id, { theme: spec.theme, title: spec.title ?? cell.sub ?? null });
-  }, [ai, cell.id, cell.sub, spec?.ai, spec?.theme, spec?.title, setAiRoomDecor]);
+  }, [aiGenerated, cell.id, cell.sub, spec?.ai, spec?.theme, spec?.title, setAiRoomDecor]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -132,12 +133,12 @@ function InteriorScene({
       }
       if (key === 'g' && (scene.spec?.aiAvailable || aiWorking)) {
         e.preventDefault();
-        if (!ai) roomAi.generate();
+        if (!aiGenerated) roomAi.generate();
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [ai, aiWorking, roomAi, scene.spec?.aiAvailable]);
+  }, [aiGenerated, aiWorking, roomAi, scene.spec?.aiAvailable]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
