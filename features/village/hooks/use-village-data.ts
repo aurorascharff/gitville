@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR, { preload } from 'swr';
-import { roomSpecKeys, villageKeys } from '@/features/village/village-cache';
+import { ROOM_SPEC_VERSION, roomSpecKeys, villageKeys } from '@/features/village/village-cache';
 import type { RoomSpecPayload, VillagePayload } from '@/types/github';
 
 const lastGoodPayloads = new Map<string, VillagePayload>();
@@ -133,17 +133,37 @@ export function cachedRoomSpec(slug: string, cellId: string): RoomSpecPayload | 
     const raw = window.localStorage.getItem(roomSpecStorageKey(slug, cellId));
     if (!raw) return undefined;
     const spec = JSON.parse(raw) as RoomSpecPayload;
-    return spec?.ok && spec.ai && spec.cellId === cellId ? spec : undefined;
+    if (isDrawableAiRoomSpec(spec, cellId)) return spec;
+    window.localStorage.removeItem(roomSpecStorageKey(slug, cellId));
+    return undefined;
   } catch {
     return undefined;
   }
 }
 
 export function rememberRoomSpec(slug: string, cellId: string, spec: RoomSpecPayload): void {
-  if (typeof window === 'undefined' || !spec.ok || !spec.ai || spec.cellId !== cellId) return;
+  if (typeof window === 'undefined' || !isDrawableAiRoomSpec(spec, cellId)) return;
   try {
     window.localStorage.setItem(roomSpecStorageKey(slug, cellId), JSON.stringify(spec));
   } catch {}
+}
+
+export function isDrawableAiRoomSpec(
+  spec: RoomSpecPayload | null | undefined,
+  cellId: string,
+): spec is RoomSpecPayload {
+  if (!spec?.ok || !spec.ai || spec.cellId !== cellId || spec.commits.length === 0 || spec.items.length === 0) {
+    return false;
+  }
+
+  const covered = new Set<number>();
+  for (const item of spec.items) {
+    if (!item.pieces?.some(piece => piece.length >= 3)) return false;
+    for (const index of item.commits) {
+      if (Number.isInteger(index) && index >= 0 && index < spec.commits.length) covered.add(index);
+    }
+  }
+  return covered.size === spec.commits.length;
 }
 
 export function preloadRoomSpec(slug: string, cellId: string): void {
@@ -164,7 +184,7 @@ export function useRoomSpec(
     revalidateOnFocus: false,
     revalidateOnMount: false,
   });
-  const aiSpec = aiRes.data?.ok && aiRes.data.cellId === cellId ? aiRes.data : null;
+  const aiSpec = isDrawableAiRoomSpec(aiRes.data, cellId) ? aiRes.data : null;
   const baseSpec = base.data?.ok && base.data.cellId === cellId ? base.data : null;
   const spec = aiSpec ?? baseSpec;
   return {
@@ -175,5 +195,5 @@ export function useRoomSpec(
 }
 
 function roomSpecStorageKey(slug: string, cellId: string) {
-  return `gitville:room-spec:${slug}:${cellId}`;
+  return `gitville:room-spec:v${ROOM_SPEC_VERSION}:${slug}:${cellId}`;
 }

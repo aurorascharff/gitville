@@ -68,7 +68,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
   const aiDecor =
     aiRoomDecor[cell.id] ?? (aiSpec?.ok && aiSpec.ai ? { theme: aiSpec.theme, title: aiSpec.title ?? cell.sub } : null);
   const canDecorate = cell.kind !== 'inbox';
-  const aiPending = aiCellIds.has(cell.id) && !aiDecor;
+  const aiPending = aiCellIds.has(cell.id) && Boolean(aiSpec?.ok && aiSpec.ai) && !aiDecor;
   const showReviewNotice =
     cell.kind === 'pr' && (Boolean(cell.noteCount) || cell.reviewDecision === 'CHANGES_REQUESTED');
 

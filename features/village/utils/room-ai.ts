@@ -2,22 +2,12 @@ import 'server-only';
 
 import { cacheLife, cacheTag } from 'next/cache';
 import { z } from 'zod';
+import { ROOM_SPEC_VERSION } from '@/features/village/village-cache';
 import { hashString } from '@/lib/utils';
 
-const ITEM_KINDS = [
-  'plant',
-  'desk',
-  'bookshelf',
-  'lamp',
-  'crate',
-  'sofa',
-  'coffee table',
-  'monitor rig',
-] as const;
+const ITEM_KINDS = ['plant', 'desk', 'bookshelf', 'lamp', 'crate', 'sofa', 'coffee table', 'monitor rig'] as const;
 
 const ART_LETTERS = 'OWwmsbrygpcot';
-const AI_ROOM_SPEC_VERSION = 3;
-
 type RoomItem = {
   name: string;
   kind?: (typeof ITEM_KINDS)[number];
@@ -96,7 +86,7 @@ export async function generateRoomSpec(
 ): Promise<RoomSpec | null> {
   if (!aiRoomsEnabled()) return null;
   try {
-    return await generateRoomSpecCached(AI_ROOM_SPEC_VERSION, slug, label, sub, commits, notes, state);
+    return await generateRoomSpecCached(ROOM_SPEC_VERSION, slug, label, sub, commits, notes, state);
   } catch {
     return null;
   }
