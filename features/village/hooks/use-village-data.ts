@@ -60,8 +60,12 @@ function mergePayload(previous: VillagePayload, next: VillagePayload): VillagePa
         assignees: mergePeople(pr.assignees, existing.assignees),
       };
     }),
-    branches: next.branches.length > 0 ? next.branches : previous.branches,
-    events: next.events.length > 0 ? next.events : previous.events,
+    branches: next.branches.length > 0 && (!next.partial || next.branches.length >= previous.branches.length)
+      ? next.branches
+      : previous.branches,
+    events: next.events.length > 0 && (!next.partial || next.events.length >= previous.events.length)
+      ? next.events
+      : previous.events,
     versions: next.versions.length > 0 ? next.versions : previous.versions,
   };
 }

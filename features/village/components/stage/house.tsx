@@ -74,10 +74,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
   const aiPending = aiCellIds.has(cell.id) && !aiDecor;
   const showReviewNotice =
     cell.kind === 'pr' &&
-    (Boolean(cell.noteCount) ||
-      cell.reviewDecision === 'CHANGES_REQUESTED' ||
-      cell.reviewDecision === 'REVIEW_REQUIRED' ||
-      Boolean(cell.reviewers?.length));
+    (Boolean(cell.noteCount) || cell.reviewDecision === 'CHANGES_REQUESTED');
 
   return (
     <button
@@ -216,17 +213,10 @@ function ReviewNotice({ cell }: { cell: Cell }) {
   const { setTip } = useVillageUi();
   const count = cell.noteCount ?? 0;
   const latest = cell.notePreview?.split('\n')[0]?.trim();
-  const requested = cell.reviewers?.map(person => person.login).join(', ');
-  const title =
-    cell.reviewDecision === 'CHANGES_REQUESTED'
-      ? 'changes requested'
-      : count > 0
-        ? 'review notice'
-        : 'review requested';
+  const title = cell.reviewDecision === 'CHANGES_REQUESTED' ? 'changes requested' : 'review notice';
   const body = [
     count > 0 ? `${count} ${count === 1 ? 'review note' : 'review notes'} on this PR` : null,
     cell.reviewDecision === 'CHANGES_REQUESTED' ? 'Changes requested on this PR' : null,
-    requested ? `Review requested: ${requested}` : null,
     cell.noteAuthor ? `latest from ${cell.noteAuthor}` : null,
     latest ? `“${latest.slice(0, 120)}”` : null,
   ]
@@ -250,7 +240,7 @@ function ReviewNotice({ cell }: { cell: Cell }) {
         e.stopPropagation();
         setTip(null);
       }}
-      className="pixel absolute top-9 left-2 z-20 block h-10 w-12 -rotate-3 drop-shadow-[2px_2px_0_rgb(0_0_0/0.28)] transition-transform group-hover:-translate-y-0.5"
+      className="pixel absolute top-9 left-2 z-20 block h-10 w-12 -rotate-3 drop-shadow-[2px_2px_0_rgb(0_0_0/0.28)]"
     >
       <span className="absolute top-0 left-2 h-8 w-8 border-2 border-[#4a3826] bg-[#f6df72]">
         <span className="font-pixel absolute top-0.5 left-1 text-[6px] leading-none font-bold text-[#6b4223]">
