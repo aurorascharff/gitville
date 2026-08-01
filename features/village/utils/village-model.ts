@@ -124,7 +124,10 @@ export function pickedPrs(payload: VillagePayload, repo?: RepoSignal): VillagePa
     })
     .sort((a, b) => b.score - a.score || b.stack.length - a.stack.length);
 
-  return groups.slice(0, prGroupLimit(payload, repo)).flatMap(group => group.stack);
+  return groups
+    .slice(0, prGroupLimit(payload, repo))
+    .sort((a, b) => b.stack[0].number - a.stack[0].number)
+    .flatMap(group => group.stack);
 }
 
 function prGroupLimit(payload: VillagePayload, repo?: RepoSignal): number {

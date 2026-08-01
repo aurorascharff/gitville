@@ -39,7 +39,12 @@ function mergePeople<T>(next: T[], previous: T[]): T[] {
 function mergePayload(previous: VillagePayload, next: VillagePayload): VillagePayload {
   if (!previous.ok || !next.ok) return next;
   const previousPrs = new Map(previous.prs.map(pr => [pr.number, pr]));
-  const prs = next.prs.length > 0 ? next.prs : previous.prs;
+  const nextPrs = new Map(next.prs.map(pr => [pr.number, pr]));
+  const prs = next.partial
+    ? [...previous.prs.map(pr => nextPrs.get(pr.number) ?? pr), ...next.prs.filter(pr => !previousPrs.has(pr.number))]
+    : next.prs.length > 0
+      ? next.prs
+      : previous.prs;
   return {
     ...previous,
     ...next,
@@ -60,12 +65,14 @@ function mergePayload(previous: VillagePayload, next: VillagePayload): VillagePa
         assignees: mergePeople(pr.assignees, existing.assignees),
       };
     }),
-    branches: next.branches.length > 0 && (!next.partial || next.branches.length >= previous.branches.length)
-      ? next.branches
-      : previous.branches,
-    events: next.events.length > 0 && (!next.partial || next.events.length >= previous.events.length)
-      ? next.events
-      : previous.events,
+    branches:
+      next.branches.length > 0 && (!next.partial || next.branches.length >= previous.branches.length)
+        ? next.branches
+        : previous.branches,
+    events:
+      next.events.length > 0 && (!next.partial || next.events.length >= previous.events.length)
+        ? next.events
+        : previous.events,
     versions: next.versions.length > 0 ? next.versions : previous.versions,
   };
 }

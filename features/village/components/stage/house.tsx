@@ -18,10 +18,7 @@ import {
 } from '@/features/village/components/shared/pixel-sprite';
 import { Placed } from '@/features/village/components/shared/placed';
 import { travelTo } from '@/features/village/components/stage/player';
-import {
-  cachedRoomSpec,
-  preloadRoomSpec,
-} from '@/features/village/hooks/use-village-data';
+import { cachedRoomSpec, preloadRoomSpec } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import type { Cell } from '@/features/village/utils/village-model';
 import { roomSpecKeys } from '@/features/village/village-cache';
@@ -73,8 +70,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
   const canDecorate = cell.kind !== 'inbox';
   const aiPending = aiCellIds.has(cell.id) && !aiDecor;
   const showReviewNotice =
-    cell.kind === 'pr' &&
-    (Boolean(cell.noteCount) || cell.reviewDecision === 'CHANGES_REQUESTED');
+    cell.kind === 'pr' && (Boolean(cell.noteCount) || cell.reviewDecision === 'CHANGES_REQUESTED');
 
   return (
     <button
@@ -160,9 +156,7 @@ export function VillageHouse({ cell, people, repo }: { cell: Cell; people: numbe
         </div>
 
         {people > 0 ? (
-          <span className="bg-brand text-brand-foreground font-pixel absolute -top-2 -right-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#2e2418] px-1 text-[11px] font-bold">
-            {people}
-          </span>
+          <PeopleBadge count={people} />
         ) : (
           <span
             aria-hidden
@@ -184,6 +178,28 @@ function EnterHint() {
   return (
     <span className="absolute -top-11 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#f7efdc] px-2 py-1 text-[14px] leading-3 font-bold whitespace-nowrap text-[#3a2f22] shadow-[2px_2px_0_rgb(0_0_0/0.25)]">
       ⏎
+    </span>
+  );
+}
+
+function PeopleBadge({ count }: { count: number }) {
+  const { setTip } = useVillageUi();
+  const body = `${count} ${count === 1 ? 'person is' : 'people are'} active here.`;
+
+  return (
+    <span
+      title={body}
+      onMouseMove={e => {
+        e.stopPropagation();
+        setTip({ x: e.clientX, y: e.clientY, title: 'people here', body, when: null });
+      }}
+      onMouseLeave={e => {
+        e.stopPropagation();
+        setTip(null);
+      }}
+      className="bg-brand text-brand-foreground font-pixel absolute -top-2 -right-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-[#2e2418] px-1 text-[11px] font-bold"
+    >
+      {count}
     </span>
   );
 }

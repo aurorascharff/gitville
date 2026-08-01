@@ -171,7 +171,9 @@ function InteriorScene({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  const frame = roomFrame(viewport.w, viewport.h, w, h);
+  const aiPanelVisible = aiWorking || Boolean(spec?.aiAvailable && spec.commits.length > 0);
+  const roomTopInset = aiPanelVisible && viewport.w >= 768 ? 112 : 0;
+  const frame = roomFrame(viewport.w, viewport.h, w, h, roomTopInset);
 
   return (
     <div
@@ -213,6 +215,7 @@ function InteriorScene({
           itemsRef={itemsRef}
           onNear={setNearIndex}
           frozenRef={frozenRef}
+          topInset={roomTopInset}
         />
         {aiHighlighted && (spec?.ai || aiWorking) ? (
           <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">

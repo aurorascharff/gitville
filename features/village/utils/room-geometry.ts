@@ -39,15 +39,21 @@ export function roomDims(cell: Cell): [number, number] {
   return [1000, 620];
 }
 
-export function roomFrame(viewportW: number, viewportH: number, roomW: number, roomH: number): RoomFrame {
+export function roomFrame(viewportW: number, viewportH: number, roomW: number, roomH: number, topInset = 0): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
   const availW = viewportW - sidebar;
-  const scale = viewportW < 640 ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH)) : 1;
+  const availH = viewportH - topInset;
+  const scale =
+    viewportW < 640
+      ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH))
+      : topInset > 0
+        ? Math.max(0.5, Math.min(1, (availH - 24) / roomH))
+        : 1;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
     x: sw <= availW ? sidebar + (availW - sw) / 2 : sidebar,
-    y: sh <= viewportH ? (viewportH - sh) / 2 : 0,
+    y: sh <= availH ? topInset + (availH - sh) / 2 : topInset,
     scale,
   };
 }
@@ -59,10 +65,17 @@ export function followRoomFrame(
   roomH: number,
   focusX: number,
   focusY: number,
+  topInset = 0,
 ): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
   const availW = viewportW - sidebar;
-  const scale = viewportW < 640 ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH)) : 1;
+  const availH = viewportH - topInset;
+  const scale =
+    viewportW < 640
+      ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH))
+      : topInset > 0
+        ? Math.max(0.5, Math.min(1, (availH - 24) / roomH))
+        : 1;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
@@ -70,7 +83,10 @@ export function followRoomFrame(
       sw <= availW
         ? sidebar + (availW - sw) / 2
         : Math.min(sidebar, Math.max(sidebar + availW - sw, sidebar + availW / 2 - focusX * scale)),
-    y: sh <= viewportH ? (viewportH - sh) / 2 : Math.min(0, Math.max(viewportH - sh, viewportH / 2 - focusY * scale)),
+    y:
+      sh <= availH
+        ? topInset + (availH - sh) / 2
+        : Math.min(topInset, Math.max(topInset + availH - sh, topInset + availH / 2 - focusY * scale)),
     scale,
   };
 }

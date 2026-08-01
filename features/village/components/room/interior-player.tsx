@@ -16,6 +16,7 @@ export function InteriorPlayer({
   itemsRef,
   onNear,
   frozenRef,
+  topInset = 0,
 }: {
   width: number;
   height: number;
@@ -26,6 +27,7 @@ export function InteriorPlayer({
   itemsRef: React.RefObject<NearItem[]>;
   onNear: (index: number | null) => void;
   frozenRef: React.RefObject<boolean>;
+  topInset?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -79,7 +81,7 @@ export function InteriorPlayer({
       if (roomRef.current) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const frame = followRoomFrame(vw, vh, width, height, s.x, s.y);
+        const frame = followRoomFrame(vw, vh, width, height, s.x, s.y, topInset);
         const targetX = frame.x;
         const targetY = frame.y;
         if (Number.isNaN(s.camX)) {
@@ -157,7 +159,7 @@ export function InteriorPlayer({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [width, height, walkTargetRef, roomRef, playerPosRef, itemsRef, frozenRef]);
+  }, [width, height, walkTargetRef, roomRef, playerPosRef, itemsRef, frozenRef, topInset]);
 
   return (
     <div ref={ref} className="absolute" style={{ transform: `translate(${width / 2 - 13}px, ${height - 108}px)` }}>
