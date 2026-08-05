@@ -185,59 +185,6 @@ function mergeParks(parks: RoadPark[]): RoadPark[] {
   return merged;
 }
 
-function octagonPoints(cx: number, cy: number, r: number): string {
-  const inset = r * 0.42;
-  return [
-    [cx - inset, cy - r],
-    [cx + inset, cy - r],
-    [cx + r, cy - inset],
-    [cx + r, cy + inset],
-    [cx + inset, cy + r],
-    [cx - inset, cy + r],
-    [cx - r, cy + inset],
-    [cx - r, cy - inset],
-  ]
-    .map(([x, y]) => `${svg(x)},${svg(y)}`)
-    .join(' ');
-}
-
-function JunctionRoundabout({ park, index }: { park: RoadPark; index: number }) {
-  const outer = fixed(Math.max(28, Math.min(48, park.size * 0.42)));
-  const road = fixed(outer * 0.76);
-  const green = fixed(outer * 0.42);
-  const flowerX = park.x + (index % 2 === 0 ? -green * 0.25 : green * 0.18);
-  const flowerY = park.y + (index % 3 === 0 ? -green * 0.12 : green * 0.2);
-
-  return (
-    <g>
-      <polygon points={octagonPoints(park.x, park.y, outer)} fill="#6e5638" opacity="0.9" />
-      <polygon points={octagonPoints(park.x, park.y, road)} fill="#a5814e" />
-      <polygon points={octagonPoints(park.x, park.y, green)} fill="#2f6a3b" />
-      <rect
-        x={svg(park.x - green * 0.22)}
-        y={svg(park.y - green * 0.18)}
-        width={svg(green * 0.44)}
-        height={svg(green * 0.36)}
-        fill="#3f8150"
-      />
-      <rect
-        x={svg(flowerX)}
-        y={svg(flowerY)}
-        width={svg(Math.max(3, green * 0.14))}
-        height={svg(Math.max(3, green * 0.14))}
-        fill="#e4c05a"
-      />
-      <rect
-        x={svg(park.x + green * 0.22)}
-        y={svg(park.y - green * 0.08)}
-        width={svg(Math.max(3, green * 0.12))}
-        height={svg(Math.max(3, green * 0.12))}
-        fill="#f0e6d2"
-      />
-    </g>
-  );
-}
-
 function Roadwork({ path, index }: { path: RoadPath; index: number }) {
   const mx = (path.from.x + path.to.x) / 2;
   const my = (path.from.y + path.to.y) / 2;
@@ -377,7 +324,7 @@ export function roadLampSpots(cells: Cell[]): Point[] {
 }
 
 export function VillageRoads({ cells }: { cells: Cell[] }) {
-  const { paths, parks } = roadLayoutFor(cells);
+  const { paths } = roadLayoutFor(cells);
   if (paths.length === 0) return null;
 
   const layers = [
@@ -393,11 +340,6 @@ export function VillageRoads({ cells }: { cells: Cell[] }) {
       shapeRendering="crispEdges"
       style={{ width: WORLD_W, height: WORLD_H }}
     >
-      <g>
-        {parks.map((park, i) => (
-          <JunctionRoundabout key={park.id} park={park} index={i} />
-        ))}
-      </g>
       {layers.map((l, li) => (
         <g key={li} stroke={l.stroke} strokeWidth={l.width} strokeLinecap="round" opacity={l.opacity}>
           {paths.map(path => (
