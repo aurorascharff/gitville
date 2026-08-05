@@ -26,7 +26,7 @@ export function TimeMachine() {
   return (
     <div
       className={cn(
-        'absolute right-3 z-50 flex flex-col items-end gap-1.5 sm:right-4',
+        'absolute right-14 z-50 flex flex-col items-end gap-1.5',
         focusId
           ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] sm:bottom-5'
           : 'bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] sm:bottom-5',

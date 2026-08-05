@@ -55,7 +55,7 @@ export function VillageViewportSkeleton() {
         <div className="panel h-8 w-8 rounded-sm sm:h-9 sm:w-24" />
       </div>
 
-      <div className="panel absolute right-3 bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] z-30 h-8 w-8 rounded-sm opacity-85 sm:right-4 sm:bottom-5 sm:h-9 sm:w-9" />
+      <div className="panel absolute right-14 bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] z-30 h-8 w-8 rounded-sm opacity-85 sm:bottom-5 sm:h-9 sm:w-9" />
 
       <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center px-4">
         <div className="panel pixel pointer-events-auto relative flex max-w-[min(22rem,calc(100vw-2rem))] flex-col items-center gap-3 rounded-sm p-4 text-center shadow-[8px_10px_0_rgb(0_0_0/0.35)] sm:gap-4 sm:p-6">
