@@ -54,9 +54,51 @@ const specSchema = z.object({
     .max(7),
 });
 
-const generatedTextErrorSchema = z.object({ text: z.string() });
-
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
+
+function firstJsonValue(text: string): string {
+  const stack: string[] = [];
+  let start = -1;
+  let quoted = false;
+  let escaped = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (start < 0) {
+      if (character !== '{' && character !== '[') continue;
+      start = index;
+      stack.push(character);
+      continue;
+    }
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (quoted && character === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (quoted) continue;
+    if (character === '{' || character === '[') stack.push(character);
+    if (character === '}' || character === ']') {
+      stack.pop();
+      if (stack.length === 0) return text.slice(start, index + 1);
+    }
+  }
+
+  throw new Error('AI response did not contain a complete JSON value.');
+}
+
+function normalizeGeneratedJson(text: string): string {
+  const envelope: unknown = JSON.parse(firstJsonValue(text));
+  if (!envelope || typeof envelope !== 'object' || !('items' in envelope)) return JSON.stringify(envelope);
+  const items = envelope.items;
+  return JSON.stringify({ ...envelope, items: typeof items === 'string' ? JSON.parse(firstJsonValue(items)) : items });
+}
 
 function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], index: number): void {
   const width = Math.max(...pixels.map(row => row.length));
@@ -80,18 +122,6 @@ function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], i
   ) {
     throw new Error(`AI ${form} did not use its pixel canvas with enough shape and detail.`);
   }
-}
-
-function recoverStringifiedItems(error: unknown): z.infer<typeof specSchema> | null {
-  const generated = generatedTextErrorSchema.safeParse(error);
-  if (!generated.success) return null;
-
-  const envelope: unknown = JSON.parse(generated.data.text);
-  if (!envelope || typeof envelope !== 'object' || !('items' in envelope)) return null;
-  const items = envelope.items;
-  if (typeof items !== 'string') return null;
-
-  return specSchema.parse({ ...envelope, items: JSON.parse(items) });
 }
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fallbackTheme: string): RoomSpec {
@@ -172,9 +202,13 @@ async function generateRoomSpecCached(
   cacheLife('days');
   cacheTag(`room-ai-${slug}`);
 
-  const { generateText, Output } = await import('ai');
+  const { extractJsonMiddleware, generateText, Output, wrapLanguageModel } = await import('ai');
   const { createGateway } = await import('@ai-sdk/gateway');
   const gateway = createGateway({ apiKey: gatewayKey() });
+  const model = wrapLanguageModel({
+    model: gateway('anthropic/claude-sonnet-5'),
+    middleware: extractJsonMiddleware({ transform: normalizeGeneratedJson }),
+  });
 
   const prompt = [
     'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Fill the room with a VARIED collection of objects you INVENT yourself — each one your own little pixel-art creation that playfully stands for a real commit and would believably sit in this room. Mix it up freely: furniture (desks, shelves, chests), props and curios, and gadgets or machines when the work calls for it. The one rule is variety and invention — never repeat the same kind of object, and never settle for a plain bookshelf-and-crate look.',
@@ -219,7 +253,7 @@ async function generateRoomSpecCached(
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const { output } = await generateText({
-        model: gateway('anthropic/claude-sonnet-5'),
+        model,
         output: Output.object({
           schema: specSchema,
           name: 'gitville_room',
@@ -229,13 +263,6 @@ async function generateRoomSpecCached(
       });
       return sanitizeSpec(specSchema.parse(output), commits.length, label);
     } catch (error) {
-      try {
-        const recovered = recoverStringifiedItems(error);
-        if (recovered) return sanitizeSpec(recovered, commits.length, label);
-      } catch (recoveryError) {
-        lastError = recoveryError;
-        continue;
-      }
       lastError = error;
     }
   }

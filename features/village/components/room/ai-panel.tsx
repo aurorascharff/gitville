@@ -22,7 +22,7 @@ export function AiPanel({
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
   const status = working
-    ? 'Leave it with the carpenter. Come back later.'
+    ? 'Come back later.'
     : generated
       ? 'Ready.'
       : ai
