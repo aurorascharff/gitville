@@ -21,13 +21,7 @@ export function AiPanel({
   const highlighted = ai || working;
   if (!working && !(spec?.aiAvailable && spec.commits.length > 0)) return null;
 
-  const status = working
-    ? 'Come back later.'
-    : generated
-      ? 'Ready.'
-      : ai
-        ? 'Still using commit furniture.'
-        : 'Use real commits.';
+  const status = working ? null : generated ? 'Ready.' : ai ? 'Still using commit furniture.' : 'Use real commits.';
   const title = generated
     ? 'Furniture fixed'
     : working
@@ -45,9 +39,7 @@ export function AiPanel({
         role="switch"
         aria-checked={generated}
         aria-keyshortcuts="G"
-        aria-label={
-          working ? 'Carpenter is furnishing this room. Come back later.' : 'Ask the carpenter to fix the furniture'
-        }
+        aria-label={working ? 'Carpenter is furnishing this room.' : 'Ask the carpenter to fix the furniture'}
         className={cn(
           'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-16 md:w-full md:justify-start md:px-3 md:py-4',
           highlighted && 'ring-2 ring-[#e4c05a]',
@@ -77,7 +69,7 @@ export function AiPanel({
               <span className="truncate">{title}</span>
               <KeyHint>G</KeyHint>
             </span>
-            <span className="block text-[13px] leading-4 text-[#6b5b43]">{status}</span>
+            {status ? <span className="block text-[13px] leading-4 text-[#6b5b43]">{status}</span> : null}
           </span>
         </span>
       </button>
