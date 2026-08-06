@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { floorClass, wallClass } from '@/features/village/utils/room-geometry';
 import type { Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ export function StackElevator({
   onPreload: (index: number) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
@@ -29,11 +30,38 @@ export function StackElevator({
     <nav
       data-stack-nav
       aria-label={`Pull request stack, ${floors.length} floors`}
-      className="absolute top-[4.25rem] right-2 z-65 flex w-[82px] flex-col items-center sm:top-28 sm:right-4 sm:w-[210px]"
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={e => {
+        if (!e.currentTarget.contains(document.activeElement)) setExpanded(false);
+      }}
+      onFocusCapture={() => setExpanded(true)}
+      onBlurCapture={e => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setExpanded(false);
+      }}
+      className={cn(
+        'absolute top-[4.25rem] right-2 z-65 flex w-[82px] flex-col items-center transition-[width] duration-200 ease-out sm:top-28 sm:right-4',
+        expanded ? 'sm:w-[360px]' : 'sm:w-[210px]',
+      )}
     >
-      <div aria-hidden className="pixel flex h-5 w-[72px] items-end justify-center sm:w-[194px]">
-        <span className="h-2 w-[72px] bg-[#6e3524] sm:w-[194px]" />
-        <span className="absolute h-4 w-12 bg-[#9f5540] sm:w-32" />
+      <div
+        aria-hidden
+        className={cn(
+          'pixel flex h-5 w-[72px] items-end justify-center transition-[width] duration-200 sm:w-[194px]',
+          expanded && 'sm:w-[344px]',
+        )}
+      >
+        <span
+          className={cn(
+            'h-2 w-[72px] bg-[#6e3524] transition-[width] duration-200 sm:w-[194px]',
+            expanded && 'sm:w-[344px]',
+          )}
+        />
+        <span
+          className={cn(
+            'absolute h-4 w-12 bg-[#9f5540] transition-[width] duration-200 sm:w-32',
+            expanded && 'sm:w-56',
+          )}
+        />
       </div>
       <div className="w-full border-4 border-[#2e2418] bg-[#2e2418] shadow-[5px_6px_0_rgb(0_0_0/0.45)]">
         <button
@@ -64,7 +92,8 @@ export function StackElevator({
                 onFocus={() => onPreload(index)}
                 onMouseEnter={() => onPreload(index)}
                 className={cn(
-                  'group relative flex h-[58px] w-full overflow-hidden border-b-2 border-[#2e2418] text-left last:border-b-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#f7efdc]',
+                  'group relative flex h-[58px] w-full overflow-hidden border-b-2 border-[#2e2418] text-left transition-[height] duration-200 last:border-b-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#f7efdc]',
+                  expanded && 'sm:h-[72px]',
                   current && 'z-10',
                 )}
               >
@@ -89,12 +118,30 @@ export function StackElevator({
                     )}
                   >
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="text-[12px] leading-4 font-black text-[#3a2f22]">F{floorNo}</span>
-                      <span className="min-w-0 truncate text-[12px] leading-4 font-bold text-[#8a4a2b]">
+                      <span
+                        className={cn('leading-4 font-black text-[#3a2f22]', expanded ? 'text-[13px]' : 'text-[12px]')}
+                      >
+                        F{floorNo}
+                      </span>
+                      <span
+                        className={cn(
+                          'min-w-0 truncate leading-4 font-bold text-[#8a4a2b]',
+                          expanded ? 'text-[13px]' : 'text-[12px]',
+                        )}
+                      >
                         {floor.label}
                       </span>
                     </span>
-                    <span className="truncate text-[11px] leading-4 text-[#6b5b43]">{floor.sub}</span>
+                    <span
+                      className={cn(
+                        'text-[#6b5b43]',
+                        expanded
+                          ? 'line-clamp-2 text-[13px] leading-[18px] whitespace-normal'
+                          : 'truncate text-[11px] leading-4',
+                      )}
+                    >
+                      {floor.sub}
+                    </span>
                   </span>
                   {current ? (
                     <>
@@ -121,7 +168,13 @@ export function StackElevator({
           <ChevronDown size={18} strokeWidth={4} />
         </button>
       </div>
-      <div aria-hidden className="pixel flex w-[74px] justify-between sm:w-[194px]">
+      <div
+        aria-hidden
+        className={cn(
+          'pixel flex w-[74px] justify-between transition-[width] duration-200 sm:w-[194px]',
+          expanded && 'sm:w-[344px]',
+        )}
+      >
         <span className="h-2 w-3 bg-[#2e2418]" />
         <span className="h-2 w-3 bg-[#2e2418]" />
       </div>
