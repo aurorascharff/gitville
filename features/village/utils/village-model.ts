@@ -9,8 +9,7 @@ const CY = WORLD_H / 2;
 
 const DX = 350;
 const DY = 295;
-const MAX_PR_BUILDINGS = 36;
-const OPEN_PULL_CANDIDATE_LIMIT = 100;
+const MAX_PR_BUILDINGS = 24;
 const MAX_ACTIVITY_FILLERS = 10;
 const DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -156,7 +155,7 @@ export type Cell = {
 
 type RepoSignal = Pick<RepoData, 'stars' | 'openIssues' | 'languages'>;
 
-export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
+export function pickedPrs(payload: VillagePayload, repo?: RepoSignal): VillagePayload['prs'] {
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
   const baseRefs = new Set(payload.prs.map(pr => pr.baseRef));
   const tops = payload.prs.filter(pr => !baseRefs.has(pr.branch));
@@ -201,13 +200,17 @@ export function pickedPrs(payload: VillagePayload): VillagePayload['prs'] {
     .sort((a, b) => b.score - a.score || b.stack.length - a.stack.length);
 
   return groups
-    .slice(0, prGroupLimit(payload))
+    .slice(0, prGroupLimit(payload, repo))
     .sort((a, b) => b.stack[0].number - a.stack[0].number)
     .flatMap(group => group.stack);
 }
 
-function prGroupLimit(payload: VillagePayload): number {
-  return Math.min(payload.prs.length, MAX_PR_BUILDINGS);
+function prGroupLimit(payload: VillagePayload, repo?: RepoSignal): number {
+  if (payload.prs.length <= MAX_PR_BUILDINGS) return payload.prs.length;
+  const size = projectSizeScore(payload, repo);
+  if (size < 18) return Math.min(payload.prs.length, 36);
+  if (size < 36) return Math.min(payload.prs.length, 30);
+  return MAX_PR_BUILDINGS;
 }
 
 function prActivity(events: WireEvent[]): Map<number, { count: number; latest: number }> {
@@ -282,9 +285,7 @@ function openPullRequestSummary(payload: VillagePayload): string | null {
     return `${payload.prs.length} of ${payload.prTotal} open PRs shown`;
   }
   if (payload.prTotal != null) return `${payload.prTotal} open PRs`;
-  return payload.prs.length >= OPEN_PULL_CANDIDATE_LIMIT
-    ? `${payload.prs.length} open PRs shown`
-    : `${payload.prs.length} open PRs`;
+  return payload.prs.length >= 64 ? `${payload.prs.length} open PRs shown` : `${payload.prs.length} open PRs`;
 }
 
 function mainBranchSub(payload: VillagePayload, repo?: RepoSignal): string {
@@ -381,7 +382,7 @@ export function buildCells(
 
   const prNumbers = new Set(payload.prs.map(pr => pr.number));
   const byHead = new Map(payload.prs.filter(pr => pr.branch).map(pr => [pr.branch, pr]));
-  const picked = pickedPrs(payload);
+  const picked = pickedPrs(payload, repo);
   const baseRefs = new Set(picked.map(pr => pr.baseRef));
   const tops = picked.filter(pr => !baseRefs.has(pr.branch));
   const placed = new Set<number>();
