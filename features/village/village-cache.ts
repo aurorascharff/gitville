@@ -1,4 +1,4 @@
-export const ROOM_SPEC_VERSION = 6;
+export const ROOM_SPEC_VERSION = 7;
 
 export const villageKeys = {
   payload: (slug: string) => `/api/village/${slug}`,

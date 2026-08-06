@@ -6,6 +6,22 @@ import { ROOM_SPEC_VERSION } from '@/features/village/village-cache';
 import { hashString } from '@/lib/utils';
 
 const ITEM_KINDS = ['plant', 'desk', 'bookshelf', 'lamp', 'crate', 'sofa', 'coffee table', 'monitor rig'] as const;
+const ITEM_FORMS = [
+  'workbench',
+  'rack',
+  'cabinet',
+  'seating',
+  'table',
+  'lamp',
+  'planter',
+  'cart',
+  'loom',
+  'forge',
+  'telescope',
+  'display',
+  'chest',
+  'divider',
+] as const;
 
 const ART_LETTERS = 'OWwmsbrygpcot';
 type RoomItem = {
@@ -27,6 +43,7 @@ const specSchema = z.object({
     .array(
       z.object({
         name: z.string(),
+        form: z.enum(ITEM_FORMS),
         kind: z.enum(ITEM_KINDS).nullable().optional(),
         pixels: z.array(z.string()).min(3),
         size: z.number().int().min(1).max(4).nullable().optional(),
@@ -39,12 +56,40 @@ const specSchema = z.object({
 
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
+function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], index: number): void {
+  const width = Math.max(...pixels.map(row => row.length));
+  const height = pixels.length;
+  const cells = pixels.join('').split('');
+  const filled = cells.filter(cell => cell !== '.');
+  const materials = new Set(filled.filter(cell => cell !== 'O'));
+  const occupancy = filled.length / (width * height);
+  const transparentRows = pixels.filter(row => row.includes('.')).length;
+  const minWidth = index === 0 ? 12 : 9;
+  const minHeight = index === 0 ? 9 : 7;
+
+  if (
+    width < minWidth ||
+    height < minHeight ||
+    filled.length < 28 ||
+    materials.size < 3 ||
+    occupancy < 0.24 ||
+    occupancy > 0.76 ||
+    transparentRows < Math.ceil(height / 3)
+  ) {
+    throw new Error(`AI ${form} did not use its pixel canvas with enough shape and detail.`);
+  }
+}
+
 function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fallbackTheme: string): RoomSpec {
   const expected = Math.min(14, commitCount);
   const claimed = new Set<number>();
-  const items: RoomItem[] = raw.items.flatMap(item => {
+  const forms = new Set<(typeof ITEM_FORMS)[number]>();
+  const items: RoomItem[] = raw.items.flatMap((item, itemIndex) => {
     const pixels = item.pixels.filter(row => artRow.test(row)).slice(0, 12);
     if (pixels.length < 3) return [];
+    if (forms.has(item.form)) throw new Error(`AI room repeated the ${item.form} furnishing form.`);
+    assertArtQuality(pixels, item.form, itemIndex);
+    forms.add(item.form);
 
     const commits = item.commits.filter(index => {
       if (!Number.isInteger(index) || index < 0 || index >= expected || claimed.has(index)) return false;
@@ -134,18 +179,22 @@ async function generateRoomSpecCached(
     'Map commits to objects:',
     '- Create 4-7 objects total. Group related commits into the same object so a busy room gets fewer, larger, more detailed objects instead of one small object per commit.',
     '- ALWAYS draw the art yourself in `pixels`. Every item must include one flat array of pixel rows, for example: `"pixels": ["..OO..", ".OggO.", "..OO.."]`. Return JSON data only; never put code or expressions inside a row.',
+    '- Choose a unique `form` for every item. `form` is its recognizable furnishing silhouette, not its commit metaphor. Never repeat a form in one room.',
     '- Each item is ONE invented object standing for one coherent piece of work; name it so the tie to its commits is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
     '- Every commit index 0..N must appear in exactly one item. Each item may cover several related commits.',
     '- Draw exactly one `pixels` block for the whole object, even when it represents several commits. Do NOT make one attached segment per commit.',
     '- Set `size` from 1 to 4. Use bigger sizes for grouped commits or larger changes, and make those objects grander or fancier with stronger silhouettes and richer details.',
     '',
     'Make the room read well:',
-    '- Make objects readable as a mix of furniture, tools, props, and abstract machines. Avoid plain rectangular screens/boxes unless the commit truly calls for one.',
+    '- Start from something that could actually furnish a room, then adapt that silhouette into the commit metaphor. It may become an abstract machine, but it must still read first as its chosen furnishing form.',
+    '- Use these silhouette recipes: workbench = broad top + drawers/tools + separated legs; rack = tall posts + 3 open shelves; cabinet = tall doors/drawers + feet; seating = back + arms/cushion + feet; table = thin top + large open space + separated legs; lamp = shade + narrow stem/arm + base; planter = asymmetric leaves + neck + pot; cart = handle + open platform/bin + 2 wheels; loom = tall frame + large open threaded centre + feet; forge = chimney/hood + hearth/anvil + legs; telescope = long angled tube + tripod; display = asymmetric stand/case + pedestal; chest = lid + box + latch + feet; divider = tall multi-panel screen + feet.',
     '- Use thin silhouettes, cutouts, handles, legs, wheels, shelves, cloth folds, levers, funnels, cables, and asymmetry so each item looks like a particular thing, not a generic console.',
+    '- Do not draw circles, rings, badges, pods, kettles, bells, drums, stamps, or rounded blobs. Do not use a compact dark outline wrapped around one coloured rectangle. Open negative space must describe the object.',
     '- The FIRST item is the centrepiece: the biggest, most detailed object embodying the headline change, sat in the middle of the room. The rest are smaller objects around it.',
     '- Give every object its OWN silhouette AND its OWN dominant colour so no two read alike. Vary shapes with "." aggressively (towers, legs, drawers, screens, funnels, arms, pots, lids) so the room is a collection of clearly-different things. Spread colour across the room (blue, green, red, purple, teal, orange, yellow) — never paint everything the same green-and-gold.',
     '- Cohesion comes from a shared ROOM, not a shared paint job: the same pixel style, the same dark outline (O), and common wood (W) / metal (m) framing tie the varied objects together.',
-    '- Each `pixels` array is 3-12 rows of 2-16 characters, letters from the legend, "." = transparent. Build at a comfortable size (centrepiece ~12-16 wide and 10-12 rows, supporting pieces ~8-14 wide) — no tiny trinkets.',
+    '- Each `pixels` array is 7-12 rows and 9-16 columns, letters from the legend, "." = transparent. The centrepiece is 12-16 wide and 9-12 rows. Use the whole canvas for a strong silhouette and interior detail, while leaving deliberate transparent cutouts around legs, shelves, arms, or handles.',
+    '- Use O plus at least three material/colour letters in every object. Keep 24-76% of the canvas occupied so it is neither a sparse symbol nor a solid block.',
     '- Legend: O=dark outline, W=wood, w=dark wood, m=metal, s=screen green, b=blue, r=red, y=yellow, g=green, p=purple, c=cream, o=orange, t=teal.',
     `- The catalog kinds [${ITEM_KINDS.join(', ')}] exist only as a last resort; set \`kind\` to null when unused, and draw your own \`pixels\` every time.`,
   ]
