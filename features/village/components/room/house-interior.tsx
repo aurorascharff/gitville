@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AvatarImage } from '@/components/ui/avatar-image';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { AiPanel } from '@/features/village/components/room/ai-panel';
+import { AiPanel, AiPanelSkeleton } from '@/features/village/components/room/ai-panel';
 import { FurnitureCloseup } from '@/features/village/components/room/furniture-closeup';
 import { HouseSign } from '@/features/village/components/room/house-sign';
 import { InteriorPlayer } from '@/features/village/components/room/interior-player';
@@ -171,7 +171,9 @@ function InteriorScene({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  const aiPanelVisible = aiWorking || Boolean(spec?.aiAvailable && spec.commits.length > 0);
+  const roomLoading = scene.loading && !spec;
+  const aiPanelLoading = roomLoading && cell.kind !== 'issue' && cell.kind !== 'inbox';
+  const aiPanelVisible = aiPanelLoading || aiWorking || Boolean(spec?.aiAvailable && spec.commits.length > 0);
   const roomTopInset = aiPanelVisible && viewport.w >= 768 ? 112 : 0;
   const frame = roomFrame(viewport.w, viewport.h, w, h, roomTopInset);
 
@@ -241,7 +243,11 @@ function InteriorScene({
         />
       ) : null}
       <HouseSign cell={cell} ai={ai} open={signOpen} onClose={() => setSignOpen(false)} />
-      <AiPanel ai={ai} onGenerate={roomAi.generate} pending={aiWorking} spec={spec} />
+      {aiPanelLoading ? (
+        <AiPanelSkeleton />
+      ) : (
+        <AiPanel ai={ai} onGenerate={roomAi.generate} pending={aiWorking} spec={spec} />
+      )}
       {inspectIndex !== null && scene.builds[inspectIndex] ? (
         <FurnitureCloseup
           build={scene.builds[inspectIndex]}

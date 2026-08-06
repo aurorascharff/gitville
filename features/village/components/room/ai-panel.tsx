@@ -85,6 +85,23 @@ export function AiPanel({
   );
 }
 
+export function AiPanelSkeleton() {
+  return (
+    <aside
+      aria-hidden
+      className="panel absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 flex h-9 w-9 items-center justify-center rounded-sm p-1.5 md:top-8 md:right-4 md:min-h-16 md:w-72 md:justify-start md:gap-3 md:p-2.5"
+    >
+      <span className="pixel flex h-6 w-6 shrink-0 items-center justify-center opacity-45 md:h-10 md:w-10">
+        <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.3} />
+      </span>
+      <span className="hidden min-w-0 flex-1 flex-col gap-2 md:flex">
+        <span className="h-3 w-28 rounded-xs bg-[#6b5b43]/25" />
+        <span className="h-2.5 w-20 rounded-xs bg-[#6b5b43]/15" />
+      </span>
+    </aside>
+  );
+}
+
 function KeyHint({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span
