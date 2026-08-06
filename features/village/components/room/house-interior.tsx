@@ -64,10 +64,17 @@ export function HouseInterior() {
     const floor = cells.find(candidate => candidate.id === `pr:${pr.number}`);
     return floor ? [floor] : [];
   });
-  const currentFloorIndex = cell ? stackFloors.findIndex(floor => floor.id === cell.id) : -1;
+  const facadeFloors = stackFloors.length
+    ? stackFloors
+    : cell && cell.kind !== 'issue' && cell.kind !== 'inbox'
+      ? [cell]
+      : [];
+  const currentFloorIndex = cell ? facadeFloors.findIndex(floor => floor.id === cell.id) : -1;
+  const floorAboveId = facadeFloors[currentFloorIndex - 1]?.id;
+  const floorBelowId = facadeFloors[currentFloorIndex + 1]?.id;
 
   function selectFloor(index: number) {
-    const floor = stackFloors[index];
+    const floor = facadeFloors[index];
     if (!floor || index === currentFloorIndex) return;
     setTransitionDirection(index < currentFloorIndex ? 'up' : 'down');
     preloadRoomSpec(slug, floor.id);
@@ -83,12 +90,9 @@ export function HouseInterior() {
   }, [focusId]);
 
   useEffect(() => {
-    if (currentFloorIndex < 0) return;
-    for (const index of [currentFloorIndex - 1, currentFloorIndex + 1]) {
-      const floor = stackFloors[index];
-      if (floor) preloadRoomSpec(slug, floor.id);
-    }
-  }, [currentFloorIndex, slug, stackFloors]);
+    if (floorAboveId) preloadRoomSpec(slug, floorAboveId);
+    if (floorBelowId) preloadRoomSpec(slug, floorBelowId);
+  }, [floorAboveId, floorBelowId, slug]);
 
   if (!cell || !viewport.ready) return null;
 
@@ -104,14 +108,14 @@ export function HouseInterior() {
         viewport={viewport}
         walkTargetRef={walkTargetRef}
         transitionDirection={transitionDirection}
-        onFloorStep={stackFloors.length > 1 ? stepFloor : null}
+        onFloorStep={facadeFloors.length > 1 ? stepFloor : null}
       />
       <StackElevator
-        floors={stackFloors}
+        floors={facadeFloors}
         currentIndex={currentFloorIndex}
         onSelect={selectFloor}
         onPreload={index => {
-          const floor = stackFloors[index];
+          const floor = facadeFloors[index];
           if (floor) preloadRoomSpec(slug, floor.id);
         }}
       />

@@ -26,16 +26,16 @@ export function TimeMachine() {
   return (
     <div
       className={cn(
-        'absolute right-14 z-50 flex flex-col items-end gap-1.5',
+        'absolute z-50 flex flex-col items-start gap-1.5',
         focusId
-          ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] sm:bottom-5'
-          : 'bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] sm:bottom-5',
+          ? 'bottom-[max(4.25rem,env(safe-area-inset-bottom)+4.25rem)] left-[5.625rem] sm:bottom-5 sm:left-[calc(min(360px,40vw)+6.625rem)]'
+          : 'bottom-[max(3.75rem,env(safe-area-inset-bottom)+3.75rem)] left-[5.625rem] sm:bottom-5 sm:left-[6.625rem]',
       )}
     >
       {open ? (
         <div
           id="village-timeline"
-          className="panel flex h-11 w-[min(36rem,calc(100vw-1.5rem))] items-center gap-1.5 rounded-sm py-1 pr-1.5 pl-2 sm:h-auto sm:gap-3 sm:py-2 sm:pr-2 sm:pl-3"
+          className="panel relative -left-[4.875rem] flex h-11 w-[min(36rem,calc(100vw-1.5rem))] items-center gap-1.5 rounded-sm py-1 pr-1.5 pl-2 sm:left-0 sm:h-auto sm:gap-3 sm:py-2 sm:pr-2 sm:pl-3"
         >
           <span className="hidden shrink-0 font-mono text-[12px] text-[#8a6d2a] sm:inline">
             {spanLabel(maxT - minT)} ago

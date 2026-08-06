@@ -16,6 +16,7 @@ import type { BranchCommit, RoomSpecItem } from '@/types/github';
 export const WALL_H = 150;
 
 export const SIDEBAR_W = 360;
+const ROOM_RAIL_W = 176;
 
 type RoomRole = 'attic' | 'middle' | 'ground' | 'single';
 export type Build = { commits: BranchCommit[]; name?: string; kind?: string; pieces?: string[][]; size?: number };
@@ -41,18 +42,20 @@ export function roomDims(cell: Cell): [number, number] {
 
 export function roomFrame(viewportW: number, viewportH: number, roomW: number, roomH: number, topInset = 0): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
-  const availW = viewportW - sidebar;
+  const rail = viewportW >= 1024 ? ROOM_RAIL_W : 0;
+  const availW = viewportW - sidebar - rail;
   const availH = viewportH - topInset;
-  const scale =
+  const baseScale =
     viewportW < 640
       ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH))
       : topInset > 0
         ? Math.max(0.5, Math.min(1, (availH - 24) / roomH))
         : 1;
+  const scale = rail ? Math.max(0.5, Math.min(baseScale, (availW - 24) / roomW)) : baseScale;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
-    x: sw <= availW ? sidebar + (availW - sw) / 2 : sidebar,
+    x: rail ? sidebar + 12 : sw <= availW ? sidebar + (availW - sw) / 2 : sidebar,
     y: sh <= availH ? topInset + (availH - sh) / 2 : topInset,
     scale,
   };
@@ -68,19 +71,24 @@ export function followRoomFrame(
   topInset = 0,
 ): RoomFrame {
   const sidebar = viewportW < 640 ? 0 : Math.min(SIDEBAR_W, viewportW * 0.4);
-  const availW = viewportW - sidebar;
+  const rail = viewportW >= 1024 ? ROOM_RAIL_W : 0;
+  const availW = viewportW - sidebar - rail;
   const availH = viewportH - topInset;
-  const scale =
+  const baseScale =
     viewportW < 640
       ? Math.max(0.62, Math.min(0.82, (availW - 28) / roomW, (viewportH - 130) / roomH))
       : topInset > 0
         ? Math.max(0.5, Math.min(1, (availH - 24) / roomH))
         : 1;
+  const scale = rail ? Math.max(0.5, Math.min(baseScale, (availW - 24) / roomW)) : baseScale;
   const sw = roomW * scale;
   const sh = roomH * scale;
   return {
-    x:
-      sw <= availW
+    x: rail
+      ? sw <= availW - 12
+        ? sidebar + 12
+        : Math.min(sidebar + 12, Math.max(sidebar + availW - sw, sidebar + availW / 2 - focusX * scale))
+      : sw <= availW
         ? sidebar + (availW - sw) / 2
         : Math.min(sidebar, Math.max(sidebar + availW - sw, sidebar + availW / 2 - focusX * scale)),
     y:

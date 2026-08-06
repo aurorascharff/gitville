@@ -18,88 +18,72 @@ export function StackElevator({
   onPreload: (index: number) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const stacked = floors.length > 1;
 
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
   }, [currentIndex]);
 
-  if (floors.length < 2) return null;
+  if (!floors.length) return null;
 
   return (
     <nav
       data-stack-nav
-      aria-label={`Pull request stack, ${floors.length} floors`}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={e => {
-        if (!e.currentTarget.contains(document.activeElement)) setExpanded(false);
-      }}
-      onFocusCapture={() => setExpanded(true)}
-      onBlurCapture={e => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setExpanded(false);
-      }}
-      className={cn(
-        'absolute top-[4.25rem] right-2 z-65 flex w-[82px] flex-col items-center transition-[width] duration-200 ease-out sm:top-28 sm:right-4',
-        expanded ? 'sm:w-[360px]' : 'sm:w-[210px]',
-      )}
+      aria-label={stacked ? `Pull request stack, ${floors.length} floors` : 'Room exterior'}
+      className="pointer-events-none absolute top-[4.25rem] right-2 z-65 flex w-[82px] flex-col items-center sm:top-28 sm:right-4 sm:w-[148px]"
     >
-      <div
-        aria-hidden
-        className={cn(
-          'pixel flex h-5 w-[72px] items-end justify-center transition-[width] duration-200 sm:w-[194px]',
-          expanded && 'sm:w-[344px]',
-        )}
-      >
-        <span
-          className={cn(
-            'h-2 w-[72px] bg-[#6e3524] transition-[width] duration-200 sm:w-[194px]',
-            expanded && 'sm:w-[344px]',
-          )}
-        />
-        <span
-          className={cn(
-            'absolute h-4 w-12 bg-[#9f5540] transition-[width] duration-200 sm:w-32',
-            expanded && 'sm:w-56',
-          )}
-        />
+      <div aria-hidden className="pixel flex h-5 w-[72px] items-end justify-center sm:w-[132px]">
+        <span className="h-2 w-[72px] bg-[#6e3524] sm:w-[132px]" />
+        <span className="absolute h-4 w-12 bg-[#9f5540] sm:w-20" />
       </div>
-      <div className="w-full border-4 border-[#2e2418] bg-[#2e2418] shadow-[5px_6px_0_rgb(0_0_0/0.45)]">
-        <button
-          type="button"
-          title="Floor above"
-          aria-label="Go to the floor above"
-          disabled={currentIndex === 0}
-          onClick={() => onSelect(currentIndex - 1)}
-          className="flex h-8 w-full items-center justify-center bg-[#e5c98f] text-[#3a2f22] hover:bg-[#f0dcad] disabled:cursor-default disabled:opacity-30"
-        >
-          <ChevronUp size={18} strokeWidth={4} />
-        </button>
-        <div
-          ref={listRef}
-          className="max-h-[min(52vh,360px)] overflow-y-auto overscroll-contain border-y-2 border-[#2e2418] bg-[#6b4930]"
-        >
+      <div className="pointer-events-auto w-full border-4 border-[#2e2418] bg-[#2e2418] shadow-[5px_6px_0_rgb(0_0_0/0.45)]">
+        {stacked ? (
+          <button
+            type="button"
+            title="Floor above"
+            aria-label="Go to the floor above"
+            disabled={currentIndex === 0}
+            onClick={() => onSelect(currentIndex - 1)}
+            className="flex h-8 w-full items-center justify-center bg-[#e5c98f] text-[#3a2f22] hover:bg-[#f0dcad] disabled:cursor-default disabled:opacity-30"
+          >
+            <ChevronUp size={18} strokeWidth={4} />
+          </button>
+        ) : null}
+        <div ref={listRef} className={cn('overflow-visible bg-[#6b4930]', stacked && 'border-y-2 border-[#2e2418]')}>
           {floors.map((floor, index) => {
             const current = index === currentIndex;
             const floorNo = floors.length - index;
+            const open = openIndex === index;
             return (
               <button
                 key={floor.id}
                 type="button"
                 aria-current={current ? 'true' : undefined}
-                aria-label={`Floor ${floorNo}: ${floor.label} ${floor.sub ?? ''}`}
+                aria-label={`${stacked ? `Floor ${floorNo}: ` : ''}${floor.label} ${floor.sub ?? ''}`}
                 title={`${floor.label} ${floor.sub ?? ''}`}
                 onClick={() => onSelect(index)}
-                onFocus={() => onPreload(index)}
-                onMouseEnter={() => onPreload(index)}
+                onFocus={() => {
+                  onPreload(index);
+                  setOpenIndex(index);
+                }}
+                onBlur={() => setOpenIndex(null)}
+                onMouseEnter={() => {
+                  onPreload(index);
+                  setOpenIndex(index);
+                }}
+                onMouseLeave={e => {
+                  if (e.currentTarget !== document.activeElement) setOpenIndex(null);
+                }}
                 className={cn(
-                  'group relative flex h-[58px] w-full overflow-hidden border-b-2 border-[#2e2418] text-left transition-[height] duration-200 last:border-b-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#f7efdc]',
-                  expanded && 'sm:h-[72px]',
-                  current && 'z-10',
+                  'relative flex h-[62px] w-full overflow-visible border-b-2 border-[#2e2418] text-left last:border-b-0 focus-visible:z-40 focus-visible:outline-2 focus-visible:outline-[#f7efdc]',
+                  open && 'z-40',
+                  current && 'z-30',
                 )}
               >
                 <span className="relative h-full w-full overflow-hidden">
-                  <span className={cn('absolute inset-x-0 top-0 h-[25px]', wallClass(floor))} />
-                  <span className={cn('absolute inset-x-0 top-[25px] bottom-0', floorClass(floor))} />
+                  <span className={cn('absolute inset-x-0 top-0 h-[27px]', wallClass(floor))} />
+                  <span className={cn('absolute inset-x-0 top-[27px] bottom-0', floorClass(floor))} />
                   <span
                     aria-hidden
                     className="absolute top-2 left-2 h-3 w-3 border-2 border-[#4a3826] bg-[#b9ddf2] shadow-[13px_0_0_#b9ddf2,13px_0_0_2px_#4a3826]"
@@ -113,35 +97,14 @@ export function StackElevator({
                   </span>
                   <span
                     className={cn(
-                      'absolute inset-y-0 right-0 left-[76px] hidden min-w-0 flex-col justify-center overflow-hidden px-2 sm:flex',
+                      'absolute inset-y-0 right-0 left-[76px] hidden min-w-0 flex-col justify-center overflow-hidden px-1.5 sm:flex',
                       current ? 'bg-[#f4d77e]' : 'bg-[#f7efdc]/92',
                     )}
                   >
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span
-                        className={cn('leading-4 font-black text-[#3a2f22]', expanded ? 'text-[13px]' : 'text-[12px]')}
-                      >
-                        F{floorNo}
-                      </span>
-                      <span
-                        className={cn(
-                          'min-w-0 truncate leading-4 font-bold text-[#8a4a2b]',
-                          expanded ? 'text-[13px]' : 'text-[12px]',
-                        )}
-                      >
-                        {floor.label}
-                      </span>
+                    <span className="text-[12px] leading-4 font-black text-[#3a2f22]">
+                      {stacked ? `F${floorNo}` : 'ROOM'}
                     </span>
-                    <span
-                      className={cn(
-                        'text-[#6b5b43]',
-                        expanded
-                          ? 'line-clamp-2 text-[13px] leading-[18px] whitespace-normal'
-                          : 'truncate text-[11px] leading-4',
-                      )}
-                    >
-                      {floor.sub}
-                    </span>
+                    <span className="truncate text-[11px] leading-4 font-bold text-[#8a4a2b]">{floor.label}</span>
                   </span>
                   {current ? (
                     <>
@@ -153,28 +116,33 @@ export function StackElevator({
                     </>
                   ) : null}
                 </span>
+                {open ? (
+                  <span className="panel pointer-events-none absolute top-[-4px] right-[calc(100%+0.5rem)] z-50 hidden min-h-[70px] w-[300px] flex-col justify-center rounded-sm border-4 border-[#2e2418] px-3 py-2 text-left shadow-[5px_6px_0_rgb(0_0_0/0.4)] sm:flex">
+                    <span className="flex min-w-0 items-center gap-2 text-[14px] leading-5 font-black text-[#3a2f22]">
+                      {stacked ? <span className="shrink-0">F{floorNo}</span> : null}
+                      <span className="truncate text-[#8a4a2b]">{floor.label}</span>
+                    </span>
+                    <span className="mt-0.5 line-clamp-2 text-[14px] leading-5 text-[#6b5b43]">{floor.sub}</span>
+                  </span>
+                ) : null}
               </button>
             );
           })}
         </div>
-        <button
-          type="button"
-          title="Floor below"
-          aria-label="Go to the floor below"
-          disabled={currentIndex === floors.length - 1}
-          onClick={() => onSelect(currentIndex + 1)}
-          className="flex h-8 w-full items-center justify-center bg-[#e5c98f] text-[#3a2f22] hover:bg-[#f0dcad] disabled:cursor-default disabled:opacity-30"
-        >
-          <ChevronDown size={18} strokeWidth={4} />
-        </button>
+        {stacked ? (
+          <button
+            type="button"
+            title="Floor below"
+            aria-label="Go to the floor below"
+            disabled={currentIndex === floors.length - 1}
+            onClick={() => onSelect(currentIndex + 1)}
+            className="flex h-8 w-full items-center justify-center bg-[#e5c98f] text-[#3a2f22] hover:bg-[#f0dcad] disabled:cursor-default disabled:opacity-30"
+          >
+            <ChevronDown size={18} strokeWidth={4} />
+          </button>
+        ) : null}
       </div>
-      <div
-        aria-hidden
-        className={cn(
-          'pixel flex w-[74px] justify-between transition-[width] duration-200 sm:w-[194px]',
-          expanded && 'sm:w-[344px]',
-        )}
-      >
+      <div aria-hidden className="pixel flex w-[74px] justify-between sm:w-[132px]">
         <span className="h-2 w-3 bg-[#2e2418]" />
         <span className="h-2 w-3 bg-[#2e2418]" />
       </div>

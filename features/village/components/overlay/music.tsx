@@ -178,7 +178,7 @@ export function VillageMusic() {
         {playing ? '♪' : <span className="opacity-45">♪</span>}
       </button>
       {playing ? (
-        <div className="panel hidden h-9 items-center rounded-sm px-2 sm:flex">
+        <div className="panel absolute bottom-[calc(100%+0.375rem)] left-0 hidden h-9 items-center rounded-sm px-2 sm:flex">
           <input
             type="range"
             min={0}
