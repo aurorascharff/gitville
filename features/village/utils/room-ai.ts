@@ -21,13 +21,15 @@ type RoomSpec = {
   items: RoomItem[];
 };
 
+const pixelBlockSchema = z.array(z.string()).min(3);
+
 const specSchema = z.object({
-  theme: z.string(),
+  theme: z.string().optional(),
   items: z.array(
     z.object({
       name: z.string(),
-      kind: z.enum(ITEM_KINDS).nullable(),
-      pieces: z.array(z.array(z.string())).min(1),
+      kind: z.enum(ITEM_KINDS).nullable().optional(),
+      pieces: z.union([pixelBlockSchema, z.array(pixelBlockSchema).min(1)]),
       size: z.number().int().min(1).max(4).nullable().optional(),
       commits: z.array(z.number()),
     }),
@@ -36,11 +38,15 @@ const specSchema = z.object({
 
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
-function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number): RoomSpec {
+function normalizePieces(pieces: string[] | string[][]): string[][] {
+  return typeof pieces[0] === 'string' ? [pieces as string[]] : (pieces as string[][]);
+}
+
+function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fallbackTheme: string): RoomSpec {
   const expected = Math.min(14, commitCount);
   const claimed = new Set<number>();
   const items: RoomItem[] = raw.items.slice(0, 14).flatMap(item => {
-    const pieces = (item.pieces ?? [])
+    const pieces = normalizePieces(item.pieces)
       .map(piece => piece.filter(row => artRow.test(row)).slice(0, 12))
       .filter(piece => piece.length >= 3)
       .slice(0, 14);
@@ -68,7 +74,7 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number): Roo
   }
 
   return {
-    theme: raw.theme.slice(0, 28),
+    theme: (raw.theme ?? fallbackTheme).slice(0, 28),
     items: items.filter(item => item.commits.length > 0),
   };
 }
@@ -133,6 +139,7 @@ async function generateRoomSpecCached(
     '',
     'Map commits to objects:',
     '- ALWAYS draw the art yourself in `pieces`. Every item must include one valid `pieces` block; reaching for `kind` without art means giving up, so avoid it.',
+    '- Write `pieces` as one nested block, for example: `"pieces": [["..OO..", ".OggO.", "..OO.."]]`.',
     '- Each item is ONE invented object standing for ONE piece of work; name it so the tie to the commit is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
     '- Group commits that clearly belong to the same piece of work into one item (its `commits` lists their indexes). Every index 0..N must appear in exactly one item. A lone commit is one self-contained object.',
     '- Draw each item as `pieces`: EXACTLY one pixel-art block for the whole object, even when it represents several commits. Do NOT make one attached segment per commit.',
@@ -159,7 +166,7 @@ async function generateRoomSpecCached(
         schema: specSchema,
         prompt,
       });
-      return sanitizeSpec(specSchema.parse(object), commits.length);
+      return sanitizeSpec(specSchema.parse(object), commits.length, label);
     } catch (error) {
       lastError = error;
     }
