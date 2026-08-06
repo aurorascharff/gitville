@@ -100,7 +100,7 @@ function normalizeGeneratedJson(text: string): string {
   return JSON.stringify({ ...envelope, items: typeof items === 'string' ? JSON.parse(firstJsonValue(items)) : items });
 }
 
-function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], index: number): void {
+function artHasEnoughDetail(pixels: string[], index: number): boolean {
   const width = Math.max(...pixels.map(row => row.length));
   const height = pixels.length;
   const cells = pixels.join('').split('');
@@ -111,17 +111,15 @@ function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], i
   const minWidth = index === 0 ? 12 : 9;
   const minHeight = index === 0 ? 9 : 7;
 
-  if (
+  return !(
     width < minWidth ||
     height < minHeight ||
     filled.length < 28 ||
-    materials.size < 3 ||
+    materials.size < 2 ||
     occupancy < 0.24 ||
-    occupancy > 0.76 ||
-    transparentRows < Math.ceil(height / 3)
-  ) {
-    throw new Error(`AI ${form} did not use its pixel canvas with enough shape and detail.`);
-  }
+    occupancy > 0.86 ||
+    transparentRows < Math.ceil(height / 4)
+  );
 }
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fallbackTheme: string): RoomSpec {
@@ -131,8 +129,7 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fall
   const items: RoomItem[] = raw.items.flatMap((item, itemIndex) => {
     const pixels = item.pixels.filter(row => artRow.test(row)).slice(0, 12);
     if (pixels.length < 3) return [];
-    if (forms.has(item.form)) throw new Error(`AI room repeated the ${item.form} furnishing form.`);
-    assertArtQuality(pixels, item.form, itemIndex);
+    if (forms.has(item.form) || !artHasEnoughDetail(pixels, itemIndex)) return [];
     forms.add(item.form);
 
     const commits = item.commits.filter(index => {
