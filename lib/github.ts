@@ -14,6 +14,7 @@ import type {
 } from '@/types/github';
 
 const API = 'https://api.github.com';
+const OPEN_PULL_CANDIDATE_LIMIT = 100;
 
 const REPO_PART = /^[\w.-]+$/;
 const UNKNOWN_ACTOR = 'someone';
@@ -569,8 +570,8 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
   const data = await ghGraphQL<{
     repository: { pullRequests: { totalCount: number; nodes: (GqlPull | null)[] | null } | null } | null;
   }>(
-    `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
-      pullRequests(first:64,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
+    `query($owner:String!,$repo:String!,$limit:Int!){ repository(owner:$owner,name:$repo){
+      pullRequests(first:$limit,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){
         totalCount
         nodes{
           number title url isDraft updatedAt headRefName baseRefName mergeable mergeStateStatus reviewDecision
@@ -582,7 +583,7 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
           author{ login avatarUrl }
         }
       } } }`,
-    { owner, repo },
+    { owner, repo, limit: OPEN_PULL_CANDIDATE_LIMIT },
   );
   const pullRequests = data?.repository?.pullRequests;
   const nodes = pullRequests?.nodes;
@@ -612,7 +613,9 @@ async function getOpenPulls(slug: string): Promise<PullsResult | null> {
     return { prs, total: pullRequests?.totalCount ?? prs.length, checksComplete: true };
   }
 
-  const pulls = await gh<PullResponse[]>(`${path}/pulls?state=open&sort=updated&direction=desc&per_page=64`);
+  const pulls = await gh<PullResponse[]>(
+    `${path}/pulls?state=open&sort=updated&direction=desc&per_page=${OPEN_PULL_CANDIDATE_LIMIT}`,
+  );
   if (!Array.isArray(pulls)) return null;
 
   const checkStates = await Promise.all(pulls.slice(0, 36).map(pr => getRestCheckState(slug, pr.head.sha)));
