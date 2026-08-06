@@ -49,7 +49,7 @@ export function AiPanel({
           working ? 'Carpenter is furnishing this room. Come back later.' : 'Ask the carpenter to fix the furniture'
         }
         className={cn(
-          'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-16 md:w-full md:justify-start md:p-2.5',
+          'panel flex h-9 w-9 cursor-pointer items-center justify-center gap-3 rounded-sm p-1.5 text-left transition-transform hover:-translate-y-0.5 md:min-h-16 md:w-full md:justify-start md:px-3 md:py-4',
           highlighted && 'ring-2 ring-[#e4c05a]',
           highlighted && 'cursor-default hover:translate-y-0',
         )}
@@ -89,7 +89,7 @@ export function AiPanelSkeleton() {
   return (
     <aside
       aria-hidden
-      className="panel absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 flex h-9 w-9 items-center justify-center rounded-sm p-1.5 md:top-8 md:right-4 md:min-h-16 md:w-72 md:justify-start md:gap-3 md:p-2.5"
+      className="panel absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 flex h-9 w-9 items-center justify-center rounded-sm p-1.5 md:top-8 md:right-4 md:min-h-16 md:w-72 md:justify-start md:gap-3 md:px-3 md:py-4"
     >
       <span className="pixel flex h-6 w-6 shrink-0 items-center justify-center opacity-45 md:h-10 md:w-10">
         <PixelSprite art={CARPENTER.art} palette={CARPENTER.palette} scale={2.3} />
