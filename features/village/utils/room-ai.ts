@@ -54,6 +54,8 @@ const specSchema = z.object({
     .max(7),
 });
 
+const generatedTextErrorSchema = z.object({ text: z.string() });
+
 const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
 
 function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], index: number): void {
@@ -78,6 +80,18 @@ function assertArtQuality(pixels: string[], form: (typeof ITEM_FORMS)[number], i
   ) {
     throw new Error(`AI ${form} did not use its pixel canvas with enough shape and detail.`);
   }
+}
+
+function recoverStringifiedItems(error: unknown): z.infer<typeof specSchema> | null {
+  const generated = generatedTextErrorSchema.safeParse(error);
+  if (!generated.success) return null;
+
+  const envelope: unknown = JSON.parse(generated.data.text);
+  if (!envelope || typeof envelope !== 'object' || !('items' in envelope)) return null;
+  const items = envelope.items;
+  if (typeof items !== 'string') return null;
+
+  return specSchema.parse({ ...envelope, items: JSON.parse(items) });
 }
 
 function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fallbackTheme: string): RoomSpec {
@@ -215,6 +229,13 @@ async function generateRoomSpecCached(
       });
       return sanitizeSpec(specSchema.parse(output), commits.length, label);
     } catch (error) {
+      try {
+        const recovered = recoverStringifiedItems(error);
+        if (recovered) return sanitizeSpec(recovered, commits.length, label);
+      } catch (recoveryError) {
+        lastError = recoveryError;
+        continue;
+      }
       lastError = error;
     }
   }
