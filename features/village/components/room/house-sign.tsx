@@ -55,14 +55,20 @@ export function HouseSign({
         </button>
         <div className="shrink-0 px-6 pt-7 pb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                'font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]',
-                isPr ? 'text-[18px] leading-6 text-[#e4c05a]' : 'text-[24px] leading-7',
-              )}
-            >
-              {cell.label}
-            </span>
+            {isPr ? (
+              <a
+                href={cell.url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open ${cell.label} on GitHub`}
+                className="flex items-center gap-1 text-[18px] leading-6 font-bold text-[#e4c05a] drop-shadow-[0_2px_0_rgb(0_0_0/0.5)] hover:underline"
+              >
+                {cell.label}
+                <ArrowUpRight size={15} strokeWidth={3} />
+              </a>
+            ) : (
+              <span className="text-[24px] leading-7 font-bold drop-shadow-[0_2px_0_rgb(0_0_0/0.5)]">{cell.label}</span>
+            )}
             {chip ? (
               <span
                 className={cn(
@@ -180,17 +186,6 @@ export function HouseSign({
         ) : (
           <div className="flex-1" />
         )}
-
-        <div className="shrink-0 border-t-2 border-[#f0e6d2]/15 px-6 py-4">
-          <a
-            href={cell.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-[15px] font-bold text-[#f0b98a] hover:underline"
-          >
-            open on github <ArrowUpRight size={14} strokeWidth={3} />
-          </a>
-        </div>
       </div>
     </aside>
   );

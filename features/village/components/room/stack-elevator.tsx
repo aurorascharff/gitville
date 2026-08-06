@@ -87,10 +87,12 @@ export function StackElevator({
                   >
                     {floorNo}
                   </span>
-                  <span className="absolute inset-y-0 left-[76px] hidden min-w-0 flex-1 flex-col justify-center bg-[#f7efdc]/92 px-2 sm:flex">
-                    <span className="flex items-center gap-1.5">
+                  <span className="absolute inset-y-0 right-0 left-[76px] hidden min-w-0 flex-col justify-center overflow-hidden bg-[#f7efdc]/92 px-2 sm:flex">
+                    <span className="flex min-w-0 items-center gap-1.5">
                       <span className="text-[12px] leading-4 font-black text-[#3a2f22]">F{floorNo}</span>
-                      <span className="truncate text-[12px] leading-4 font-bold text-[#8a4a2b]">{floor.label}</span>
+                      <span className="min-w-0 truncate text-[12px] leading-4 font-bold text-[#8a4a2b]">
+                        {floor.label}
+                      </span>
                     </span>
                     <span className="truncate text-[11px] leading-4 text-[#6b5b43]">{floor.sub}</span>
                   </span>
