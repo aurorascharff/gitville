@@ -54,7 +54,8 @@ const specSchema = z.object({
     .max(7),
 });
 
-const artRow = new RegExp(`^[${ART_LETTERS}.]{2,16}$`);
+const artLetters = new Set(`${ART_LETTERS}.`);
+const pixelAliases: Record<string, string> = { S: 's', '|': 'm', ' ': '.' };
 
 function firstJsonValue(text: string): string {
   const stack: string[] = [];
@@ -96,8 +97,26 @@ function firstJsonValue(text: string): string {
 function normalizeGeneratedJson(text: string): string {
   const envelope: unknown = JSON.parse(firstJsonValue(text));
   if (!envelope || typeof envelope !== 'object' || !('items' in envelope)) return JSON.stringify(envelope);
-  const items = envelope.items;
-  return JSON.stringify({ ...envelope, items: typeof items === 'string' ? JSON.parse(firstJsonValue(items)) : items });
+  let items: unknown = envelope.items;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (typeof items === 'string') {
+      items = JSON.parse(firstJsonValue(items));
+      continue;
+    }
+    if (items && typeof items === 'object' && !Array.isArray(items) && 'items' in items) {
+      items = items.items;
+      continue;
+    }
+    break;
+  }
+  return JSON.stringify({ ...envelope, items });
+}
+
+function normalizePixelRow(row: string): string {
+  return [...row]
+    .slice(0, 16)
+    .map(character => (artLetters.has(character) ? character : (pixelAliases[character] ?? '.')))
+    .join('');
 }
 
 function artHasEnoughDetail(pixels: string[], index: number): boolean {
@@ -108,7 +127,7 @@ function artHasEnoughDetail(pixels: string[], index: number): boolean {
   const materials = new Set(filled.filter(cell => cell !== 'O'));
   const occupancy = filled.length / (width * height);
   const transparentRows = pixels.filter(row => row.includes('.')).length;
-  const minWidth = index === 0 ? 12 : 9;
+  const minWidth = index === 0 ? 11 : 9;
   const minHeight = index === 0 ? 9 : 7;
 
   return !(
@@ -127,7 +146,10 @@ function sanitizeSpec(raw: z.infer<typeof specSchema>, commitCount: number, fall
   const claimed = new Set<number>();
   const forms = new Set<(typeof ITEM_FORMS)[number]>();
   const items: RoomItem[] = raw.items.flatMap((item, itemIndex) => {
-    const pixels = item.pixels.filter(row => artRow.test(row)).slice(0, 12);
+    const pixels = item.pixels
+      .map(normalizePixelRow)
+      .filter(row => row.length >= 2)
+      .slice(0, 12);
     if (pixels.length < 3) return [];
     if (forms.has(item.form) || !artHasEnoughDetail(pixels, itemIndex)) return [];
     forms.add(item.form);
@@ -206,6 +228,9 @@ async function generateRoomSpecCached(
     model: gateway('anthropic/claude-sonnet-5'),
     middleware: extractJsonMiddleware({ transform: normalizeGeneratedJson }),
   });
+  const maximumItems = Math.min(7, Math.max(1, Math.ceil(commits.length / 2)));
+  const minimumItems = Math.min(maximumItems, commits.length <= 2 ? 1 : 3);
+  const itemCount = minimumItems === maximumItems ? `${minimumItems}` : `${minimumItems}-${maximumItems}`;
 
   const prompt = [
     'You are the set decorator for ONE room in a pixel-art village where a real GitHub project comes to life. Fill the room with a VARIED collection of objects you INVENT yourself — each one your own little pixel-art creation that playfully stands for a real commit and would believably sit in this room. Mix it up freely: furniture (desks, shelves, chests), props and curios, and gadgets or machines when the work calls for it. The one rule is variety and invention — never repeat the same kind of object, and never settle for a plain bookshelf-and-crate look.',
@@ -222,7 +247,7 @@ async function generateRoomSpecCached(
     '- Every object should feel at home in that room, but make each grouped piece of work inspire a DIFFERENT invention — one a machine, one a piece of furniture, one an odd little prop — so the room is a cabinet of curiosities, not a matching set.',
     '',
     'Map commits to objects:',
-    '- Create 4-7 objects total. Group related commits into the same object so a busy room gets fewer, larger, more detailed objects instead of one small object per commit.',
+    `- Create ${itemCount} ${minimumItems === maximumItems && minimumItems === 1 ? 'object' : 'objects'} total. Group related commits into the same object so a busy room gets fewer, larger, more detailed objects instead of one small object per commit.`,
     '- ALWAYS draw the art yourself in `pixels`. Every item must include one flat array of pixel rows, for example: `"pixels": ["..OO..", ".OggO.", "..OO.."]`. Return JSON data only; never put code or expressions inside a row.',
     '- Choose a unique `form` for every item. `form` is its recognizable furnishing silhouette, not its commit metaphor. Never repeat a form in one room.',
     '- Each item is ONE invented object standing for one coherent piece of work; name it so the tie to its commits is clear, and make it a clearly DIFFERENT thing from every other object in the room.',
@@ -254,7 +279,7 @@ async function generateRoomSpecCached(
         output: Output.object({
           schema: specSchema,
           name: 'gitville_room',
-          description: 'A themed room with 4-7 custom pixel-art objects covering every commit.',
+          description: `A themed room with ${itemCount} custom pixel-art objects covering every commit.`,
         }),
         prompt,
       });
