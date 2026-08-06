@@ -19,11 +19,7 @@ const REPO_PART = /^[\w.-]+$/;
 const UNKNOWN_ACTOR = 'someone';
 const VILLAGE_PAYLOAD_TAG_PREFIX = 'gv-live-v2';
 
-class VillagePayloadMiss extends Error {
-  constructor(readonly payload: VillagePayload) {
-    super('Village payload incomplete');
-  }
-}
+class GitHubUnavailableError extends Error {}
 
 function repoParts(slug: string): { slug: string; owner: string; name: string; path: string } | null {
   const parsed = parseRepoSlug(slug);
@@ -67,6 +63,18 @@ async function gh<T>(path: string): Promise<T | null> {
   }
 }
 
+async function ghResult<T>(path: string, authenticated = true): Promise<{ data: T | null; status: number | null }> {
+  try {
+    const headers = ghHeaders();
+    if (!authenticated) delete headers.Authorization;
+    const res = await fetch(`${API}${path}`, { headers });
+    if (!res.ok) return { data: null, status: res.status };
+    return { data: (await res.json()) as T, status: res.status };
+  } catch {
+    return { data: null, status: null };
+  }
+}
+
 export function parseRepoSlug(input: string): { slug: string; owner: string; name: string } | null {
   const clean = input.trim();
   const m =
@@ -100,10 +108,28 @@ export async function getRepoData(slug: string): Promise<RepoData | null> {
   cacheTag(`gh-repo-${slug}`);
   const parsed = repoParts(slug);
   if (!parsed) return null;
-  const meta = await gh<RepoResponse>(parsed.path);
-  if (!meta || meta.private) return null;
+  const result = await ghResult<RepoResponse>(parsed.path);
+  if (!result.data) {
+    if (result.status === 404) return null;
+    const fallback = await getGraphqlRepoData(parsed);
+    if (fallback) return fallback;
+    const publicResult = process.env.GITHUB_TOKEN
+      ? await ghResult<RepoResponse>(parsed.path, false)
+      : { data: null, status: result.status };
+    if (!publicResult.data) throw new GitHubUnavailableError('GitHub repository metadata is unavailable');
+    return mapRepoData(parsed, publicResult.data, {});
+  }
+  if (result.data.private) return null;
 
   const langs = (await gh<Record<string, number>>(`${parsed.path}/languages`)) ?? {};
+  return mapRepoData(parsed, result.data, langs);
+}
+
+function mapRepoData(
+  parsed: NonNullable<ReturnType<typeof repoParts>>,
+  meta: RepoResponse,
+  langs: Record<string, number>,
+): RepoData {
   const total = Object.values(langs).reduce((s, b) => s + Number(b), 0) || 1;
   const languages = Object.entries(langs)
     .map(([name, bytes]) => ({ name, percent: Math.round((Number(bytes) / total) * 100) }))
@@ -121,6 +147,51 @@ export async function getRepoData(slug: string): Promise<RepoData | null> {
     defaultBranch: meta.default_branch ?? 'main',
     homepage: meta.homepage || null,
     ownerAvatar: meta.owner?.avatar_url ?? '',
+  };
+}
+
+async function getGraphqlRepoData(parsed: NonNullable<ReturnType<typeof repoParts>>): Promise<RepoData | null> {
+  const data = await ghGraphQL<{
+    repository: {
+      name: string;
+      description: string | null;
+      stargazerCount: number;
+      issues: { totalCount: number };
+      defaultBranchRef: { name: string } | null;
+      homepageUrl: string | null;
+      owner: { login: string; avatarUrl: string };
+      languages: {
+        totalSize: number;
+        edges: { size: number; node: { name: string } }[] | null;
+      };
+    } | null;
+  }>(
+    `query($owner:String!,$repo:String!){ repository(owner:$owner,name:$repo){
+      name description stargazerCount homepageUrl
+      issues(states:OPEN){ totalCount }
+      defaultBranchRef{ name }
+      owner{ login avatarUrl }
+      languages(first:5,orderBy:{field:SIZE,direction:DESC}){ totalSize edges{ size node{ name } } }
+    } }`,
+    { owner: parsed.owner, repo: parsed.name },
+  );
+  const repo = data?.repository;
+  if (!repo) return null;
+  const total = repo.languages.totalSize || 1;
+  return {
+    slug: parsed.slug,
+    owner: repo.owner.login,
+    name: repo.name,
+    description: repo.description ?? '',
+    languages: (repo.languages.edges ?? []).map(edge => ({
+      name: edge.node.name,
+      percent: Math.round((edge.size / total) * 100),
+    })),
+    stars: repo.stargazerCount,
+    openIssues: repo.issues.totalCount,
+    defaultBranch: repo.defaultBranchRef?.name ?? 'main',
+    homepage: repo.homepageUrl,
+    ownerAvatar: repo.owner.avatarUrl,
   };
 }
 
@@ -725,19 +796,21 @@ async function readVillagePayload(slug: string, defaultBranch: string): Promise<
 
 async function getCachedVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   'use cache: remote';
-  cacheLife({ stale: 45, revalidate: 45, expire: 600 });
   cacheTag(villagePayloadTag(slug));
 
   const payload = await readVillagePayload(slug, defaultBranch);
-  if (!payload.ok || payload.partial) throw new VillagePayloadMiss(payload);
+  cacheLife(
+    payload.ok && !payload.partial
+      ? { stale: 45, revalidate: 45, expire: 600 }
+      : { stale: 15, revalidate: 60, expire: 120 },
+  );
   return payload;
 }
 
 export async function getVillagePayload(slug: string, defaultBranch: string): Promise<VillagePayload> {
   try {
     return await getCachedVillagePayload(slug, defaultBranch);
-  } catch (error) {
-    if (error instanceof VillagePayloadMiss) return error.payload;
+  } catch {
     return unavailableVillagePayload(defaultBranch);
   }
 }
