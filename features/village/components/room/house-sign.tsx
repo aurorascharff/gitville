@@ -1,13 +1,12 @@
 'use client';
 
 import { ArrowUpRight, X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { BARRIER, PixelSprite } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import { wallClass } from '@/features/village/utils/room-geometry';
-import { pickedPrs, prStackForCell, type Cell } from '@/features/village/utils/village-model';
+import { prStackForCell, type Cell } from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 
 export function HouseSign({
@@ -21,11 +20,9 @@ export function HouseSign({
   open: boolean;
   onClose: () => void;
 }) {
-  const { slug, setFocusId } = useVillageUi();
+  const { slug } = useVillageUi();
   const { payload } = useVillageData(slug);
   const { spec } = useRoomSpec(slug, cell.id, ai);
-  const stackNavRef = useRef<HTMLUListElement>(null);
-  const keepStackFocusRef = useRef(false);
 
   const { stack, floorNo } = prStackForCell(payload, cell);
   const isPr = cell.kind === 'pr';
@@ -38,19 +35,6 @@ export function HouseSign({
         : cell.prState === 'ready'
           ? 'ready'
           : null;
-
-  useEffect(() => {
-    if (!keepStackFocusRef.current) return;
-    keepStackFocusRef.current = false;
-    stackNavRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
-  }, [cell.id]);
-
-  function moveStackFocus(current: HTMLElement, direction: 1 | -1) {
-    const items = [...(stackNavRef.current?.querySelectorAll<HTMLElement>('[data-stack-item]') ?? [])];
-    const index = items.indexOf(current);
-    const next = items[index + direction];
-    next?.focus();
-  }
 
   return (
     <aside
@@ -197,96 +181,6 @@ export function HouseSign({
           <div className="flex-1" />
         )}
 
-        {stack.length > 1 ? (
-          <div className="max-h-[45%] shrink-0 overflow-y-auto overscroll-contain border-t-2 border-[#f0e6d2]/15 px-6 py-4">
-            <p className="mb-2.5 text-[12px] font-bold text-[#9a8c6d] uppercase">In this stack</p>
-            <ul ref={stackNavRef} className="flex flex-col gap-1">
-              {stack.map(pr => {
-                const here = `pr:${pr.number}` === cell.id;
-                const hasHouse = pickedPrs(payload).some(p => p.number === pr.number);
-                const base = 'flex w-full min-w-0 items-baseline gap-2 rounded-xs border-2 px-2 py-1.5 text-left';
-                const inner = (
-                  <>
-                    <span className="shrink-0 text-[14px] font-bold">#{pr.number}</span>
-                    <span className="truncate text-[14px] leading-5 opacity-90">{pr.title}</span>
-                    {pr.draft ? (
-                      <span className="pixel shrink-0 self-center" title="draft">
-                        <PixelSprite art={BARRIER.art} palette={BARRIER.palette} scale={3} />
-                      </span>
-                    ) : null}
-                  </>
-                );
-                const link = cn(base, 'cursor-pointer border-transparent text-[#e4d7ba] hover:border-[#f0e6d2]/40');
-                return (
-                  <li key={pr.number}>
-                    {here ? (
-                      <button
-                        type="button"
-                        data-stack-item
-                        aria-current="true"
-                        onKeyDown={e => {
-                          if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, 1);
-                          }
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, -1);
-                          }
-                        }}
-                        className={cn(base, 'cursor-default border-[#2e2418] bg-[#e4c05a] text-[#3a2f22]')}
-                      >
-                        {inner}
-                      </button>
-                    ) : hasHouse ? (
-                      <button
-                        type="button"
-                        data-stack-item
-                        onClick={() => {
-                          keepStackFocusRef.current = true;
-                          setFocusId(`pr:${pr.number}`);
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, 1);
-                          }
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, -1);
-                          }
-                        }}
-                        className={link}
-                      >
-                        {inner}
-                      </button>
-                    ) : (
-                      <a
-                        href={pr.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        data-stack-item
-                        onKeyDown={e => {
-                          if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, 1);
-                          }
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            moveStackFocus(e.currentTarget, -1);
-                          }
-                        }}
-                        className={link}
-                      >
-                        {inner}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
         <div className="shrink-0 border-t-2 border-[#f0e6d2]/15 px-6 py-4">
           <a
             href={cell.url}

@@ -8,6 +8,7 @@ import { FurnitureCloseup } from '@/features/village/components/room/furniture-c
 import { HouseSign } from '@/features/village/components/room/house-sign';
 import { InteriorPlayer } from '@/features/village/components/room/interior-player';
 import { RoomOccupants } from '@/features/village/components/room/room-occupants';
+import { StackElevator } from '@/features/village/components/room/stack-elevator';
 import {
   AI_ART_PALETTE,
   CAMPFIRE,
@@ -20,7 +21,7 @@ import {
 } from '@/features/village/components/shared/pixel-sprite';
 import { useRoomAi } from '@/features/village/hooks/use-room-ai';
 import { useViewport, type Viewport } from '@/features/village/hooks/use-viewport';
-import { useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
+import { preloadRoomSpec, useRoomSpec, useVillageData } from '@/features/village/hooks/use-village-data';
 import { useVillageUi } from '@/features/village/providers/village-ui-provider';
 import {
   backdropFor,
@@ -38,7 +39,13 @@ import {
   wallClass,
   type Build,
 } from '@/features/village/utils/room-geometry';
-import { roomFor, timeWindowFor, worldModelFor, type Cell } from '@/features/village/utils/village-model';
+import {
+  prStackForCell,
+  roomFor,
+  timeWindowFor,
+  worldModelFor,
+  type Cell,
+} from '@/features/village/utils/village-model';
 import { cn } from '@/lib/utils';
 import type { RoomNote } from '@/types/github';
 
@@ -50,24 +57,65 @@ export function HouseInterior() {
   const cell = focusId ? cells.find(c => c.id === focusId) : null;
   const walkTargetRef = useRef<{ x: number; y: number } | null>(null);
   const viewport = useViewport();
+  const [transitionDirection, setTransitionDirection] = useState<'up' | 'down' | null>(null);
+
+  const stack = cell ? prStackForCell(payload, cell).stack : [];
+  const stackFloors = stack.flatMap(pr => {
+    const floor = cells.find(candidate => candidate.id === `pr:${pr.number}`);
+    return floor ? [floor] : [];
+  });
+  const currentFloorIndex = cell ? stackFloors.findIndex(floor => floor.id === cell.id) : -1;
+
+  function selectFloor(index: number) {
+    const floor = stackFloors[index];
+    if (!floor || index === currentFloorIndex) return;
+    setTransitionDirection(index < currentFloorIndex ? 'up' : 'down');
+    preloadRoomSpec(slug, floor.id);
+    setFocusId(floor.id);
+  }
+
+  function stepFloor(direction: -1 | 1) {
+    selectFloor(currentFloorIndex + direction);
+  }
 
   useEffect(() => {
     walkTargetRef.current = null;
   }, [focusId]);
 
+  useEffect(() => {
+    if (currentFloorIndex < 0) return;
+    for (const index of [currentFloorIndex - 1, currentFloorIndex + 1]) {
+      const floor = stackFloors[index];
+      if (floor) preloadRoomSpec(slug, floor.id);
+    }
+  }, [currentFloorIndex, slug, stackFloors]);
+
   if (!cell || !viewport.ready) return null;
 
   return (
-    <InteriorScene
-      key={cell.id}
-      cell={cell}
-      ai={aiOn}
-      setAiOn={setAiOn}
-      setAiRoomDecor={setAiRoomDecor}
-      setFocusId={setFocusId}
-      viewport={viewport}
-      walkTargetRef={walkTargetRef}
-    />
+    <>
+      <InteriorScene
+        key={cell.id}
+        cell={cell}
+        ai={aiOn}
+        setAiOn={setAiOn}
+        setAiRoomDecor={setAiRoomDecor}
+        setFocusId={setFocusId}
+        viewport={viewport}
+        walkTargetRef={walkTargetRef}
+        transitionDirection={transitionDirection}
+        onFloorStep={stackFloors.length > 1 ? stepFloor : null}
+      />
+      <StackElevator
+        floors={stackFloors}
+        currentIndex={currentFloorIndex}
+        onSelect={selectFloor}
+        onPreload={index => {
+          const floor = stackFloors[index];
+          if (floor) preloadRoomSpec(slug, floor.id);
+        }}
+      />
+    </>
   );
 }
 
@@ -79,6 +127,8 @@ function InteriorScene({
   setFocusId,
   viewport,
   walkTargetRef,
+  transitionDirection,
+  onFloorStep,
 }: {
   cell: Cell;
   ai: boolean;
@@ -87,6 +137,8 @@ function InteriorScene({
   setFocusId: (id: string | null) => void;
   viewport: Viewport;
   walkTargetRef: React.RefObject<{ x: number; y: number } | null>;
+  transitionDirection: 'up' | 'down' | null;
+  onFloorStep: ((direction: -1 | 1) => void) | null;
 }) {
   const roomRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -105,6 +157,10 @@ function InteriorScene({
   const itemsRef = useRef<{ x: number; y: number; index: number }[]>([]);
   const frozenRef = useRef(false);
   const nearRef = useRef<number | null>(null);
+  const wheelDeltaRef = useRef(0);
+  const wheelLockedRef = useRef(false);
+  const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
+  const suppressWalkRef = useRef(false);
 
   useEffect(() => {
     itemsRef.current = scene.slots.map((s, i) => ({ x: s.x, y: s.y + WALL_H, index: i }));
@@ -135,10 +191,18 @@ function InteriorScene({
         e.preventDefault();
         if (!aiGenerated) roomAi.generate();
       }
+      if (onFloorStep && (e.key === 'PageUp' || e.key === '[')) {
+        e.preventDefault();
+        onFloorStep(-1);
+      }
+      if (onFloorStep && (e.key === 'PageDown' || e.key === ']')) {
+        e.preventDefault();
+        onFloorStep(1);
+      }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [aiGenerated, aiWorking, roomAi, scene.spec?.aiAvailable]);
+  }, [aiGenerated, aiWorking, onFloorStep, roomAi, scene.spec?.aiAvailable]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -165,11 +229,25 @@ function InteriorScene({
     const el = sceneRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) e.preventDefault();
+      if (e.ctrlKey) {
+        e.preventDefault();
+        return;
+      }
+      if (!onFloorStep || wheelLockedRef.current || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if (e.target instanceof Element && e.target.closest('a, button, [data-stack-nav], [data-stop-walk]')) return;
+      wheelDeltaRef.current += e.deltaY;
+      if (Math.abs(wheelDeltaRef.current) < 80) return;
+      e.preventDefault();
+      wheelLockedRef.current = true;
+      onFloorStep(wheelDeltaRef.current < 0 ? -1 : 1);
+      wheelDeltaRef.current = 0;
+      window.setTimeout(() => {
+        wheelLockedRef.current = false;
+      }, 420);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, []);
+  }, [onFloorStep]);
 
   const roomLoading = scene.loading && !spec;
   const aiPanelLoading = roomLoading && cell.kind !== 'issue' && cell.kind !== 'inbox';
@@ -182,48 +260,76 @@ function InteriorScene({
       ref={sceneRef}
       className="absolute inset-0 z-40 touch-none overflow-hidden"
       style={{ background: `radial-gradient(ellipse 85% 75% at 50% 42%, ${backdropFor(cell)}, #0c0a08 80%)` }}
+      onPointerDown={e => {
+        if (!onFloorStep || (e.target as Element).closest('a, button, [data-stop-walk]')) return;
+        pointerStartRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      }}
+      onPointerUp={e => {
+        const start = pointerStartRef.current;
+        pointerStartRef.current = null;
+        if (!start || start.id !== e.pointerId || !onFloorStep) return;
+        const dx = e.clientX - start.x;
+        const dy = e.clientY - start.y;
+        if (Math.abs(dy) < 64 || Math.abs(dy) < Math.abs(dx) * 1.25) return;
+        suppressWalkRef.current = true;
+        onFloorStep(dy < 0 ? -1 : 1);
+        window.setTimeout(() => {
+          suppressWalkRef.current = false;
+        }, 0);
+      }}
+      onPointerCancel={() => {
+        pointerStartRef.current = null;
+      }}
     >
       <div
         key={cell.id}
-        ref={roomRef}
         className={cn(
-          'pixel absolute top-0 left-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)] will-change-transform',
-          aiHighlighted && 'ring-4 ring-[#e4c05a]',
+          'pointer-events-none absolute inset-0',
+          transitionDirection === 'up' && 'stack-room-enter-up',
+          transitionDirection === 'down' && 'stack-room-enter-down',
         )}
-        style={{
-          width: `${w}px`,
-          height: `${h}px`,
-          transform: `translate3d(${frame.x}px, ${frame.y}px, 0) scale(${frame.scale})`,
-          transformOrigin: '0 0',
-        }}
-        onClick={e => {
-          if ((e.target as Element).closest('a, button, [data-stop-walk]')) return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          const s = rect.width / e.currentTarget.offsetWidth;
-          walkTargetRef.current = { x: (e.clientX - rect.left) / s - 4, y: (e.clientY - rect.top) / s - 4 };
-        }}
       >
-        <WallNotes cell={cell} ai={ai} />
-        <Floor cell={cell} width={w} height={h} scene={scene} nearIndex={nearIndex} onInspect={setInspectIndex} />
-        <RoomOccupants cell={cell} width={w} height={h} />
-        <DoorMat width={w} height={h} />
-        <InteriorPlayer
-          width={w}
-          height={h}
-          walkTargetRef={walkTargetRef}
-          roomRef={roomRef}
-          onExit={() => setFocusId(null)}
-          playerPosRef={playerPosRef}
-          itemsRef={itemsRef}
-          onNear={setNearIndex}
-          frozenRef={frozenRef}
-          topInset={roomTopInset}
-        />
-        {aiHighlighted && (spec?.ai || aiWorking) ? (
-          <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
-            {spec?.ai ? 'furniture fixed' : 'come back later'}
-          </span>
-        ) : null}
+        <div
+          ref={roomRef}
+          className={cn(
+            'pixel pointer-events-auto absolute top-0 left-0 overflow-hidden rounded-sm border-4 border-[#2e2418] shadow-[8px_10px_0_rgb(0_0_0/0.5)] will-change-transform',
+            aiHighlighted && 'ring-4 ring-[#e4c05a]',
+          )}
+          style={{
+            width: `${w}px`,
+            height: `${h}px`,
+            transform: `translate3d(${frame.x}px, ${frame.y}px, 0) scale(${frame.scale})`,
+            transformOrigin: '0 0',
+          }}
+          onClick={e => {
+            if (suppressWalkRef.current || (e.target as Element).closest('a, button, [data-stop-walk]')) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const s = rect.width / e.currentTarget.offsetWidth;
+            walkTargetRef.current = { x: (e.clientX - rect.left) / s - 4, y: (e.clientY - rect.top) / s - 4 };
+          }}
+        >
+          <WallNotes cell={cell} ai={ai} />
+          <Floor cell={cell} width={w} height={h} scene={scene} nearIndex={nearIndex} onInspect={setInspectIndex} />
+          <RoomOccupants cell={cell} width={w} height={h} />
+          <DoorMat width={w} height={h} />
+          <InteriorPlayer
+            width={w}
+            height={h}
+            walkTargetRef={walkTargetRef}
+            roomRef={roomRef}
+            onExit={() => setFocusId(null)}
+            playerPosRef={playerPosRef}
+            itemsRef={itemsRef}
+            onNear={setNearIndex}
+            frozenRef={frozenRef}
+            topInset={roomTopInset}
+          />
+          {aiHighlighted && (spec?.ai || aiWorking) ? (
+            <span className="font-pixel absolute top-2 left-1/2 z-20 -translate-x-1/2 rounded-sm border-2 border-[#4a3826] bg-[#e4c05a] px-2 py-0.5 text-[11px] font-bold text-[#3a2f22]">
+              {spec?.ai ? 'furniture fixed' : 'come back later'}
+            </span>
+          ) : null}
+        </div>
       </div>
       <button
         type="button"

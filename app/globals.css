@@ -414,6 +414,32 @@
     transform: scale(1) translateY(0);
   }
 }
+.stack-room-enter-up {
+  animation: stack-room-enter-up 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.stack-room-enter-down {
+  animation: stack-room-enter-down 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes stack-room-enter-up {
+  0% {
+    opacity: 0;
+    transform: translateY(56px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes stack-room-enter-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-56px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .sprite-bob,
   .player-walk .pixel-person-left-leg,
@@ -421,6 +447,8 @@
   .player-walk .pixel-person-left-foot,
   .player-walk .pixel-person-right-foot,
   .pop-in,
+  .stack-room-enter-up,
+  .stack-room-enter-down,
   .smoke-puff,
   .stars,
   .zzz span,

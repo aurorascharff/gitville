@@ -136,7 +136,7 @@ export function VillageHelp() {
           </div>
 
           <div className="mt-3 border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
-            Inside a stacked house the sign lists every floor. Click one to visit that PR.
+            Inside a stacked house the cutaway shows every floor. Click, scroll, or swipe to move between PRs.
           </div>
           <div className="border-t-2 border-[#4a3826]/30 py-3 text-[13px] leading-snug text-[#6b5b43]">
             <span className="font-bold text-[#3a2f22]">Fix furniture</span> gives the carpenter the real commits as
