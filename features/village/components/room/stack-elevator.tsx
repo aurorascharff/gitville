@@ -65,7 +65,7 @@ export function StackElevator({
                 onMouseEnter={() => onPreload(index)}
                 className={cn(
                   'group relative flex h-[58px] w-full overflow-hidden border-b-2 border-[#2e2418] text-left last:border-b-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-[#f7efdc]',
-                  current && 'z-10 ring-4 ring-[#f0c94f] ring-inset',
+                  current && 'z-10',
                 )}
               >
                 <span className="relative h-full w-full overflow-hidden">
@@ -79,15 +79,15 @@ export function StackElevator({
                     aria-hidden
                     className="absolute right-2 bottom-2 h-3 w-6 border-2 border-[#3a2f22] bg-[#e4c05a]"
                   />
-                  <span
-                    className={cn(
-                      'absolute top-1 right-1 flex h-5 min-w-5 items-center justify-center border-2 border-[#2e2418] px-0.5 text-[10px] leading-none font-black sm:hidden',
-                      current ? 'bg-[#f0c94f] text-[#2e2418]' : 'bg-[#f7efdc] text-[#4a3826]',
-                    )}
-                  >
+                  <span className="absolute top-1 right-1 flex h-5 min-w-5 items-center justify-center border-2 border-[#2e2418] bg-[#f7efdc] px-0.5 text-[10px] leading-none font-black text-[#4a3826] sm:hidden">
                     {floorNo}
                   </span>
-                  <span className="absolute inset-y-0 right-0 left-[76px] hidden min-w-0 flex-col justify-center overflow-hidden bg-[#f7efdc]/92 px-2 sm:flex">
+                  <span
+                    className={cn(
+                      'absolute inset-y-0 right-0 left-[76px] hidden min-w-0 flex-col justify-center overflow-hidden px-2 sm:flex',
+                      current ? 'bg-[#f4d77e]' : 'bg-[#f7efdc]/92',
+                    )}
+                  >
                     <span className="flex min-w-0 items-center gap-1.5">
                       <span className="text-[12px] leading-4 font-black text-[#3a2f22]">F{floorNo}</span>
                       <span className="min-w-0 truncate text-[12px] leading-4 font-bold text-[#8a4a2b]">
@@ -96,6 +96,15 @@ export function StackElevator({
                     </span>
                     <span className="truncate text-[11px] leading-4 text-[#6b5b43]">{floor.sub}</span>
                   </span>
+                  {current ? (
+                    <>
+                      <span aria-hidden className="absolute inset-0 z-20 border-4 border-[#f0c94f]" />
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-1 left-[68px] z-30 w-2 border-2 border-[#2e2418] bg-[#f0c94f] sm:left-[72px]"
+                      />
+                    </>
+                  ) : null}
                 </span>
               </button>
             );
