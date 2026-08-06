@@ -40,9 +40,84 @@ function hexSpiral(rings: number): [number, number][] {
 
 const AXIAL = hexSpiral(4);
 
+type Point = { x: number; y: number };
+type PlacementState = { positions: Map<string, Point>; active: Set<string> };
+
+const clientPlacementStates = new Map<string, PlacementState>();
+
 function slotPos(i: number): { x: number; y: number } {
   const [q, r] = AXIAL[i % AXIAL.length];
   return { x: CX + (q + r / 2) * DX, y: CY + r * DY };
+}
+
+function pointKey(point: Point): string {
+  return `${point.x}:${point.y}`;
+}
+
+function stabilizeClientCells(slug: string, cells: Cell[]): Cell[] {
+  if (typeof window === 'undefined') return cells;
+
+  let state = clientPlacementStates.get(slug);
+  if (!state) {
+    state = {
+      positions: new Map(cells.map(cell => [cell.id, { x: cell.x, y: cell.y }])),
+      active: new Set(cells.map(cell => cell.id)),
+    };
+    clientPlacementStates.set(slug, state);
+    return cells;
+  }
+
+  const grouped = new Map<string, { cells: Cell[]; order: number }>();
+  cells.forEach((cell, order) => {
+    const key = pointKey(cell);
+    const group = grouped.get(key);
+    if (group) group.cells.push(cell);
+    else grouped.set(key, { cells: [cell], order });
+  });
+
+  const groups = [...grouped.values()].sort((a, b) => {
+    const priority = (group: Cell[]) => {
+      if (group.some(cell => cell.id === 'main' || cell.id === 'inbox')) return -1;
+      if (group.some(cell => state.active.has(cell.id))) return 0;
+      if (group.some(cell => state.positions.has(cell.id))) return 1;
+      return 2;
+    };
+    return priority(a.cells) - priority(b.cells) || a.order - b.order;
+  });
+
+  const used = new Set<string>();
+  const assigned = new Map<string, Point>();
+  const available = AXIAL.slice(2).map((_, index) => slotPos(index + 2));
+
+  for (const group of groups) {
+    const remembered = [
+      ...group.cells.filter(cell => state.active.has(cell.id)),
+      ...group.cells.filter(cell => !state.active.has(cell.id)),
+    ]
+      .map(cell => state.positions.get(cell.id))
+      .find(point => point && !used.has(pointKey(point)));
+    const fallback = { x: group.cells[0].x, y: group.cells[0].y };
+    const point =
+      remembered ??
+      (!used.has(pointKey(fallback)) ? fallback : available.find(candidate => !used.has(pointKey(candidate)))) ??
+      fallback;
+
+    used.add(pointKey(point));
+    for (const cell of group.cells) {
+      assigned.set(cell.id, point);
+      state.positions.set(cell.id, point);
+    }
+  }
+
+  state.active = new Set(cells.map(cell => cell.id));
+  if (state.positions.size > AXIAL.length * 2) {
+    for (const id of state.positions.keys()) {
+      if (!state.active.has(id)) state.positions.delete(id);
+      if (state.positions.size <= AXIAL.length * 2) break;
+    }
+  }
+
+  return cells.map(cell => ({ ...cell, ...(assigned.get(cell.id) ?? cell) }));
 }
 
 type CellKind = 'main' | 'pr' | 'branch' | 'issue' | 'inbox';
@@ -533,7 +608,7 @@ type WorldModel = {
 };
 
 export function worldModelFor(payload: VillagePayload, slug: string, asOf: number, repo?: RepoSignal): WorldModel {
-  const cells = buildCells(payload, slug, asOf, repo);
+  const cells = stabilizeClientCells(slug, buildCells(payload, slug, asOf, repo));
   const actors = actorsAt(payload, cells, asOf);
 
   const byCell = new Map<string, Actor[]>();
