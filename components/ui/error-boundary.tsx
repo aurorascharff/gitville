@@ -1,7 +1,8 @@
 'use client';
 
+import { LoaderCircle } from 'lucide-react';
 import { catchError, type ErrorInfo } from 'next/error';
-import type { ComponentType } from 'react';
+import { useTransition, type ComponentType } from 'react';
 
 type ErrorBoundaryFallbackProps = ErrorInfo & {
   title?: string;
@@ -20,14 +21,19 @@ function ErrorFallback(
 }
 
 function DefaultErrorFallback({ retry, title }: ErrorBoundaryFallbackProps) {
+  const [isPending, startTransition] = useTransition();
+
   return (
     <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
       <p className="text-sm font-medium">{title ?? 'Something went wrong.'}</p>
       <button
-        onClick={() => retry()}
-        className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+        aria-busy={isPending}
+        className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-white/10"
+        disabled={isPending}
+        onClick={() => startTransition(() => retry())}
       >
-        Try again
+        {isPending && <LoaderCircle aria-hidden className="size-4 animate-spin" />}
+        {isPending ? 'Retrying…' : 'Try again'}
       </button>
     </div>
   );
